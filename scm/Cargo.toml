@@ -1,0 +1,280 @@
+[package]
+name         = "swe-edge-bootstrap"
+version.workspace     = true
+edition.workspace     = true
+license.workspace     = true
+rust-version.workspace = true
+authors.workspace     = true
+repository.workspace  = true
+description  = "edge — process-level assembler: wires ingress + proxy + domain + egress, lifecycle, and systemd notify."
+keywords     = ["daemon", "runtime", "lifecycle", "systemd", "swe"]
+categories   = ["network-programming"]
+
+[package.metadata.struct-engine]
+application_type = "lib"
+service_type     = "runtime"
+
+[lib]
+name = "swe_edge_bootstrap"
+path = "main/src/lib.rs"
+
+[features]
+default        = []
+observability  = ["dep:tracing-subscriber", "swe-edge-observ-config/observability"]
+message-broker = ["dep:swe-edge-runtime-message-broker"]
+scheduler      = ["dep:swe-edge-runtime-scheduler"]
+
+[dependencies]
+async-trait  = { workspace = true }
+dirs         = { workspace = true }
+futures      = { workspace = true }
+parking_lot  = { workspace = true }
+serde        = { workspace = true }
+serde_json   = { workspace = true }
+thiserror    = { workspace = true }
+tokio        = { workspace = true }
+toml         = { workspace = true }
+tracing      = { workspace = true }
+tracing-subscriber = { workspace = true, optional = true }
+
+swe-edge-configbuilder           = { workspace = true }
+swe-edge-observ-config           = { workspace = true }
+swe-edge-runtime-message-broker  = { workspace = true, optional = true }
+swe-edge-runtime-scheduler       = { workspace = true, optional = true }
+
+edge-proxy                       = { workspace = true }
+swe-edge-ingress-http            = { workspace = true }
+swe-edge-ingress-grpc            = { workspace = true }
+swe-edge-egress-grpc             = { workspace = true }
+swe-edge-egress-http             = { workspace = true }
+swe-edge-ingress-verifier        = { workspace = true }
+swe-edge-ingress-grpc-reflection = { workspace = true }
+edge-domain                      = { workspace = true }
+swe-observ-metrics               = { workspace = true }
+
+[dev-dependencies]
+async-trait    = { workspace = true }
+reqwest        = { workspace = true }
+serde          = { workspace = true }
+tempfile       = { workspace = true }
+tokio          = { workspace = true }
+swe-edge-configbuilder          = { workspace = true }
+swe-edge-observ-config          = { workspace = true }
+swe-edge-runtime-message-broker = { workspace = true }
+swe-edge-runtime-scheduler      = { workspace = true }
+edge-proxy                      = { workspace = true }
+swe-edge-ingress-http           = { workspace = true }
+swe-edge-ingress-grpc           = { workspace = true }
+swe-edge-egress-grpc            = { workspace = true }
+swe-edge-egress-http            = { workspace = true }
+
+[[test]]
+name = "runtime_int_test"
+path = "tests/runtime_int_test.rs"
+
+[[test]]
+name = "observability_int_test"
+path = "tests/observability_int_test.rs"
+
+[[test]]
+name = "composite_int_test"
+path = "tests/composite_int_test.rs"
+
+[[test]]
+name = "json_codec_int_test"
+path = "tests/json_codec_int_test.rs"
+
+[[test]]
+name = "ingress_int_test"
+path = "tests/ingress_int_test.rs"
+
+[[test]]
+name = "egress_int_test"
+path = "tests/egress_int_test.rs"
+
+[[test]]
+name = "runtime_manager_int_test"
+path = "tests/runtime_manager_int_test.rs"
+
+[[test]]
+name = "validator_int_test"
+path = "tests/validator_int_test.rs"
+
+[[test]]
+name = "saf_config_loader_int_test"
+path = "tests/saf_config_loader_int_test.rs"
+
+[[test]]
+name = "saf_daemon_int_test"
+path = "tests/saf_daemon_int_test.rs"
+
+[[test]]
+name = "saf_lifecycle_monitor_int_test"
+path = "tests/saf_lifecycle_monitor_int_test.rs"
+
+[[test]]
+name = "metrics_handler_int_test"
+path = "tests/metrics_handler_int_test.rs"
+
+[[test]]
+name = "dep_coverage_int_test"
+path = "tests/dep_coverage_int_test.rs"
+
+[[test]]
+name = "observ_config_int_test"
+path = "tests/observ_config_int_test.rs"
+
+[[test]]
+name = "swe_edge_observ_config_int_test"
+path = "tests/swe_edge_observ_config_int_test.rs"
+
+[[test]]
+name = "runner_int_test"
+path = "tests/runner_int_test.rs"
+
+[[test]]
+name = "runtime_result_int_test"
+path = "tests/runtime_result_int_test.rs"
+
+[[test]]
+name = "shared_counters_int_test"
+path = "tests/shared_counters_int_test.rs"
+
+[[test]]
+name = "message_broker_runtime_int_test"
+path = "tests/message_broker_runtime_int_test.rs"
+
+[[test]]
+name = "composite_grpc_ingress_int_test"
+path = "tests/composite_grpc_ingress_int_test.rs"
+
+[[test]]
+name = "composite_ingress_int_test"
+path = "tests/composite_ingress_int_test.rs"
+
+[[test]]
+name = "config_error_int_test"
+path = "tests/config_error_int_test.rs"
+
+[[test]]
+name = "config_override_int_test"
+path = "tests/config_override_int_test.rs"
+
+[[test]]
+name = "application_config_loader_int_test"
+path = "tests/application_config_loader_int_test.rs"
+
+[[test]]
+name = "default_egress_int_test"
+path = "tests/default_egress_int_test.rs"
+
+[[test]]
+name = "runtime_error_int_test"
+path = "tests/runtime_error_int_test.rs"
+
+[[test]]
+name = "default_ingress_int_test"
+path = "tests/default_ingress_int_test.rs"
+
+[[test]]
+name = "metrics_exporter_int_test"
+path = "tests/metrics_exporter_int_test.rs"
+
+[[test]]
+name = "autoscale_policy_int_test"
+path = "tests/autoscale_policy_int_test.rs"
+
+[[test]]
+name = "grpc_load_monitor_int_test"
+path = "tests/grpc_load_monitor_int_test.rs"
+
+[[test]]
+name = "http_load_monitor_int_test"
+path = "tests/http_load_monitor_int_test.rs"
+
+[[test]]
+name = "lifecycle_observer_int_test"
+path = "tests/lifecycle_observer_int_test.rs"
+
+[[test]]
+name = "metrics_config_int_test"
+path = "tests/metrics_config_int_test.rs"
+
+[[test]]
+name = "ring_buffer_int_test"
+path = "tests/ring_buffer_int_test.rs"
+
+[[test]]
+name = "sampler_int_test"
+path = "tests/sampler_int_test.rs"
+
+[[test]]
+name = "traffic_counters_int_test"
+path = "tests/traffic_counters_int_test.rs"
+
+[[test]]
+name = "runtime_builder_serve_int_test"
+path = "tests/runtime_builder_serve_int_test.rs"
+
+[[test]]
+name = "default_runtime_manager_int_test"
+path = "tests/default_runtime_manager_int_test.rs"
+
+[[test]]
+name = "service_registry_int_test"
+path = "tests/service_registry_int_test.rs"
+
+[[test]]
+name = "traits_int_test"
+path = "tests/traits_int_test.rs"
+
+[[test]]
+name = "runtime_config_int_test"
+path = "tests/runtime_config_int_test.rs"
+
+[[test]]
+name = "runtime_status_int_test"
+path = "tests/runtime_status_int_test.rs"
+
+[[test]]
+name = "component_health_int_test"
+path = "tests/component_health_int_test.rs"
+
+[[test]]
+name = "runtime_health_int_test"
+path = "tests/runtime_health_int_test.rs"
+
+[[test]]
+name = "config_validator_int_test"
+path = "tests/config_validator_int_test.rs"
+
+[[test]]
+name = "scheduler_int_test"
+path = "tests/scheduler_int_test.rs"
+
+[[test]]
+name = "server_config_loader_int_test"
+path = "tests/server_config_loader_int_test.rs"
+
+[[test]]
+name = "server_monitor_int_test"
+path = "tests/server_monitor_int_test.rs"
+
+[[test]]
+name = "server_svc_int_test"
+path = "tests/server_svc_int_test.rs"
+
+[[test]]
+name = "runtime_extension_int_test"
+path = "tests/runtime_extension_int_test.rs"
+
+[[test]]
+name = "tracing_initializer_int_test"
+path = "tests/tracing_initializer_int_test.rs"
+
+[[test]]
+name = "configbuilder_int_test"
+path = "tests/configbuilder_int_test.rs"
+
+[lints]
+workspace = true
