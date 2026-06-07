@@ -22,6 +22,14 @@ pub use swe_edge_ingress_verifier::{
     Claims, JwtConfig, JwtKey, JwtVerifier, TokenVerifier, VerifierError,
 };
 
+// ── Handler decorators + config-driven assembly ───────────────────────────────
+pub use crate::api::config::FeatureRegistryExt;
+pub use edge_domain::{
+    Cache, CacheAsideHandler, CacheAsideResponse, EventEmittingHandler, FallbackHandler,
+    FallbackPolicy, HandlerFactory, InMemoryCache, OptionalHandler, TimeoutHandler, TimeoutPolicy,
+};
+pub use swe_edge_configbuilder::{FeatureRegistry, FeatureState, OptionalSection};
+
 // ── Ingress surface (handlers + request/response types) ───────────────────────
 pub use edge_domain::{Handler, HandlerError};
 pub use swe_edge_ingress_grpc::{

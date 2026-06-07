@@ -20,6 +20,9 @@ pub enum ConfigError {
     /// Required environment variable is missing or malformed.
     #[error("invalid env var: {0}")]
     BadEnvVar(String),
+    /// A [`HandlerFactory::build`](edge_domain::HandlerFactory::build) call failed.
+    #[error("handler build failed: {0}")]
+    HandlerBuild(String),
 }
 
 impl From<swe_edge_configbuilder::ConfigError> for ConfigError {
