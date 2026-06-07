@@ -50,6 +50,7 @@ swe-edge-egress-http             = { workspace = true }
 swe-edge-ingress-verifier        = { workspace = true }
 swe-edge-ingress-grpc-reflection = { workspace = true }
 edge-domain                      = { workspace = true }
+edge-dispatch                    = { workspace = true }
 swe-observ-metrics               = { workspace = true }
 
 [dev-dependencies]
