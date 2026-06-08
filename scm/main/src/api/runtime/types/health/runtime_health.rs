@@ -1,10 +1,12 @@
 //! `RuntimeHealth` — aggregate health of the running daemon.
 
+use serde::Serialize;
+
 use crate::api::runtime::types::health::component_health::ComponentHealth;
 use crate::api::runtime::RuntimeStatus;
 
 /// Aggregate health report for the runtime.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct RuntimeHealth {
     /// Overall runtime status (Starting, Running, Stopping, Stopped).
     pub status: RuntimeStatus,

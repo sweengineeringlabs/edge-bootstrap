@@ -1,7 +1,9 @@
 //! `ComponentHealth` — health status of a single runtime subsystem.
 
+use serde::Serialize;
+
 /// Health status of a single runtime subsystem.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ComponentHealth {
     /// Name of the runtime subsystem (e.g. "http", "grpc", "db").
     pub name: String,

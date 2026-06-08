@@ -147,6 +147,34 @@ impl ServerMonitor {
         let wrapped: Arc<dyn LifecycleMonitor> = Arc::new(monitor);
         wrapped
     }
+
+    /// Build an HTTP health endpoint handler backed by `manager`.
+    ///
+    /// The returned handler responds to `GET /health` with a JSON
+    /// [`RuntimeHealth`](crate::RuntimeHealth) body. HTTP 200 when the
+    /// runtime reports healthy; 503 when any component is degraded.
+    ///
+    /// Register the handler in an `HttpIngress` alongside your application
+    /// routes to expose runtime health without additional boilerplate.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// use std::sync::Arc;
+    /// use swe_edge_bootstrap::{Runtime, RuntimeConfig, RuntimeManager, ServerMonitor};
+    ///
+    /// # async fn run(config: RuntimeConfig, ingress: Arc<dyn swe_edge_bootstrap::Ingress>, egress: Arc<dyn swe_edge_bootstrap::Egress>, lifecycle: Arc<dyn edge_proxy::LifecycleMonitor>) {
+    /// let mgr: Arc<dyn RuntimeManager> =
+    ///     Arc::new(Runtime::runtime_manager(config, ingress, egress, lifecycle));
+    /// let health = ServerMonitor::health_handler(Arc::clone(&mgr));
+    /// // Wire `health` into your HttpIngress composite.
+    /// # }
+    /// ```
+    pub fn health_handler(
+        manager: Arc<dyn crate::api::runtime::traits::runtime_manager::RuntimeManager>,
+    ) -> impl crate::api::health::HealthHandler {
+        crate::core::health::DefaultHealthHandler::new(manager, "/health")
+    }
 }
 
 // ── Runtime SAF methods ────────────────────────────────────────────────────────

@@ -5,6 +5,7 @@ mod bootstrap_svc;
 pub use crate::api::config::traits::loader::ConfigLoader;
 pub use crate::api::config::ConfigError;
 pub use crate::api::egress::Egress;
+pub use crate::api::health::HealthHandler;
 pub use crate::api::ingress::Ingress;
 pub use crate::api::runtime::traits::runtime_manager::RuntimeManager;
 pub use crate::api::runtime::types::health::ComponentHealth;

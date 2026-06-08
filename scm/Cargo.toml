@@ -277,5 +277,9 @@ path = "tests/tracing_initializer_int_test.rs"
 name = "configbuilder_int_test"
 path = "tests/configbuilder_int_test.rs"
 
+[[test]]
+name = "health_handler_int_test"
+path = "tests/health_handler_int_test.rs"
+
 [lints]
 workspace = true

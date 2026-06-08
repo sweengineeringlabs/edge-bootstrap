@@ -3,6 +3,7 @@
 pub(crate) mod composite;
 pub(crate) mod config;
 pub(crate) mod egress;
+pub(crate) mod health;
 pub(crate) mod ingress;
 pub(crate) mod json;
 pub(crate) mod metrics;
