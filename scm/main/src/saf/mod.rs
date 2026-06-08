@@ -24,11 +24,11 @@ pub use swe_edge_ingress_verifier::{
 
 // ── Handler decorators + config-driven assembly ───────────────────────────────
 pub use crate::api::config::FeatureRegistryExt;
-pub use edge_domain::{EventEmittingHandler, HandlerFactory};
 pub use edge_dispatch::{
-    Cache, CacheAsideHandler, CacheAsideResponse, FallbackHandler,
-    FallbackPolicy, InMemoryCache, OptionalHandler, TimeoutHandler, TimeoutPolicy,
+    Cache, CacheAsideHandler, CacheAsideResponse, FallbackHandler, FallbackPolicy, InMemoryCache,
+    OptionalHandler, TimeoutHandler, TimeoutPolicy,
 };
+pub use edge_domain::{EventEmittingHandler, HandlerFactory};
 pub use swe_edge_configbuilder::{FeatureRegistry, FeatureState, OptionalSection};
 
 // ── Ingress surface (handlers + request/response types) ───────────────────────

@@ -7,6 +7,6 @@ pub(crate) mod traits;
 pub(crate) mod types;
 
 pub use error::ConfigError;
-pub use traits::FeatureRegistryExt;
 pub use swe_edge_observ_config::{ObservabilityConfig, TracingConfig};
+pub use traits::FeatureRegistryExt;
 pub(crate) use types::ConfigOverride;
