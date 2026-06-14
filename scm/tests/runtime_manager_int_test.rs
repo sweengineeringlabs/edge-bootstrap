@@ -9,7 +9,7 @@ use futures::FutureExt;
 use tokio::net::TcpListener;
 use tokio::sync::oneshot;
 
-use edge_proxy::{HealthReport, LifecycleError, LifecycleMonitor};
+use edge_proxy::{ComponentHealth, HealthReport, HealthStatus, LifecycleError, LifecycleMonitor};
 use swe_edge_bootstrap::{Runtime, RuntimeConfig, RuntimeManager, RuntimeStatus};
 use swe_edge_egress_http::{
     HttpEgress, HttpEgressResult, HttpRequest as EgressReq, HttpResponse as EgressResp,
@@ -30,6 +30,12 @@ impl LifecycleMonitor for StubLifecycle {
     }
     fn shutdown(&self) -> BoxFuture<'_, Result<(), LifecycleError>> {
         async move { Ok(()) }.boxed()
+    }
+    fn status(&self) -> BoxFuture<'_, HealthStatus> {
+        async move { HealthStatus::Healthy }.boxed()
+    }
+    fn component(&self, _id: &str) -> BoxFuture<'_, Option<ComponentHealth>> {
+        async move { None }.boxed()
     }
 }
 

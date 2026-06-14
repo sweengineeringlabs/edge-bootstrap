@@ -263,7 +263,7 @@ mod tests {
     use super::*;
     use crate::core::egress::DefaultEgress;
     use crate::core::ingress::DefaultIngress;
-    use edge_proxy::{HealthReport, LifecycleError};
+    use edge_proxy::{ComponentHealth, HealthReport, HealthStatus, LifecycleError};
     use futures::future::BoxFuture;
     use futures::FutureExt;
     use std::collections::HashMap;
@@ -292,6 +292,12 @@ mod tests {
         }
         fn shutdown(&self) -> BoxFuture<'_, Result<(), LifecycleError>> {
             async move { Ok(()) }.boxed()
+        }
+        fn status(&self) -> BoxFuture<'_, HealthStatus> {
+            async move { HealthStatus::Healthy }.boxed()
+        }
+        fn component(&self, _id: &str) -> BoxFuture<'_, Option<ComponentHealth>> {
+            async move { None }.boxed()
         }
     }
 

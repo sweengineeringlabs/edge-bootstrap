@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use edge_proxy::{HealthReport, HealthStatus, LifecycleError, LifecycleMonitor};
+use edge_proxy::{ComponentHealth, HealthReport, HealthStatus, LifecycleError, LifecycleMonitor};
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use swe_observ_metrics::MetricsProvider;
@@ -60,6 +60,15 @@ impl LifecycleMonitor for MetricsLifecycleMonitor {
 
     fn shutdown(&self) -> BoxFuture<'_, Result<(), LifecycleError>> {
         async move { self.inner.shutdown().await }.boxed()
+    }
+
+    fn status(&self) -> BoxFuture<'_, HealthStatus> {
+        async move { self.inner.status().await }.boxed()
+    }
+
+    fn component(&self, id: &str) -> BoxFuture<'_, Option<ComponentHealth>> {
+        let id = id.to_owned();
+        async move { self.inner.component(&id).await }.boxed()
     }
 }
 
