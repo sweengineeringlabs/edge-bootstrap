@@ -25,7 +25,9 @@ fn test_http_route_accepts_handler_with_auto_json_codec() {
     struct EchoHandler;
 
     #[async_trait::async_trait]
-    impl Handler<Req, Resp> for EchoHandler {
+    impl Handler for EchoHandler {
+        type Request = Req;
+        type Response = Resp;
         fn id(&self) -> &str {
             "echo"
         }

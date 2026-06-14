@@ -1,8 +1,8 @@
 use std::sync::Arc;
 use std::time::Instant;
 
-use edge_domain::RequestContext;
 use futures::future::BoxFuture;
+use swe_edge_ingress_http::SecurityContext;
 use swe_edge_ingress_http::{
     HttpHealthCheck, HttpIngress, HttpIngressResult, HttpRequest, HttpResponse,
 };
@@ -27,7 +27,7 @@ impl HttpIngress for HttpLoadMonitor {
     fn handle(
         &self,
         request: HttpRequest,
-        ctx: RequestContext,
+        ctx: SecurityContext,
     ) -> BoxFuture<'_, HttpIngressResult<HttpResponse>> {
         self.counters.on_start();
         let counters = Arc::clone(&self.counters);
@@ -66,7 +66,7 @@ mod tests {
             fn handle(
                 &self,
                 _: HttpRequest,
-                _: RequestContext,
+                _: SecurityContext,
             ) -> BoxFuture<'_, HttpIngressResult<HttpResponse>> {
                 Box::pin(async { Ok(HttpResponse::new(200, vec![])) })
             }
@@ -84,7 +84,7 @@ mod tests {
             fn handle(
                 &self,
                 _: HttpRequest,
-                _: RequestContext,
+                _: SecurityContext,
             ) -> BoxFuture<'_, HttpIngressResult<HttpResponse>> {
                 Box::pin(async { Ok(HttpResponse::new(200, vec![])) })
             }
@@ -94,7 +94,7 @@ mod tests {
         }
         let c = counters();
         let m = HttpLoadMonitor::new(Arc::new(HttpLoadMonitorOk), Arc::clone(&c));
-        m.handle(HttpRequest::get("/"), RequestContext::unauthenticated())
+        m.handle(HttpRequest::get("/"), SecurityContext::unauthenticated())
             .await
             .unwrap();
         assert_eq!(c.requests_in_flight.load(Ordering::Relaxed), 0);
