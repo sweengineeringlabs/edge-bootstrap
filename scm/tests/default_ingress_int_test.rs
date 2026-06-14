@@ -32,13 +32,13 @@ fn test_empty_ingress_grpc_returns_none() {
 /// @covers: Runtime::grpc_ingress
 #[test]
 fn test_grpc_ingress_has_any_returns_true() {
-    use edge_domain::RequestContext;
+    use swe_edge_ingress_http::SecurityContext;
     struct Stub;
     impl swe_edge_bootstrap::GrpcIngress for Stub {
         fn handle_unary(
             &self,
             _: GrpcRequest,
-            _: RequestContext,
+            _: SecurityContext,
         ) -> BoxFuture<'_, GrpcIngressResult<GrpcResponse>> {
             Box::pin(async { Err(GrpcIngressError::Unimplemented("stub".into())) })
         }
@@ -47,7 +47,7 @@ fn test_grpc_ingress_has_any_returns_true() {
             _: String,
             _: GrpcMetadata,
             _: GrpcMessageStream,
-            _: RequestContext,
+            _: SecurityContext,
         ) -> BoxFuture<'_, GrpcIngressResult<(GrpcMessageStream, GrpcMetadata)>> {
             Box::pin(async { Err(GrpcIngressError::Unimplemented("stub".into())) })
         }

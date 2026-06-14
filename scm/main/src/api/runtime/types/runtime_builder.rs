@@ -54,7 +54,10 @@ impl RuntimeBuilder {
     }
 
     /// Register an HTTP handler using JSON encode/decode.
-    pub fn http_route<Req, Resp>(self, handler: Arc<dyn Handler<Req, Resp>>) -> Self
+    pub fn http_route<Req, Resp>(
+        self,
+        handler: Arc<dyn Handler<Request = Req, Response = Resp>>,
+    ) -> Self
     where
         Req: serde::de::DeserializeOwned + Send + 'static,
         Resp: serde::Serialize + Send + 'static,
@@ -69,7 +72,7 @@ impl RuntimeBuilder {
     /// Register an HTTP handler with custom decode and encode functions.
     pub fn http_route_with<Req, Resp>(
         mut self,
-        handler: Arc<dyn Handler<Req, Resp>>,
+        handler: Arc<dyn Handler<Request = Req, Response = Resp>>,
         decode: HttpDecodeFn<Req>,
         encode: HttpEncodeFn<Resp>,
     ) -> Self
@@ -86,7 +89,10 @@ impl RuntimeBuilder {
     }
 
     /// Register a gRPC handler using JSON encode/decode.
-    pub fn grpc_route<Req, Resp>(self, handler: Arc<dyn Handler<Req, Resp>>) -> Self
+    pub fn grpc_route<Req, Resp>(
+        self,
+        handler: Arc<dyn Handler<Request = Req, Response = Resp>>,
+    ) -> Self
     where
         Req: serde::de::DeserializeOwned + Send + 'static,
         Resp: serde::Serialize + Send + 'static,
@@ -101,7 +107,7 @@ impl RuntimeBuilder {
     /// Register a gRPC handler with custom decode and encode functions.
     pub fn grpc_route_with<Req, Resp>(
         mut self,
-        handler: Arc<dyn Handler<Req, Resp>>,
+        handler: Arc<dyn Handler<Request = Req, Response = Resp>>,
         decode: GrpcDecodeFn<Req>,
         encode: GrpcEncodeFn<Resp>,
     ) -> Self

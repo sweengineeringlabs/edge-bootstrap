@@ -5,7 +5,7 @@ use std::sync::Arc;
 use futures::future::BoxFuture;
 use swe_edge_ingress_http::{
     HttpHealthCheck, HttpIngress, HttpIngressError, HttpIngressResult, HttpMethod, HttpRequest,
-    HttpResponse, RequestContext,
+    HttpResponse, SecurityContext,
 };
 
 use crate::api::health::HealthHandler;
@@ -36,7 +36,7 @@ impl HttpIngress for DefaultHealthHandler {
     fn handle(
         &self,
         request: HttpRequest,
-        _ctx: RequestContext,
+        _ctx: SecurityContext,
     ) -> BoxFuture<'_, HttpIngressResult<HttpResponse>> {
         let manager = Arc::clone(&self.manager);
         let path = self.path.clone();
@@ -134,7 +134,7 @@ mod tests {
         let resp = h
             .handle(
                 HttpRequest::get("/health"),
-                RequestContext::unauthenticated(),
+                SecurityContext::unauthenticated(),
             )
             .await
             .unwrap();
@@ -147,7 +147,7 @@ mod tests {
         let resp = h
             .handle(
                 HttpRequest::get("/health"),
-                RequestContext::unauthenticated(),
+                SecurityContext::unauthenticated(),
             )
             .await
             .unwrap();
@@ -160,7 +160,7 @@ mod tests {
         let resp = h
             .handle(
                 HttpRequest::get("/health"),
-                RequestContext::unauthenticated(),
+                SecurityContext::unauthenticated(),
             )
             .await
             .unwrap();
@@ -175,14 +175,11 @@ mod tests {
         let resp = h
             .handle(
                 HttpRequest::get("/health"),
-                RequestContext::unauthenticated(),
+                SecurityContext::unauthenticated(),
             )
             .await
             .unwrap();
-        assert_eq!(
-            resp.header("content-type"),
-            Some("application/json")
-        );
+        assert_eq!(resp.header("content-type"), Some("application/json"));
     }
 
     #[tokio::test]
@@ -191,7 +188,7 @@ mod tests {
         let err = h
             .handle(
                 HttpRequest::post("/health"),
-                RequestContext::unauthenticated(),
+                SecurityContext::unauthenticated(),
             )
             .await
             .unwrap_err();
@@ -204,7 +201,7 @@ mod tests {
         let err = h
             .handle(
                 HttpRequest::get("/metrics"),
-                RequestContext::unauthenticated(),
+                SecurityContext::unauthenticated(),
             )
             .await
             .unwrap_err();
@@ -217,7 +214,7 @@ mod tests {
         let resp = h
             .handle(
                 HttpRequest::get("/health/"),
-                RequestContext::unauthenticated(),
+                SecurityContext::unauthenticated(),
             )
             .await
             .unwrap();

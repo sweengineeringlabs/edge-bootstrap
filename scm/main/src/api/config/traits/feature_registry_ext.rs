@@ -26,7 +26,9 @@ use crate::api::config::error::ConfigError;
 /// struct GuardHandler { token: String }
 ///
 /// #[async_trait::async_trait]
-/// impl Handler<String, String> for GuardHandler {
+/// impl Handler for GuardHandler {
+///     type Request = String;
+///     type Response = String;
 ///     fn id(&self) -> &str { "guard" }
 ///     fn pattern(&self) -> &str { "/guard" }
 ///     async fn execute(&self, req: String) -> Result<String, HandlerError> {
@@ -34,7 +36,8 @@ use crate::api::config::error::ConfigError;
 ///     }
 /// }
 ///
-/// impl HandlerFactory<GuardConfig> for GuardHandler {
+/// impl HandlerFactory for GuardHandler {
+///     type Config = GuardConfig;
 ///     fn build(cfg: GuardConfig) -> Result<Self, HandlerError> {
 ///         Ok(GuardHandler { token: cfg.token })
 ///     }
@@ -58,7 +61,7 @@ pub trait FeatureRegistryExt {
     ) -> Result<OptionalHandler<H>, ConfigError>
     where
         C: OptionalSection,
-        H: HandlerFactory<C>;
+        H: HandlerFactory<Config = C>;
 }
 
 impl FeatureRegistryExt for FeatureRegistry {
@@ -68,7 +71,7 @@ impl FeatureRegistryExt for FeatureRegistry {
     ) -> Result<OptionalHandler<H>, ConfigError>
     where
         C: OptionalSection,
-        H: HandlerFactory<C>,
+        H: HandlerFactory<Config = C>,
     {
         match self.load::<C>(loader)? {
             FeatureState::Enabled(cfg) => {

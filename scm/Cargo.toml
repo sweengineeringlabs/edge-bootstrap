@@ -23,6 +23,7 @@ default        = []
 observability  = ["dep:tracing-subscriber", "swe-edge-observ-config/observability"]
 message-broker = ["dep:swe-edge-runtime-message-broker"]
 scheduler      = ["dep:swe-edge-runtime-scheduler"]
+security       = ["dep:swe-edge-security"]
 
 [dependencies]
 async-trait  = { workspace = true }
@@ -41,6 +42,7 @@ swe-edge-configbuilder           = { workspace = true }
 swe-edge-observ-config           = { workspace = true }
 swe-edge-runtime-message-broker  = { workspace = true, optional = true }
 swe-edge-runtime-scheduler       = { workspace = true, optional = true }
+swe-edge-security                = { workspace = true, optional = true }
 
 edge-proxy                       = { workspace = true }
 swe-edge-ingress-http            = { workspace = true }
@@ -280,6 +282,11 @@ path = "tests/configbuilder_int_test.rs"
 [[test]]
 name = "health_handler_int_test"
 path = "tests/health_handler_int_test.rs"
+
+[[test]]
+name             = "security_feature_int_test"
+path             = "tests/security_feature_int_test.rs"
+required-features = ["security"]
 
 [lints]
 workspace = true

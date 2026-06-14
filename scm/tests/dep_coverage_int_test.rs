@@ -15,7 +15,9 @@ async fn test_edge_domain_handler_registered_via_builder() {
     struct PingHandler;
 
     #[async_trait::async_trait]
-    impl Handler<String, String> for PingHandler {
+    impl Handler for PingHandler {
+        type Request = String;
+        type Response = String;
         fn id(&self) -> &str {
             "ping"
         }
@@ -135,7 +137,9 @@ fn test_ingress_grpc_handler_registered_via_builder() {
     struct EchoHandler;
 
     #[async_trait::async_trait]
-    impl Handler<Vec<u8>, Vec<u8>> for EchoHandler {
+    impl Handler for EchoHandler {
+        type Request = Vec<u8>;
+        type Response = Vec<u8>;
         fn id(&self) -> &str {
             "echo"
         }
