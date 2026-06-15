@@ -205,7 +205,7 @@ impl Runtime {
         lifecycle: Arc<dyn LifecycleMonitor>,
     ) -> RuntimeResult<()> {
         use swe_edge_ingress_grpc::TonicGrpcServer;
-        use swe_edge_ingress_http::AxumHttpServer;
+        use swe_edge_ingress_http::{AxumHttpServer, HttpServer};
         use swe_edge_ingress_verifier::{JwtVerifier, TokenVerifier};
         use tokio::sync::oneshot;
 
@@ -239,7 +239,7 @@ impl Runtime {
                 let signal = async move {
                     let _ = http_shutdown_rx.await;
                 };
-                if let Err(e) = server.serve(signal).await {
+                if let Err(e) = server.serve_with_shutdown(Box::pin(signal)).await {
                     tracing::error!("HTTP server error: {e}");
                 }
             })

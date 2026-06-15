@@ -13,7 +13,7 @@ use crate::api::config::error::ConfigError;
 /// ```rust,no_run
 /// use swe_edge_configbuilder::{FeatureRegistry, SectionLoaderImpl, OptionalSection};
 /// use swe_edge_bootstrap::{FeatureRegistryExt, HandlerFactory};
-/// use edge_dispatch::{Handler, HandlerError, OptionalHandler};
+/// use edge_dispatch::{Handler, HandlerContext, HandlerError, OptionalHandler};
 /// use serde::Deserialize;
 ///
 /// #[derive(Deserialize)]
@@ -31,7 +31,7 @@ use crate::api::config::error::ConfigError;
 ///     type Response = String;
 ///     fn id(&self) -> &str { "guard" }
 ///     fn pattern(&self) -> &str { "/guard" }
-///     async fn execute(&self, req: String) -> Result<String, HandlerError> {
+///     async fn execute(&self, req: String, _ctx: HandlerContext<'_>) -> Result<String, HandlerError> {
 ///         Ok(req)
 ///     }
 /// }

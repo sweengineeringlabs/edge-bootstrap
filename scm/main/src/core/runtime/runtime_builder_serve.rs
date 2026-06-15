@@ -11,7 +11,7 @@ use swe_edge_egress_grpc::TransportSvc as GrpcTransportSvc;
 use swe_edge_egress_http::HttpTransportSvc;
 use swe_edge_ingress_grpc::TonicGrpcServer;
 use swe_edge_ingress_grpc_reflection::ReflectionService;
-use swe_edge_ingress_http::AxumHttpServer;
+use swe_edge_ingress_http::{AxumHttpServer, HttpServer};
 use swe_edge_ingress_verifier::{JwtVerifier, TokenVerifier};
 use tokio::sync::oneshot;
 
@@ -188,7 +188,7 @@ impl RuntimeBuilder {
                 let signal = async move {
                     let _ = http_rx.await;
                 };
-                if let Err(e) = server.serve(signal).await {
+                if let Err(e) = server.serve_with_shutdown(Box::pin(signal)).await {
                     tracing::error!("HTTP server error: {e}");
                 }
             })
@@ -245,7 +245,7 @@ impl RuntimeBuilder {
                     let signal = async move {
                         let _ = rx.await;
                     };
-                    if let Err(e) = server.serve(signal).await {
+                    if let Err(e) = server.serve_with_shutdown(Box::pin(signal)).await {
                         tracing::error!("metrics server error: {e}");
                     }
                 });

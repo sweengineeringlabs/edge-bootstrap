@@ -17,7 +17,7 @@ use swe_edge_egress_http::{
 };
 use swe_edge_ingress_http::{
     AxumHttpServer, HttpHealthCheck, HttpIngress, HttpIngressError, HttpIngressResult, HttpRequest,
-    HttpResponse, SecurityContext,
+    HttpResponse, HttpServer, SecurityContext,
 };
 
 struct StubLifecycle;
@@ -108,7 +108,7 @@ async fn start_daemon_stack(
         let signal = async move {
             let _ = shutdown_rx.await;
         };
-        let _ = server.serve_with_listener(listener, signal).await;
+        let _ = server.serve_with_listener(listener, Box::pin(signal)).await;
     });
     (base_url, mgr, shutdown_tx)
 }
