@@ -199,7 +199,7 @@ impl RuntimeBuilder {
     /// includes `"message-broker"` in every [`RuntimeHealth`] report.
     ///
     /// [`MessageBroker::health_check`]: swe_edge_runtime_message_broker::MessageBroker::health_check
-    /// [`RuntimeHealth`]: crate::api::runtime::types::health::RuntimeHealth
+    /// [`RuntimeHealth`]: crate::RuntimeHealth
     #[cfg(feature = "message-broker")]
     pub fn with_message_broker(
         mut self,

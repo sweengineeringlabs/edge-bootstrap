@@ -91,7 +91,7 @@ impl ServerConfigLoader {
         loader.load_for_tenant(tenant_id)
     }
 
-    /// Validate a [`RuntimeConfig`] using the built-in [`ConfigValidator`].
+    /// Validate a [`RuntimeConfig`](crate::RuntimeConfig) using the built-in `ConfigValidator`.
     ///
     /// Returns `Err(RuntimeError::StartFailed)` if any field is out of bounds.
     pub fn validate_config(config: &RuntimeConfig) -> Result<(), RuntimeError> {
@@ -194,8 +194,8 @@ impl Runtime {
 
     /// Start the daemon and block until a shutdown signal is received.
     ///
-    /// Calls [`RuntimeManager::start`], waits for `SIGTERM` or `SIGINT`
-    /// (Ctrl+C on all platforms), then calls [`RuntimeManager::shutdown`].
+    /// Calls [`RuntimeManager::start`](crate::RuntimeManager::start), waits for `SIGTERM` or `SIGINT`
+    /// (Ctrl+C on all platforms), then calls [`RuntimeManager::shutdown`](crate::RuntimeManager::shutdown).
     /// If shutdown does not complete within `config.shutdown_timeout_secs`,
     /// returns [`RuntimeError::ShutdownTimeout`].
     pub async fn run(
