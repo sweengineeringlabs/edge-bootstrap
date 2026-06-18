@@ -55,8 +55,13 @@ edge-domain                      = { workspace = true }
 edge-dispatch                    = { workspace = true }
 swe-observ-metrics               = { workspace = true }
 
+[[example]]
+name = "hello_edge"
+path = "examples/hello_edge.rs"
+
 [dev-dependencies]
 async-trait    = { workspace = true }
+edge-llm-provider = { workspace = true }
 reqwest        = { workspace = true }
 serde          = { workspace = true }
 tempfile       = { workspace = true }
@@ -70,7 +75,7 @@ swe-edge-ingress-http           = { workspace = true }
 swe-edge-ingress-grpc           = { workspace = true }
 swe-edge-egress-grpc            = { workspace = true }
 swe-edge-egress-http            = { workspace = true }
-edge-domain                     = { workspace = true, features = ["command"] }
+edge-domain                     = { workspace = true, features = ["command", "security"] }
 
 [[test]]
 name = "runtime_int_test"

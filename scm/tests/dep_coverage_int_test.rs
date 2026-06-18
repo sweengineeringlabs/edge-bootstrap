@@ -13,7 +13,7 @@ async fn test_edge_domain_handler_registered_via_builder() {
     use edge_domain::{Handler, HandlerContext, HandlerError, NoopCommandBus, SecurityContext};
 
     fn make_ctx(security: &SecurityContext) -> HandlerContext<'_> {
-        HandlerContext { security, commands: &NoopCommandBus }
+        HandlerContext::new(security, &NoopCommandBus)
     }
 
     struct PingHandler;
