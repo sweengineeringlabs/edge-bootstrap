@@ -59,7 +59,7 @@ mod tests {
         GrpcHealthCheck, GrpcIngressResult, GrpcMetadata, GrpcRequest, GrpcResponse,
     };
     use swe_edge_ingress_http::{
-        HttpHealthCheck, HttpIngressResult, HttpRequest, HttpResponse, RequestContext,
+        HttpHealthCheck, HttpIngressResult, HttpRequest, HttpResponse, SecurityContext,
     };
 
     struct DefaultIngressStubHttp;
@@ -67,7 +67,7 @@ mod tests {
         fn handle(
             &self,
             _: HttpRequest,
-            _: RequestContext,
+            _: SecurityContext,
         ) -> BoxFuture<'_, HttpIngressResult<HttpResponse>> {
             Box::pin(async { Ok(HttpResponse::new(200, vec![])) })
         }
@@ -81,7 +81,7 @@ mod tests {
         fn handle_unary(
             &self,
             _: GrpcRequest,
-            _: RequestContext,
+            _: SecurityContext,
         ) -> BoxFuture<'_, GrpcIngressResult<GrpcResponse>> {
             Box::pin(async {
                 Ok(GrpcResponse {

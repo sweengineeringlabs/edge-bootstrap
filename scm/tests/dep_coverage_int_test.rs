@@ -10,19 +10,25 @@ use swe_edge_bootstrap::{Runtime, RuntimeConfig};
 /// Exercises edge-domain via the RuntimeBuilder HTTP route path.
 #[tokio::test]
 async fn test_edge_domain_handler_registered_via_builder() {
-    use edge_domain::{Handler, HandlerError};
+    use edge_domain::{Handler, HandlerContext, HandlerError, NoopCommandBus, SecurityContext};
+
+    fn make_ctx(security: &SecurityContext) -> HandlerContext<'_> {
+        HandlerContext::new(security, &NoopCommandBus)
+    }
 
     struct PingHandler;
 
     #[async_trait::async_trait]
-    impl Handler<String, String> for PingHandler {
+    impl Handler for PingHandler {
+        type Request = String;
+        type Response = String;
         fn id(&self) -> &str {
             "ping"
         }
         fn pattern(&self) -> &str {
             "/ping"
         }
-        async fn execute(&self, _: String) -> Result<String, HandlerError> {
+        async fn execute(&self, _: String, _ctx: HandlerContext<'_>) -> Result<String, HandlerError> {
             Ok("pong".into())
         }
     }
@@ -31,6 +37,12 @@ async fn test_edge_domain_handler_registered_via_builder() {
     let b = Runtime::builder().http_route(Arc::new(PingHandler));
     // build_registry returns None (no egress) but the builder is valid
     assert!(b.build_registry().is_none());
+    // Verify execute works with a context
+    let handler = PingHandler;
+    let security = SecurityContext::unauthenticated();
+    let ctx = make_ctx(&security);
+    let result = handler.execute("test".into(), ctx).await;
+    assert!(result.is_ok());
 }
 
 // ── swe-edge-ingress-verifier ─────────────────────────────────────────────────
@@ -129,20 +141,22 @@ fn test_jwt_verifier_rejects_invalid_token_directly() {
 /// Exercises swe-edge-ingress-grpc through the RuntimeBuilder gRPC route path.
 #[test]
 fn test_ingress_grpc_handler_registered_via_builder() {
-    use edge_domain::{Handler, HandlerError};
+    use edge_domain::{Handler, HandlerContext, HandlerError};
     use swe_edge_bootstrap::Runtime;
 
     struct EchoHandler;
 
     #[async_trait::async_trait]
-    impl Handler<Vec<u8>, Vec<u8>> for EchoHandler {
+    impl Handler for EchoHandler {
+        type Request = Vec<u8>;
+        type Response = Vec<u8>;
         fn id(&self) -> &str {
             "echo"
         }
         fn pattern(&self) -> &str {
             "/echo"
         }
-        async fn execute(&self, req: Vec<u8>) -> Result<Vec<u8>, HandlerError> {
+        async fn execute(&self, req: Vec<u8>, _ctx: HandlerContext<'_>) -> Result<Vec<u8>, HandlerError> {
             Ok(req)
         }
     }

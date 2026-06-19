@@ -2,12 +2,12 @@
 
 use std::sync::Arc;
 
-use edge_domain::RequestContext;
 use futures::future::BoxFuture;
 use swe_edge_ingress_grpc::{
     GrpcHealthCheck, GrpcIngress, GrpcIngressResult, GrpcMessageStream, GrpcMetadata, GrpcRequest,
     GrpcResponse,
 };
+use swe_edge_ingress_http::SecurityContext;
 
 pub(crate) use crate::api::composite::types::composite_grpc_ingress::CompositeGrpcIngress;
 
@@ -34,7 +34,7 @@ impl GrpcIngress for CompositeGrpcIngress {
     fn handle_unary(
         &self,
         request: GrpcRequest,
-        ctx: RequestContext,
+        ctx: SecurityContext,
     ) -> BoxFuture<'_, GrpcIngressResult<GrpcResponse>> {
         let handler = self.route(&request.method);
         Box::pin(async move { handler.handle_unary(request, ctx).await })
@@ -45,7 +45,7 @@ impl GrpcIngress for CompositeGrpcIngress {
         method: String,
         metadata: GrpcMetadata,
         messages: GrpcMessageStream,
-        ctx: RequestContext,
+        ctx: SecurityContext,
     ) -> BoxFuture<'_, GrpcIngressResult<(GrpcMessageStream, GrpcMetadata)>> {
         let handler = self.route(&method);
         Box::pin(async move { handler.handle_stream(method, metadata, messages, ctx).await })
@@ -79,7 +79,7 @@ mod tests {
         fn handle_unary(
             &self,
             _req: GrpcRequest,
-            _ctx: RequestContext,
+            _ctx: SecurityContext,
         ) -> BoxFuture<'_, GrpcIngressResult<GrpcResponse>> {
             *self.called.lock() = true;
             Box::pin(async { Err(GrpcIngressError::Unimplemented("stub".into())) })
@@ -89,7 +89,7 @@ mod tests {
             _m: String,
             _md: GrpcMetadata,
             _ms: GrpcMessageStream,
-            _ctx: RequestContext,
+            _ctx: SecurityContext,
         ) -> BoxFuture<'_, GrpcIngressResult<(GrpcMessageStream, GrpcMetadata)>> {
             *self.called.lock() = true;
             Box::pin(async { Err(GrpcIngressError::Unimplemented("stub".into())) })
@@ -126,7 +126,7 @@ mod tests {
         let _ = composite
             .handle_unary(
                 req("/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo"),
-                RequestContext::unauthenticated(),
+                SecurityContext::unauthenticated(),
             )
             .await;
         assert!(
@@ -148,7 +148,10 @@ mod tests {
             Arc::clone(&reflection) as Arc<dyn GrpcIngress>,
         );
         let _ = composite
-            .handle_unary(req("/my.Service/Method"), RequestContext::unauthenticated())
+            .handle_unary(
+                req("/my.Service/Method"),
+                SecurityContext::unauthenticated(),
+            )
             .await;
         assert!(
             primary.was_called(),

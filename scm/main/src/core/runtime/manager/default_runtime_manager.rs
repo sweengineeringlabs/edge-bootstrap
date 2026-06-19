@@ -263,7 +263,7 @@ mod tests {
     use super::*;
     use crate::core::egress::DefaultEgress;
     use crate::core::ingress::DefaultIngress;
-    use edge_proxy::{HealthReport, LifecycleError};
+    use edge_proxy::{ComponentHealth, HealthReport, HealthStatus, LifecycleError};
     use futures::future::BoxFuture;
     use futures::FutureExt;
     use std::collections::HashMap;
@@ -278,7 +278,7 @@ mod tests {
         GrpcHealthCheck, GrpcIngress, GrpcIngressResult, GrpcMetadata, GrpcRequest, GrpcResponse,
     };
     use swe_edge_ingress_http::{
-        HttpHealthCheck, HttpIngressResult, HttpRequest, HttpResponse, RequestContext,
+        HttpHealthCheck, HttpIngressResult, HttpRequest, HttpResponse, SecurityContext,
     };
 
     struct DefaultRuntimeManagerStubLifecycle;
@@ -293,6 +293,12 @@ mod tests {
         fn shutdown(&self) -> BoxFuture<'_, Result<(), LifecycleError>> {
             async move { Ok(()) }.boxed()
         }
+        fn status(&self) -> BoxFuture<'_, HealthStatus> {
+            async move { HealthStatus::Healthy }.boxed()
+        }
+        fn component(&self, _id: &str) -> BoxFuture<'_, Option<ComponentHealth>> {
+            async move { None }.boxed()
+        }
     }
 
     struct DefaultRuntimeManagerStubHttp;
@@ -300,7 +306,7 @@ mod tests {
         fn handle(
             &self,
             _: HttpRequest,
-            _ctx: RequestContext,
+            _ctx: SecurityContext,
         ) -> BoxFuture<'_, HttpIngressResult<HttpResponse>> {
             Box::pin(async { Ok(HttpResponse::new(200, vec![])) })
         }
@@ -314,7 +320,7 @@ mod tests {
         fn handle_unary(
             &self,
             _: GrpcRequest,
-            _ctx: RequestContext,
+            _ctx: SecurityContext,
         ) -> BoxFuture<'_, GrpcIngressResult<GrpcResponse>> {
             Box::pin(async {
                 Ok(GrpcResponse {

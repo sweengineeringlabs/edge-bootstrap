@@ -12,6 +12,7 @@ fn test_http_route_accepts_handler_with_auto_json_codec() {
     use serde::{Deserialize, Serialize};
     use std::sync::Arc;
     use swe_edge_bootstrap::{Handler, HandlerError};
+    use edge_domain::HandlerContext;
 
     #[derive(Deserialize)]
     struct Req {
@@ -25,14 +26,16 @@ fn test_http_route_accepts_handler_with_auto_json_codec() {
     struct EchoHandler;
 
     #[async_trait::async_trait]
-    impl Handler<Req, Resp> for EchoHandler {
+    impl Handler for EchoHandler {
+        type Request = Req;
+        type Response = Resp;
         fn id(&self) -> &str {
             "echo"
         }
         fn pattern(&self) -> &str {
             "/echo"
         }
-        async fn execute(&self, req: Req) -> Result<Resp, HandlerError> {
+        async fn execute(&self, req: Req, _ctx: HandlerContext<'_>) -> Result<Resp, HandlerError> {
             Ok(Resp { text: req.prompt })
         }
     }
