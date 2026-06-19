@@ -9,7 +9,7 @@ use futures::FutureExt;
 use tokio::net::TcpListener;
 use tokio::sync::oneshot;
 
-use edge_proxy::{HealthReport, LifecycleError, LifecycleMonitor};
+use edge_proxy::{ComponentHealth, HealthReport, HealthStatus, LifecycleError, LifecycleMonitor};
 use swe_edge_bootstrap::{Runtime, RuntimeConfig, RuntimeManager, RuntimeStatus};
 use swe_edge_egress_http::{
     HttpEgress, HttpEgressResult, HttpRequest as EgressReq, HttpResponse as EgressResp,
@@ -17,7 +17,7 @@ use swe_edge_egress_http::{
 };
 use swe_edge_ingress_http::{
     AxumHttpServer, HttpHealthCheck, HttpIngress, HttpIngressError, HttpIngressResult, HttpRequest,
-    HttpResponse, RequestContext,
+    HttpResponse, HttpServer, SecurityContext,
 };
 
 struct StubLifecycle;
@@ -30,6 +30,12 @@ impl LifecycleMonitor for StubLifecycle {
     }
     fn shutdown(&self) -> BoxFuture<'_, Result<(), LifecycleError>> {
         async move { Ok(()) }.boxed()
+    }
+    fn status(&self) -> BoxFuture<'_, HealthStatus> {
+        async move { HealthStatus::Healthy }.boxed()
+    }
+    fn component(&self, _id: &str) -> BoxFuture<'_, Option<ComponentHealth>> {
+        async move { None }.boxed()
     }
 }
 
@@ -57,7 +63,7 @@ impl HttpIngress for EchoHandler {
     fn handle(
         &self,
         req: HttpRequest,
-        _ctx: RequestContext,
+        _ctx: SecurityContext,
     ) -> BoxFuture<'_, HttpIngressResult<HttpResponse>> {
         Box::pin(async move {
             Ok(HttpResponse::new(
@@ -76,7 +82,7 @@ impl HttpIngress for NotFoundHandler {
     fn handle(
         &self,
         _: HttpRequest,
-        _ctx: RequestContext,
+        _ctx: SecurityContext,
     ) -> BoxFuture<'_, HttpIngressResult<HttpResponse>> {
         Box::pin(async { Err(HttpIngressError::NotFound("resource gone".into())) })
     }
@@ -102,7 +108,7 @@ async fn start_daemon_stack(
         let signal = async move {
             let _ = shutdown_rx.await;
         };
-        let _ = server.serve_with_listener(listener, signal).await;
+        let _ = server.serve_with_listener(listener, Box::pin(signal)).await;
     });
     (base_url, mgr, shutdown_tx)
 }

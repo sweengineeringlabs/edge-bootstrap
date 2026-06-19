@@ -5,8 +5,8 @@ use std::sync::Arc;
 
 use futures::future::BoxFuture;
 use swe_edge_bootstrap::{
-    ComponentHealth, HealthHandler, HttpIngress, HttpIngressError, HttpMethod, HttpRequest,
-    RequestContext, RuntimeHealth, RuntimeManager, RuntimeResult, RuntimeStatus, ServerMonitor,
+    ComponentHealth, HealthHandler, HttpIngress, HttpIngressError, HttpRequest, RuntimeHealth,
+    RuntimeManager, RuntimeResult, RuntimeStatus, SecurityContext, ServerMonitor,
 };
 
 // ── Test doubles ──────────────────────────────────────────────────────────────
@@ -58,7 +58,7 @@ async fn test_health_handler_get_returns_200_when_runtime_healthy() {
     let resp = h
         .handle(
             HttpRequest::get("/health"),
-            RequestContext::unauthenticated(),
+            SecurityContext::unauthenticated(),
         )
         .await
         .unwrap();
@@ -72,7 +72,7 @@ async fn test_health_handler_get_returns_503_when_runtime_degraded() {
     let resp = h
         .handle(
             HttpRequest::get("/health"),
-            RequestContext::unauthenticated(),
+            SecurityContext::unauthenticated(),
         )
         .await
         .unwrap();
@@ -86,7 +86,7 @@ async fn test_health_handler_body_contains_status_and_uptime() {
     let resp = h
         .handle(
             HttpRequest::get("/health"),
-            RequestContext::unauthenticated(),
+            SecurityContext::unauthenticated(),
         )
         .await
         .unwrap();
@@ -102,7 +102,7 @@ async fn test_health_handler_content_type_is_json() {
     let resp = h
         .handle(
             HttpRequest::get("/health"),
-            RequestContext::unauthenticated(),
+            SecurityContext::unauthenticated(),
         )
         .await
         .unwrap();
@@ -116,7 +116,7 @@ async fn test_health_handler_non_get_returns_invalid_input_error() {
     let err = h
         .handle(
             HttpRequest::post("/health"),
-            RequestContext::unauthenticated(),
+            SecurityContext::unauthenticated(),
         )
         .await
         .unwrap_err();
@@ -133,7 +133,7 @@ async fn test_health_handler_wrong_path_returns_not_found_error() {
     let err = h
         .handle(
             HttpRequest::get("/metrics"),
-            RequestContext::unauthenticated(),
+            SecurityContext::unauthenticated(),
         )
         .await
         .unwrap_err();

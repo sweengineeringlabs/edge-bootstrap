@@ -5,8 +5,8 @@
 
 use std::sync::Arc;
 
-use edge_domain::RequestContext;
 use futures::future::BoxFuture;
+use swe_edge_ingress_http::SecurityContext;
 use swe_edge_ingress_http::{
     HttpHealthCheck, HttpIngress, HttpIngressError, HttpIngressResult, HttpMethod, HttpRequest,
     HttpResponse,
@@ -65,7 +65,7 @@ impl HttpIngress for MetricsHandler {
     fn handle(
         &self,
         request: HttpRequest,
-        _ctx: RequestContext,
+        _ctx: SecurityContext,
     ) -> BoxFuture<'_, HttpIngressResult<HttpResponse>> {
         let provider = Arc::clone(&self.counters.provider);
         let path = self.path.clone();
@@ -124,7 +124,7 @@ mod tests {
         let resp = h
             .handle(
                 HttpRequest::get("/metrics"),
-                RequestContext::unauthenticated(),
+                SecurityContext::unauthenticated(),
             )
             .await
             .unwrap();
@@ -151,7 +151,7 @@ mod tests {
         let err = h
             .handle(
                 HttpRequest::get("/healthz"),
-                RequestContext::unauthenticated(),
+                SecurityContext::unauthenticated(),
             )
             .await
             .unwrap_err();
@@ -164,7 +164,7 @@ mod tests {
         let resp = h
             .handle(
                 HttpRequest::get("/metrics/"),
-                RequestContext::unauthenticated(),
+                SecurityContext::unauthenticated(),
             )
             .await
             .unwrap();
@@ -177,7 +177,7 @@ mod tests {
         let err = h
             .handle(
                 HttpRequest::post("/metrics"),
-                RequestContext::unauthenticated(),
+                SecurityContext::unauthenticated(),
             )
             .await
             .unwrap_err();
