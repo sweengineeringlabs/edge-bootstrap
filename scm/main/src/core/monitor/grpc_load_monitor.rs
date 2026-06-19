@@ -1,12 +1,12 @@
 use std::sync::Arc;
 use std::time::Instant;
 
-use edge_domain::RequestContext;
 use futures::future::BoxFuture;
 use swe_edge_ingress_grpc::{
     GrpcHealthCheck, GrpcIngress, GrpcIngressResult, GrpcMessageStream, GrpcMetadata, GrpcRequest,
     GrpcResponse,
 };
+use swe_edge_ingress_http::SecurityContext;
 
 use crate::api::monitor::SharedCounters;
 
@@ -28,7 +28,7 @@ impl GrpcIngress for GrpcLoadMonitor {
     fn handle_unary(
         &self,
         request: GrpcRequest,
-        ctx: RequestContext,
+        ctx: SecurityContext,
     ) -> BoxFuture<'_, GrpcIngressResult<GrpcResponse>> {
         self.counters.on_start();
         let counters = Arc::clone(&self.counters);
@@ -46,7 +46,7 @@ impl GrpcIngress for GrpcLoadMonitor {
         method: String,
         metadata: GrpcMetadata,
         messages: GrpcMessageStream,
-        ctx: RequestContext,
+        ctx: SecurityContext,
     ) -> BoxFuture<'_, GrpcIngressResult<(GrpcMessageStream, GrpcMetadata)>> {
         self.counters.on_start();
         let counters = Arc::clone(&self.counters);
@@ -85,7 +85,7 @@ mod tests {
             fn handle_unary(
                 &self,
                 _: GrpcRequest,
-                _: RequestContext,
+                _: SecurityContext,
             ) -> BoxFuture<'_, GrpcIngressResult<GrpcResponse>> {
                 Box::pin(async { Err(GrpcIngressError::Unimplemented("stub".into())) })
             }
@@ -94,7 +94,7 @@ mod tests {
                 _: String,
                 _: GrpcMetadata,
                 _: GrpcMessageStream,
-                _: RequestContext,
+                _: SecurityContext,
             ) -> BoxFuture<'_, GrpcIngressResult<(GrpcMessageStream, GrpcMetadata)>> {
                 Box::pin(async { Err(GrpcIngressError::Unimplemented("stub".into())) })
             }

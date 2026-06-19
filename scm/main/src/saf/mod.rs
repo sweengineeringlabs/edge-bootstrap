@@ -26,10 +26,10 @@ pub use swe_edge_ingress_verifier::{
 // ── Handler decorators + config-driven assembly ───────────────────────────────
 pub use crate::api::config::FeatureRegistryExt;
 pub use edge_dispatch::{
-    Cache, CacheAsideHandler, CacheAsideResponse, FallbackHandler, FallbackPolicy, InMemoryCache,
-    OptionalHandler, TimeoutHandler, TimeoutPolicy,
+    Cache, CacheAsideHandler, CacheAsideResponse, EventEmittingHandler, FallbackHandler,
+    FallbackPolicy, InMemoryCache, OptionalHandler, TimeoutHandler, TimeoutPolicy,
 };
-pub use edge_domain::{EventEmittingHandler, HandlerFactory};
+pub use edge_domain::HandlerFactory;
 pub use swe_edge_configbuilder::{FeatureRegistry, FeatureState, OptionalSection};
 
 // ── Ingress surface (handlers + request/response types) ───────────────────────
@@ -41,7 +41,7 @@ pub use swe_edge_ingress_grpc::{
 pub use swe_edge_ingress_http::{
     HttpAuth, HttpBody, HttpConfig, HttpDecodeFn, HttpEncodeFn, HttpHealthCheck, HttpIngress,
     HttpIngressError, HttpIngressResult, HttpMethod, HttpRequest, HttpResponse, HttpStream,
-    IngressTlsConfig, RequestContext,
+    IngressTlsConfig, SecurityContext,
 };
 
 // ── Egress surface (outbound clients) ─────────────────────────────────────────
@@ -70,3 +70,10 @@ pub use swe_edge_runtime_scheduler::{Scheduler, SchedulerSvc, TokioSchedulerConf
 pub use swe_edge_runtime_message_broker::MessageBrokerFactory;
 #[cfg(feature = "message-broker")]
 pub use swe_edge_runtime_message_broker::{Message, MessageBroker, MessageStream};
+
+// ── Security context propagation ──────────────────────────────────────────────
+#[cfg(feature = "security")]
+pub use swe_edge_security::{
+    AuthEnforcerHandler, AuthzPolicy, CredentialResolver, CredentialSource, NoopAuthzPolicy,
+    PeerIdentity, Principal, SecretString, SecurityContextBuilder, SecurityError, TenantId,
+};

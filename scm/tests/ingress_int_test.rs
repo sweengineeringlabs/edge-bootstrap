@@ -4,7 +4,7 @@ use futures::future::BoxFuture;
 use std::sync::Arc;
 use swe_edge_bootstrap::{Ingress, Runtime};
 use swe_edge_ingress_http::{
-    HttpHealthCheck, HttpIngress, HttpIngressResult, HttpRequest, HttpResponse, RequestContext,
+    HttpHealthCheck, HttpIngress, HttpIngressResult, HttpRequest, HttpResponse, SecurityContext,
 };
 
 struct Stub;
@@ -12,7 +12,7 @@ impl HttpIngress for Stub {
     fn handle(
         &self,
         _: HttpRequest,
-        _ctx: RequestContext,
+        _ctx: SecurityContext,
     ) -> BoxFuture<'_, HttpIngressResult<HttpResponse>> {
         Box::pin(async { Ok(HttpResponse::new(200, vec![])) })
     }
