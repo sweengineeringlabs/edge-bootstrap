@@ -74,6 +74,6 @@ pub use swe_edge_runtime_message_broker::{Message, MessageBroker, MessageStream}
 // ── Security context propagation ──────────────────────────────────────────────
 #[cfg(feature = "security")]
 pub use swe_edge_security::{
-    AuthEnforcerHandler, AuthzPolicy, CredentialResolver, CredentialSource, NoopAuthzPolicy,
+    AuthzPolicy, CredentialResolver, CredentialSource, NoopAuthzPolicy,
     PeerIdentity, Principal, SecretString, SecurityContextBuilder, SecurityError, TenantId,
 };
