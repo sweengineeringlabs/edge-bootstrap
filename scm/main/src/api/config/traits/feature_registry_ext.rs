@@ -1,10 +1,20 @@
 //! [`FeatureRegistryExt`] — bridge from `FeatureRegistry` to `OptionalHandler`.
 
 use edge_dispatch::OptionalHandler;
-use edge_domain::HandlerFactory;
 use swe_edge_configbuilder::{FeatureRegistry, FeatureState, OptionalSection, SectionLoaderImpl};
 
 use crate::api::config::error::ConfigError;
+
+/// Constructs a handler from a loaded feature config.
+///
+/// Owned locally: upstream `edge-domain`/`edge-application` dropped this factory-from-config
+/// pattern (it is a bootstrap-level, config-driven construction concern, not a domain port).
+pub trait HandlerFactory: Sized {
+    /// The config type this factory is constructed from.
+    type Config;
+    /// Construct `Self` from a loaded `Config`.
+    fn build(cfg: Self::Config) -> Result<Self, edge_domain::HandlerError>;
+}
 
 /// Extends [`FeatureRegistry`] with a one-call bridge to [`OptionalHandler`].
 ///

@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use edge_dispatch::{Handler, HandlerRegistry, HandlerRegistryImpl};
+use edge_dispatch::{Handler, HandlerComposer, HandlerRegistry};
 use edge_proxy::LifecycleMonitor;
 use swe_edge_egress_grpc::GrpcEgress;
 use swe_edge_egress_http::HttpEgress;
@@ -18,6 +18,11 @@ use swe_edge_ingress_verifier::TokenVerifier;
 
 use crate::api::runtime::types::runtime_config::RuntimeConfig;
 use crate::api::runtime::types::service_registry::ServiceRegistry;
+
+/// Zero-sized marker adopting `edge_dispatch`'s default `HandlerComposer` factory methods
+/// (`create_registry`, …) — the crate no longer exposes a directly-constructible registry type.
+struct DefaultComposer;
+impl HandlerComposer for DefaultComposer {}
 
 /// Builder for assembling and starting an edge runtime.
 pub struct RuntimeBuilder {
@@ -81,7 +86,10 @@ impl RuntimeBuilder {
         Resp: Send + 'static,
     {
         let d = self.http_dispatcher.get_or_insert_with(|| {
-            HttpHandlerRegistryDispatcher::new(Arc::new(HandlerRegistryImpl::new()))
+            HttpHandlerRegistryDispatcher::new(Arc::new(DefaultComposer::create_registry::<
+                Req,
+                Resp,
+            >()))
         });
         d.register(HttpHandlerAdapter::new(handler, decode, encode))
             .expect("duplicate HTTP route");
@@ -116,7 +124,10 @@ impl RuntimeBuilder {
         Resp: Send + 'static,
     {
         let d = self.grpc_dispatcher.get_or_insert_with(|| {
-            GrpcHandlerRegistryDispatcher::new(Arc::new(HandlerRegistryImpl::new()))
+            GrpcHandlerRegistryDispatcher::new(Arc::new(DefaultComposer::create_registry::<
+                Req,
+                Resp,
+            >()))
         });
         d.register(GrpcHandlerAdapter::new(handler, decode, encode));
         self

@@ -111,10 +111,14 @@ fn test_grpc_reflection_config_field_respected() {
 /// Exercises swe-edge-ingress-grpc-reflection directly via ReflectionService.
 #[test]
 fn test_reflection_service_can_be_constructed_with_empty_registry() {
-    use edge_dispatch::HandlerRegistryImpl;
+    use edge_dispatch::HandlerComposer;
     use std::sync::Arc;
     use swe_edge_ingress_grpc_reflection::ReflectionService;
-    let registry = Arc::new(HandlerRegistryImpl::<Vec<u8>, Vec<u8>>::new());
+
+    struct Composer;
+    impl HandlerComposer for Composer {}
+
+    let registry = Arc::new(Composer::create_registry::<Vec<u8>, Vec<u8>>());
     let _svc = ReflectionService::new(registry);
 }
 
