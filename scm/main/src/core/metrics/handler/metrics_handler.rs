@@ -5,11 +5,9 @@
 
 use std::sync::Arc;
 
-use futures::future::BoxFuture;
-use swe_edge_ingress_http::SecurityContext;
 use swe_edge_ingress_http::{
-    HttpHealthCheck, HttpIngress, HttpIngressError, HttpIngressResult, HttpMethod, HttpRequest,
-    HttpResponse,
+    HealthCheckRequest, HealthCheckResponse, HttpFuture, HttpHealthCheck, HttpIngress,
+    HttpIngressError, HttpMethod, HttpRequest, HttpResponse, InboundRequest,
 };
 use swe_observ_metrics::{MetricType, MetricsProvider};
 
@@ -64,12 +62,12 @@ impl crate::api::metrics::traits::metrics_handler::MetricsHandler for MetricsHan
 impl HttpIngress for MetricsHandler {
     fn handle(
         &self,
-        request: HttpRequest,
-        _ctx: SecurityContext,
-    ) -> BoxFuture<'_, HttpIngressResult<HttpResponse>> {
+        req: InboundRequest,
+    ) -> HttpFuture<'_, Result<HttpResponse, HttpIngressError>> {
         let provider = Arc::clone(&self.counters.provider);
         let path = self.path.clone();
-        Box::pin(async move {
+        let request = req.request;
+        HttpFuture::new(async move {
             if request.method != HttpMethod::Get {
                 return Err(HttpIngressError::InvalidInput(
                     "metrics endpoint only accepts GET".into(),
@@ -98,8 +96,15 @@ impl HttpIngress for MetricsHandler {
         })
     }
 
-    fn health_check(&self) -> BoxFuture<'_, HttpIngressResult<HttpHealthCheck>> {
-        Box::pin(async { Ok(HttpHealthCheck::healthy()) })
+    fn health_check(
+        &self,
+        _req: HealthCheckRequest,
+    ) -> HttpFuture<'_, Result<HealthCheckResponse, HttpIngressError>> {
+        HttpFuture::new(async {
+            Ok(HealthCheckResponse {
+                health: HttpHealthCheck::healthy(),
+            })
+        })
     }
 }
 
@@ -118,14 +123,20 @@ mod tests {
         MetricsHandler::new(counters, "/metrics")
     }
 
+    fn inbound(request: HttpRequest) -> InboundRequest {
+        InboundRequest {
+            request,
+            ctx: swe_edge_ingress_http::RequestContext::new(
+                edge_domain::SecurityContext::unauthenticated(),
+            ),
+        }
+    }
+
     #[tokio::test]
     async fn test_handle_get_configured_path_returns_prometheus_text() {
         let h = handler_with_data();
         let resp = h
-            .handle(
-                HttpRequest::get("/metrics"),
-                SecurityContext::unauthenticated(),
-            )
+            .handle(inbound(HttpRequest::get("/metrics")))
             .await
             .unwrap();
         assert_eq!(resp.status, 200);
@@ -149,10 +160,7 @@ mod tests {
     async fn test_handle_get_wrong_path_returns_not_found() {
         let h = handler_with_data();
         let err = h
-            .handle(
-                HttpRequest::get("/healthz"),
-                SecurityContext::unauthenticated(),
-            )
+            .handle(inbound(HttpRequest::get("/healthz")))
             .await
             .unwrap_err();
         assert!(matches!(err, HttpIngressError::NotFound(_)));
@@ -162,10 +170,7 @@ mod tests {
     async fn test_handle_get_path_with_trailing_slash_returns_200() {
         let h = handler_with_data();
         let resp = h
-            .handle(
-                HttpRequest::get("/metrics/"),
-                SecurityContext::unauthenticated(),
-            )
+            .handle(inbound(HttpRequest::get("/metrics/")))
             .await
             .unwrap();
         assert_eq!(resp.status, 200);
@@ -175,10 +180,7 @@ mod tests {
     async fn test_handle_non_get_returns_invalid_input_error() {
         let h = handler_with_data();
         let err = h
-            .handle(
-                HttpRequest::post("/metrics"),
-                SecurityContext::unauthenticated(),
-            )
+            .handle(inbound(HttpRequest::post("/metrics")))
             .await
             .unwrap_err();
         assert!(matches!(err, HttpIngressError::InvalidInput(_)));
@@ -196,8 +198,8 @@ mod tests {
     #[tokio::test]
     async fn test_health_check_returns_healthy() {
         let h = handler_with_data();
-        let hc = h.health_check().await.unwrap();
-        assert!(hc.healthy);
+        let hc = h.health_check(HealthCheckRequest).await.unwrap();
+        assert!(hc.health.healthy);
     }
 
     #[test]

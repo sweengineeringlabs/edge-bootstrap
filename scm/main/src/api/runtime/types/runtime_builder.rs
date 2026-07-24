@@ -2,27 +2,23 @@
 
 use std::sync::Arc;
 
-use edge_dispatch::{Handler, HandlerComposer, HandlerRegistry};
+use edge_domain::{Handler, InProcessHandlerRegistry};
 use edge_proxy::LifecycleMonitor;
+use edge_security_runtime_tls::PemTlsConfig;
 use swe_edge_egress_grpc::GrpcEgress;
 use swe_edge_egress_http::HttpEgress;
 use swe_edge_ingress_grpc::{
-    GrpcDecodeFn, GrpcEncodeFn, GrpcHandlerAdapter, GrpcHandlerRegistryDispatcher, GrpcIngress,
-    GrpcIngressInterceptor, GrpcIngressInterceptorChain,
+    GrpcBytes, GrpcDecodeFn, GrpcEncodeFn, GrpcHandlerAdapter, GrpcHandlerRegistryDispatcher,
+    GrpcIngress, GrpcIngressInterceptor, GrpcIngressInterceptorChain,
 };
 use swe_edge_ingress_http::{
     HttpDecodeFn, HttpEncodeFn, HttpHandlerAdapter, HttpHandlerRegistryDispatcher, HttpIngress,
-    HttpStream, IngressTlsConfig,
+    HttpRequest, HttpResponse, HttpStream,
 };
 use swe_edge_ingress_verifier::TokenVerifier;
 
 use crate::api::runtime::types::runtime_config::RuntimeConfig;
 use crate::api::runtime::types::service_registry::ServiceRegistry;
-
-/// Zero-sized marker adopting `edge_dispatch`'s default `HandlerComposer` factory methods
-/// (`create_registry`, …) — the crate no longer exposes a directly-constructible registry type.
-struct DefaultComposer;
-impl HandlerComposer for DefaultComposer {}
 
 /// Builder for assembling and starting an edge runtime.
 pub struct RuntimeBuilder {
@@ -32,8 +28,8 @@ pub struct RuntimeBuilder {
     pub(crate) grpc_handler: Option<Arc<dyn GrpcIngress>>,
     pub(crate) http_dispatcher: Option<HttpHandlerRegistryDispatcher>,
     pub(crate) grpc_dispatcher: Option<GrpcHandlerRegistryDispatcher>,
-    pub(crate) http_tls: Option<IngressTlsConfig>,
-    pub(crate) grpc_tls: Option<IngressTlsConfig>,
+    pub(crate) http_tls: Option<PemTlsConfig>,
+    pub(crate) grpc_tls: Option<PemTlsConfig>,
     pub(crate) http_bearer_verifier: Option<Arc<dyn TokenVerifier>>,
     pub(crate) grpc_interceptors: GrpcIngressInterceptorChain,
     pub(crate) grpc_allow_unauthenticated: bool,
@@ -64,8 +60,8 @@ impl RuntimeBuilder {
         handler: Arc<dyn Handler<Request = Req, Response = Resp>>,
     ) -> Self
     where
-        Req: serde::de::DeserializeOwned + Send + 'static,
-        Resp: serde::Serialize + Send + 'static,
+        Req: serde::de::DeserializeOwned + Send + 'static + edge_domain::Request,
+        Resp: serde::Serialize + Send + 'static + edge_domain::Response,
     {
         self.http_route_with(
             handler,
@@ -82,14 +78,14 @@ impl RuntimeBuilder {
         encode: HttpEncodeFn<Resp>,
     ) -> Self
     where
-        Req: Send + 'static,
-        Resp: Send + 'static,
+        Req: Send + 'static + edge_domain::Request,
+        Resp: Send + 'static + edge_domain::Response,
     {
         let d = self.http_dispatcher.get_or_insert_with(|| {
-            HttpHandlerRegistryDispatcher::new(Arc::new(DefaultComposer::create_registry::<
-                Req,
-                Resp,
-            >()))
+            HttpHandlerRegistryDispatcher::new(Arc::new(InProcessHandlerRegistry::<
+                HttpRequest,
+                HttpResponse,
+            >::default()))
         });
         d.register(HttpHandlerAdapter::new(handler, decode, encode))
             .expect("duplicate HTTP route");
@@ -102,8 +98,8 @@ impl RuntimeBuilder {
         handler: Arc<dyn Handler<Request = Req, Response = Resp>>,
     ) -> Self
     where
-        Req: serde::de::DeserializeOwned + Send + 'static,
-        Resp: serde::Serialize + Send + 'static,
+        Req: serde::de::DeserializeOwned + Send + 'static + edge_domain::Request,
+        Resp: serde::Serialize + Send + 'static + edge_domain::Response,
     {
         self.grpc_route_with(
             handler,
@@ -120,14 +116,14 @@ impl RuntimeBuilder {
         encode: GrpcEncodeFn<Resp>,
     ) -> Self
     where
-        Req: Send + 'static,
-        Resp: Send + 'static,
+        Req: Send + 'static + edge_domain::Request,
+        Resp: Send + 'static + edge_domain::Response,
     {
         let d = self.grpc_dispatcher.get_or_insert_with(|| {
-            GrpcHandlerRegistryDispatcher::new(Arc::new(DefaultComposer::create_registry::<
-                Req,
-                Resp,
-            >()))
+            GrpcHandlerRegistryDispatcher::new(Arc::new(InProcessHandlerRegistry::<
+                GrpcBytes,
+                GrpcBytes,
+            >::default()))
         });
         d.register(GrpcHandlerAdapter::new(handler, decode, encode));
         self
@@ -144,12 +140,12 @@ impl RuntimeBuilder {
     }
 
     /// Attach a TLS configuration to the HTTP server.
-    pub fn http_tls(mut self, config: IngressTlsConfig) -> Self {
+    pub fn http_tls(mut self, config: PemTlsConfig) -> Self {
         self.http_tls = Some(config);
         self
     }
     /// Attach a TLS configuration to the gRPC server.
-    pub fn grpc_tls(mut self, config: IngressTlsConfig) -> Self {
+    pub fn grpc_tls(mut self, config: PemTlsConfig) -> Self {
         self.grpc_tls = Some(config);
         self
     }

@@ -4,8 +4,8 @@ use std::sync::Arc;
 
 use futures::future::BoxFuture;
 use swe_edge_ingress_http::{
-    HttpHealthCheck, HttpIngress, HttpIngressError, HttpIngressResult, HttpMethod, HttpRequest,
-    HttpResponse, SecurityContext,
+    HealthCheckRequest, HealthCheckResponse, HttpFuture, HttpHealthCheck, HttpIngress,
+    HttpIngressError, HttpMethod, HttpRequest, HttpResponse, InboundRequest,
 };
 
 use crate::api::health::HealthHandler;
@@ -35,12 +35,12 @@ impl HealthHandler for DefaultHealthHandler {}
 impl HttpIngress for DefaultHealthHandler {
     fn handle(
         &self,
-        request: HttpRequest,
-        _ctx: SecurityContext,
-    ) -> BoxFuture<'_, HttpIngressResult<HttpResponse>> {
+        req: InboundRequest,
+    ) -> HttpFuture<'_, Result<HttpResponse, HttpIngressError>> {
         let manager = Arc::clone(&self.manager);
         let path = self.path.clone();
-        Box::pin(async move {
+        let request = req.request;
+        HttpFuture::new(async move {
             if request.method != HttpMethod::Get {
                 return Err(HttpIngressError::InvalidInput(
                     "health endpoint only accepts GET".into(),
@@ -71,8 +71,15 @@ impl HttpIngress for DefaultHealthHandler {
         })
     }
 
-    fn health_check(&self) -> BoxFuture<'_, HttpIngressResult<HttpHealthCheck>> {
-        Box::pin(async { Ok(HttpHealthCheck::healthy()) })
+    fn health_check(
+        &self,
+        _req: HealthCheckRequest,
+    ) -> HttpFuture<'_, Result<HealthCheckResponse, HttpIngressError>> {
+        HttpFuture::new(async {
+            Ok(HealthCheckResponse {
+                health: HttpHealthCheck::healthy(),
+            })
+        })
     }
 }
 
@@ -128,14 +135,20 @@ mod tests {
         DefaultHealthHandler::new(Arc::new(DegradedManager), "/health")
     }
 
+    fn inbound(request: HttpRequest) -> InboundRequest {
+        InboundRequest {
+            request,
+            ctx: swe_edge_ingress_http::RequestContext::new(
+                edge_domain::SecurityContext::unauthenticated(),
+            ),
+        }
+    }
+
     #[tokio::test]
     async fn test_handle_get_health_returns_200_when_healthy() {
         let h = healthy_handler();
         let resp = h
-            .handle(
-                HttpRequest::get("/health"),
-                SecurityContext::unauthenticated(),
-            )
+            .handle(inbound(HttpRequest::get("/health")))
             .await
             .unwrap();
         assert_eq!(resp.status, 200);
@@ -145,10 +158,7 @@ mod tests {
     async fn test_handle_get_health_returns_503_when_degraded() {
         let h = degraded_handler();
         let resp = h
-            .handle(
-                HttpRequest::get("/health"),
-                SecurityContext::unauthenticated(),
-            )
+            .handle(inbound(HttpRequest::get("/health")))
             .await
             .unwrap();
         assert_eq!(resp.status, 503);
@@ -158,10 +168,7 @@ mod tests {
     async fn test_handle_get_health_body_is_json_with_status_field() {
         let h = healthy_handler();
         let resp = h
-            .handle(
-                HttpRequest::get("/health"),
-                SecurityContext::unauthenticated(),
-            )
+            .handle(inbound(HttpRequest::get("/health")))
             .await
             .unwrap();
         let body: serde_json::Value = serde_json::from_slice(&resp.body).unwrap();
@@ -173,10 +180,7 @@ mod tests {
     async fn test_handle_get_health_content_type_is_json() {
         let h = healthy_handler();
         let resp = h
-            .handle(
-                HttpRequest::get("/health"),
-                SecurityContext::unauthenticated(),
-            )
+            .handle(inbound(HttpRequest::get("/health")))
             .await
             .unwrap();
         assert_eq!(resp.header("content-type"), Some("application/json"));
@@ -186,10 +190,7 @@ mod tests {
     async fn test_handle_non_get_returns_invalid_input_error() {
         let h = healthy_handler();
         let err = h
-            .handle(
-                HttpRequest::post("/health"),
-                SecurityContext::unauthenticated(),
-            )
+            .handle(inbound(HttpRequest::post("/health")))
             .await
             .unwrap_err();
         assert!(matches!(err, HttpIngressError::InvalidInput(_)));
@@ -199,10 +200,7 @@ mod tests {
     async fn test_handle_wrong_path_returns_not_found() {
         let h = healthy_handler();
         let err = h
-            .handle(
-                HttpRequest::get("/metrics"),
-                SecurityContext::unauthenticated(),
-            )
+            .handle(inbound(HttpRequest::get("/metrics")))
             .await
             .unwrap_err();
         assert!(matches!(err, HttpIngressError::NotFound(_)));
@@ -212,10 +210,7 @@ mod tests {
     async fn test_handle_trailing_slash_matches_configured_path() {
         let h = healthy_handler();
         let resp = h
-            .handle(
-                HttpRequest::get("/health/"),
-                SecurityContext::unauthenticated(),
-            )
+            .handle(inbound(HttpRequest::get("/health/")))
             .await
             .unwrap();
         assert_eq!(resp.status, 200);
@@ -224,8 +219,8 @@ mod tests {
     #[tokio::test]
     async fn test_health_check_returns_healthy() {
         let h = healthy_handler();
-        let hc = h.health_check().await.unwrap();
-        assert!(hc.healthy);
+        let hc = h.health_check(HealthCheckRequest).await.unwrap();
+        assert!(hc.health.healthy);
     }
 
     #[test]

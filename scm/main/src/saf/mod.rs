@@ -16,6 +16,7 @@ pub use crate::api::runtime::{RuntimeError, RuntimeResult};
 pub use crate::api::runtime::{ServerConfigLoader, ServerMonitor};
 
 // ── Auth / TLS ────────────────────────────────────────────────────────────────
+pub use edge_security_runtime_tls::PemTlsConfig;
 pub use swe_edge_ingress_grpc::{
     AuthorizationInterceptor, GrpcIngressInterceptor, GrpcIngressInterceptorChain,
 };
@@ -38,9 +39,9 @@ pub use swe_edge_ingress_grpc::{
     GrpcMessageStream, GrpcMetadata, GrpcRequest, GrpcResponse, GrpcStatusCode,
 };
 pub use swe_edge_ingress_http::{
-    HttpAuth, HttpBody, HttpConfig, HttpDecodeFn, HttpEncodeFn, HttpHealthCheck, HttpIngress,
-    HttpIngressError, HttpIngressResult, HttpMethod, HttpRequest, HttpResponse, HttpStream,
-    IngressTlsConfig, SecurityContext,
+    HealthCheckRequest, HealthCheckResponse, HttpAuth, HttpBody, HttpConfig, HttpDecodeFn,
+    HttpEncodeFn, HttpFuture, HttpHealthCheck, HttpIngress, HttpIngressError, HttpMethod,
+    HttpRequest, HttpResponse, HttpStream, InboundRequest, RequestContext, SecurityContext,
 };
 
 // ── Egress surface (outbound clients) ─────────────────────────────────────────
@@ -48,7 +49,7 @@ pub use swe_edge_egress_grpc::{GrpcEgress, GrpcEgressError, GrpcEgressResult, To
 pub use swe_edge_egress_http::{HttpEgress, HttpEgressError, HttpEgressResult, HttpStreamResponse};
 
 // ── Lifecycle / health ────────────────────────────────────────────────────────
-pub use edge_proxy::{HealthReport, LifecycleMonitor, ProxySvc};
+pub use edge_proxy::{HealthResponse, LifecycleMonitor, ProxySvc};
 
 // ── Load monitoring / auto-scaling ────────────────────────────────────────────
 pub use crate::api::monitor::types::ring_buffer::RingBuffer;
@@ -72,7 +73,14 @@ pub use swe_edge_runtime_message_broker::{Message, MessageBroker, MessageStream}
 
 // ── Security context propagation ──────────────────────────────────────────────
 #[cfg(feature = "security")]
-pub use swe_edge_security::{
-    AuthzPolicy, CredentialResolver, CredentialSource, NoopAuthzPolicy,
-    PeerIdentity, Principal, SecretString, SecurityContextBuilder, SecurityError, TenantId,
+pub use edge_security_runtime::{
+    Principal, PrincipalRequest, PrincipalResponse, SecurityContextBuilder, SecurityError,
 };
+#[cfg(feature = "security")]
+pub use edge_security_runtime_authz::{AuthzPolicy, NoopAuthzPolicy};
+#[cfg(feature = "security")]
+pub use edge_security_runtime_credential::{
+    CredentialResolver, CredentialSource, SecretString, TenantId,
+};
+#[cfg(feature = "security")]
+pub use edge_security_runtime_tls::PeerIdentity;

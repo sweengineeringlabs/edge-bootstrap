@@ -1,10 +1,9 @@
 use std::sync::Arc;
 use std::time::Instant;
 
-use futures::future::BoxFuture;
-use swe_edge_ingress_http::SecurityContext;
 use swe_edge_ingress_http::{
-    HttpHealthCheck, HttpIngress, HttpIngressResult, HttpRequest, HttpResponse,
+    HealthCheckRequest, HealthCheckResponse, HttpFuture, HttpIngress, HttpIngressError,
+    HttpResponse, InboundRequest,
 };
 
 use crate::api::monitor::SharedCounters;
@@ -26,13 +25,12 @@ impl crate::api::monitor::HttpLoadMonitor for HttpLoadMonitor {}
 impl HttpIngress for HttpLoadMonitor {
     fn handle(
         &self,
-        request: HttpRequest,
-        ctx: SecurityContext,
-    ) -> BoxFuture<'_, HttpIngressResult<HttpResponse>> {
+        req: InboundRequest,
+    ) -> HttpFuture<'_, Result<HttpResponse, HttpIngressError>> {
         self.counters.on_start();
         let counters = Arc::clone(&self.counters);
-        let fut = self.inner.handle(request, ctx);
-        Box::pin(async move {
+        let fut = self.inner.handle(req);
+        HttpFuture::new(async move {
             let start = Instant::now();
             let result = fut.await;
             counters.on_end(start.elapsed().as_micros() as u64, result.is_err());
@@ -40,8 +38,11 @@ impl HttpIngress for HttpLoadMonitor {
         })
     }
 
-    fn health_check(&self) -> BoxFuture<'_, HttpIngressResult<HttpHealthCheck>> {
-        self.inner.health_check()
+    fn health_check(
+        &self,
+        req: HealthCheckRequest,
+    ) -> HttpFuture<'_, Result<HealthCheckResponse, HttpIngressError>> {
+        self.inner.health_check(req)
     }
 }
 
@@ -51,6 +52,7 @@ mod tests {
     use crate::api::monitor::TrafficCounters;
     use std::sync::atomic::Ordering;
     use std::sync::Arc;
+    use swe_edge_ingress_http::{HttpHealthCheck, HttpRequest, RequestContext};
     use swe_observ_metrics::create_local_metrics_backend;
 
     fn counters() -> SharedCounters {
@@ -65,13 +67,19 @@ mod tests {
         impl HttpIngress for HttpLoadMonitorStub {
             fn handle(
                 &self,
-                _: HttpRequest,
-                _: SecurityContext,
-            ) -> BoxFuture<'_, HttpIngressResult<HttpResponse>> {
-                Box::pin(async { Ok(HttpResponse::new(200, vec![])) })
+                _req: InboundRequest,
+            ) -> HttpFuture<'_, Result<HttpResponse, HttpIngressError>> {
+                HttpFuture::new(async { Ok(HttpResponse::new(200, vec![])) })
             }
-            fn health_check(&self) -> BoxFuture<'_, HttpIngressResult<HttpHealthCheck>> {
-                Box::pin(async { Ok(HttpHealthCheck::healthy()) })
+            fn health_check(
+                &self,
+                _req: HealthCheckRequest,
+            ) -> HttpFuture<'_, Result<HealthCheckResponse, HttpIngressError>> {
+                HttpFuture::new(async {
+                    Ok(HealthCheckResponse {
+                        health: HttpHealthCheck::healthy(),
+                    })
+                })
             }
         }
         let _m = HttpLoadMonitor::new(Arc::new(HttpLoadMonitorStub), counters());
@@ -83,20 +91,29 @@ mod tests {
         impl HttpIngress for HttpLoadMonitorOk {
             fn handle(
                 &self,
-                _: HttpRequest,
-                _: SecurityContext,
-            ) -> BoxFuture<'_, HttpIngressResult<HttpResponse>> {
-                Box::pin(async { Ok(HttpResponse::new(200, vec![])) })
+                _req: InboundRequest,
+            ) -> HttpFuture<'_, Result<HttpResponse, HttpIngressError>> {
+                HttpFuture::new(async { Ok(HttpResponse::new(200, vec![])) })
             }
-            fn health_check(&self) -> BoxFuture<'_, HttpIngressResult<HttpHealthCheck>> {
-                Box::pin(async { Ok(HttpHealthCheck::healthy()) })
+            fn health_check(
+                &self,
+                _req: HealthCheckRequest,
+            ) -> HttpFuture<'_, Result<HealthCheckResponse, HttpIngressError>> {
+                HttpFuture::new(async {
+                    Ok(HealthCheckResponse {
+                        health: HttpHealthCheck::healthy(),
+                    })
+                })
             }
         }
         let c = counters();
         let m = HttpLoadMonitor::new(Arc::new(HttpLoadMonitorOk), Arc::clone(&c));
-        m.handle(HttpRequest::get("/"), SecurityContext::unauthenticated())
-            .await
-            .unwrap();
+        m.handle(InboundRequest {
+            request: HttpRequest::get("/"),
+            ctx: RequestContext::new(edge_domain::SecurityContext::unauthenticated()),
+        })
+        .await
+        .unwrap();
         assert_eq!(c.requests_in_flight.load(Ordering::Relaxed), 0);
         let snaps = c.provider.export();
         assert!(snaps

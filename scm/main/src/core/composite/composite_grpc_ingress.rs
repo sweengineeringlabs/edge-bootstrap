@@ -4,10 +4,9 @@ use std::sync::Arc;
 
 use futures::future::BoxFuture;
 use swe_edge_ingress_grpc::{
-    GrpcHealthCheck, GrpcIngress, GrpcIngressResult, GrpcMessageStream, GrpcMetadata, GrpcRequest,
-    GrpcResponse,
+    GrpcIngress, GrpcIngressError, HealthCheckRequest, HealthCheckResponse, StreamRequest,
+    StreamResponse, UnaryRequest,
 };
-use swe_edge_ingress_http::SecurityContext;
 
 pub(crate) use crate::api::composite::types::composite_grpc_ingress::CompositeGrpcIngress;
 
@@ -33,26 +32,25 @@ impl CompositeGrpcIngress {
 impl GrpcIngress for CompositeGrpcIngress {
     fn handle_unary(
         &self,
-        request: GrpcRequest,
-        ctx: SecurityContext,
-    ) -> BoxFuture<'_, GrpcIngressResult<GrpcResponse>> {
-        let handler = self.route(&request.method);
-        Box::pin(async move { handler.handle_unary(request, ctx).await })
+        req: UnaryRequest,
+    ) -> BoxFuture<'_, Result<swe_edge_ingress_grpc::GrpcResponse, GrpcIngressError>> {
+        let handler = self.route(&req.request.method);
+        Box::pin(async move { handler.handle_unary(req).await })
     }
 
     fn handle_stream(
         &self,
-        method: String,
-        metadata: GrpcMetadata,
-        messages: GrpcMessageStream,
-        ctx: SecurityContext,
-    ) -> BoxFuture<'_, GrpcIngressResult<(GrpcMessageStream, GrpcMetadata)>> {
-        let handler = self.route(&method);
-        Box::pin(async move { handler.handle_stream(method, metadata, messages, ctx).await })
+        req: StreamRequest,
+    ) -> BoxFuture<'_, Result<StreamResponse, GrpcIngressError>> {
+        let handler = self.route(&req.method);
+        Box::pin(async move { handler.handle_stream(req).await })
     }
 
-    fn health_check(&self) -> BoxFuture<'_, GrpcIngressResult<GrpcHealthCheck>> {
-        self.primary.health_check()
+    fn health_check(
+        &self,
+        req: HealthCheckRequest,
+    ) -> BoxFuture<'_, Result<HealthCheckResponse, GrpcIngressError>> {
+        self.primary.health_check(req)
     }
 }
 
@@ -62,7 +60,7 @@ mod tests {
     use futures::future::BoxFuture;
     use parking_lot::Mutex;
     use std::sync::Arc;
-    use swe_edge_ingress_grpc::{GrpcIngressError, GrpcMetadata, GrpcRequest};
+    use swe_edge_ingress_grpc::{GrpcHealthCheck, GrpcRequest, SecurityContext};
 
     #[derive(Default)]
     struct CompositeGrpcIngressTracker {
@@ -78,24 +76,27 @@ mod tests {
     impl GrpcIngress for CompositeGrpcIngressTracker {
         fn handle_unary(
             &self,
-            _req: GrpcRequest,
-            _ctx: SecurityContext,
-        ) -> BoxFuture<'_, GrpcIngressResult<GrpcResponse>> {
+            _req: UnaryRequest,
+        ) -> BoxFuture<'_, Result<swe_edge_ingress_grpc::GrpcResponse, GrpcIngressError>> {
             *self.called.lock() = true;
             Box::pin(async { Err(GrpcIngressError::Unimplemented("stub".into())) })
         }
         fn handle_stream(
             &self,
-            _m: String,
-            _md: GrpcMetadata,
-            _ms: GrpcMessageStream,
-            _ctx: SecurityContext,
-        ) -> BoxFuture<'_, GrpcIngressResult<(GrpcMessageStream, GrpcMetadata)>> {
+            _req: StreamRequest,
+        ) -> BoxFuture<'_, Result<StreamResponse, GrpcIngressError>> {
             *self.called.lock() = true;
             Box::pin(async { Err(GrpcIngressError::Unimplemented("stub".into())) })
         }
-        fn health_check(&self) -> BoxFuture<'_, GrpcIngressResult<GrpcHealthCheck>> {
-            Box::pin(async { Ok(GrpcHealthCheck::healthy()) })
+        fn health_check(
+            &self,
+            _req: HealthCheckRequest,
+        ) -> BoxFuture<'_, Result<HealthCheckResponse, GrpcIngressError>> {
+            Box::pin(async {
+                Ok(HealthCheckResponse {
+                    check: Box::new(GrpcHealthCheck::healthy()),
+                })
+            })
         }
     }
 
@@ -124,10 +125,10 @@ mod tests {
             Arc::clone(&reflection) as Arc<dyn GrpcIngress>,
         );
         let _ = composite
-            .handle_unary(
-                req("/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo"),
-                SecurityContext::unauthenticated(),
-            )
+            .handle_unary(UnaryRequest {
+                request: req("/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo"),
+                ctx: SecurityContext::unauthenticated(),
+            })
             .await;
         assert!(
             !primary.was_called(),
@@ -148,10 +149,10 @@ mod tests {
             Arc::clone(&reflection) as Arc<dyn GrpcIngress>,
         );
         let _ = composite
-            .handle_unary(
-                req("/my.Service/Method"),
-                SecurityContext::unauthenticated(),
-            )
+            .handle_unary(UnaryRequest {
+                request: req("/my.Service/Method"),
+                ctx: SecurityContext::unauthenticated(),
+            })
             .await;
         assert!(
             primary.was_called(),

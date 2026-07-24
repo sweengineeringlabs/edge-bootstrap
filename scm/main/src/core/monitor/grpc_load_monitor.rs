@@ -3,10 +3,9 @@ use std::time::Instant;
 
 use futures::future::BoxFuture;
 use swe_edge_ingress_grpc::{
-    GrpcHealthCheck, GrpcIngress, GrpcIngressResult, GrpcMessageStream, GrpcMetadata, GrpcRequest,
-    GrpcResponse,
+    GrpcIngress, GrpcIngressError, GrpcResponse, HealthCheckRequest, HealthCheckResponse,
+    StreamRequest, StreamResponse, UnaryRequest,
 };
-use swe_edge_ingress_http::SecurityContext;
 
 use crate::api::monitor::SharedCounters;
 
@@ -27,12 +26,11 @@ impl crate::api::monitor::GrpcLoadMonitor for GrpcLoadMonitor {}
 impl GrpcIngress for GrpcLoadMonitor {
     fn handle_unary(
         &self,
-        request: GrpcRequest,
-        ctx: SecurityContext,
-    ) -> BoxFuture<'_, GrpcIngressResult<GrpcResponse>> {
+        req: UnaryRequest,
+    ) -> BoxFuture<'_, Result<GrpcResponse, GrpcIngressError>> {
         self.counters.on_start();
         let counters = Arc::clone(&self.counters);
-        let fut = self.inner.handle_unary(request, ctx);
+        let fut = self.inner.handle_unary(req);
         Box::pin(async move {
             let start = Instant::now();
             let result = fut.await;
@@ -43,14 +41,11 @@ impl GrpcIngress for GrpcLoadMonitor {
 
     fn handle_stream(
         &self,
-        method: String,
-        metadata: GrpcMetadata,
-        messages: GrpcMessageStream,
-        ctx: SecurityContext,
-    ) -> BoxFuture<'_, GrpcIngressResult<(GrpcMessageStream, GrpcMetadata)>> {
+        req: StreamRequest,
+    ) -> BoxFuture<'_, Result<StreamResponse, GrpcIngressError>> {
         self.counters.on_start();
         let counters = Arc::clone(&self.counters);
-        let fut = self.inner.handle_stream(method, metadata, messages, ctx);
+        let fut = self.inner.handle_stream(req);
         Box::pin(async move {
             let start = Instant::now();
             let result = fut.await;
@@ -59,8 +54,11 @@ impl GrpcIngress for GrpcLoadMonitor {
         })
     }
 
-    fn health_check(&self) -> BoxFuture<'_, GrpcIngressResult<GrpcHealthCheck>> {
-        self.inner.health_check()
+    fn health_check(
+        &self,
+        req: HealthCheckRequest,
+    ) -> BoxFuture<'_, Result<HealthCheckResponse, GrpcIngressError>> {
+        self.inner.health_check(req)
     }
 }
 
@@ -69,7 +67,7 @@ mod tests {
     use super::*;
     use crate::api::monitor::TrafficCounters;
     use std::sync::Arc;
-    use swe_edge_ingress_grpc::GrpcIngressError;
+    use swe_edge_ingress_grpc::GrpcHealthCheck;
     use swe_observ_metrics::create_local_metrics_backend;
 
     fn counters() -> SharedCounters {
@@ -84,22 +82,25 @@ mod tests {
         impl GrpcIngress for GrpcLoadMonitorStub {
             fn handle_unary(
                 &self,
-                _: GrpcRequest,
-                _: SecurityContext,
-            ) -> BoxFuture<'_, GrpcIngressResult<GrpcResponse>> {
+                _req: UnaryRequest,
+            ) -> BoxFuture<'_, Result<GrpcResponse, GrpcIngressError>> {
                 Box::pin(async { Err(GrpcIngressError::Unimplemented("stub".into())) })
             }
             fn handle_stream(
                 &self,
-                _: String,
-                _: GrpcMetadata,
-                _: GrpcMessageStream,
-                _: SecurityContext,
-            ) -> BoxFuture<'_, GrpcIngressResult<(GrpcMessageStream, GrpcMetadata)>> {
+                _req: StreamRequest,
+            ) -> BoxFuture<'_, Result<StreamResponse, GrpcIngressError>> {
                 Box::pin(async { Err(GrpcIngressError::Unimplemented("stub".into())) })
             }
-            fn health_check(&self) -> BoxFuture<'_, GrpcIngressResult<GrpcHealthCheck>> {
-                Box::pin(async { Ok(GrpcHealthCheck::healthy()) })
+            fn health_check(
+                &self,
+                _req: HealthCheckRequest,
+            ) -> BoxFuture<'_, Result<HealthCheckResponse, GrpcIngressError>> {
+                Box::pin(async {
+                    Ok(HealthCheckResponse {
+                        check: Box::new(GrpcHealthCheck::healthy()),
+                    })
+                })
             }
         }
         let _m = GrpcLoadMonitor::new(Arc::new(GrpcLoadMonitorStub), counters());

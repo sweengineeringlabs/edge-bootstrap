@@ -1,4 +1,5 @@
 //! Integration tests for ServerMonitor.
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use edge_proxy::ProxySvc;
 use std::sync::Arc;
@@ -19,6 +20,6 @@ async fn test_server_monitor_observe_delegates_health_to_inner() {
     let inner = ProxySvc::new_null_lifecycle_monitor();
     let provider: Arc<dyn MetricsProvider> = Arc::new(create_local_metrics_backend());
     let observed = ServerMonitor::observe(inner, provider);
-    let report = observed.health().await;
+    let report = observed.health(edge_proxy::HealthRequest).await.unwrap();
     assert!(matches!(report.overall, edge_proxy::HealthStatus::Healthy));
 }

@@ -1,6 +1,10 @@
 use std::sync::Arc;
 
-use edge_proxy::{ComponentHealth, HealthReport, HealthStatus, LifecycleError, LifecycleMonitor};
+use edge_proxy::{
+    ComponentHealth, ComponentRequest, ComponentResponse, HealthRequest, HealthResponse,
+    HealthStatus, LifecycleError, LifecycleMonitor, ShutdownRequest, StartBackgroundTasksRequest,
+    StatusRequest, StatusResponse,
+};
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use swe_observ_metrics::MetricsProvider;
@@ -34,9 +38,9 @@ impl MetricsLifecycleMonitor {
 }
 
 impl LifecycleMonitor for MetricsLifecycleMonitor {
-    fn health(&self) -> BoxFuture<'_, HealthReport> {
+    fn health(&self, req: HealthRequest) -> BoxFuture<'_, Result<HealthResponse, LifecycleError>> {
         async move {
-            let report = self.inner.health().await;
+            let report = self.inner.health(req).await?;
             for component in &report.components {
                 self.provider.record_gauge(
                     "edge_component_health",
@@ -49,26 +53,32 @@ impl LifecycleMonitor for MetricsLifecycleMonitor {
                 Self::score(report.overall),
                 &[("component", "overall")],
             );
-            report
+            Ok(report)
         }
         .boxed()
     }
 
-    fn start_background_tasks(&self) -> BoxFuture<'_, ()> {
-        async move { self.inner.start_background_tasks().await }.boxed()
+    fn start_background_tasks(
+        &self,
+        req: StartBackgroundTasksRequest,
+    ) -> BoxFuture<'_, Result<(), LifecycleError>> {
+        async move { self.inner.start_background_tasks(req).await }.boxed()
     }
 
-    fn shutdown(&self) -> BoxFuture<'_, Result<(), LifecycleError>> {
-        async move { self.inner.shutdown().await }.boxed()
+    fn shutdown(&self, req: ShutdownRequest) -> BoxFuture<'_, Result<(), LifecycleError>> {
+        async move { self.inner.shutdown(req).await }.boxed()
     }
 
-    fn status(&self) -> BoxFuture<'_, HealthStatus> {
-        async move { self.inner.status().await }.boxed()
+    fn status(&self, req: StatusRequest) -> BoxFuture<'_, Result<StatusResponse, LifecycleError>> {
+        async move { self.inner.status(req).await }.boxed()
     }
 
-    fn component(&self, id: &str) -> BoxFuture<'_, Option<ComponentHealth>> {
-        let id = id.to_owned();
-        async move { self.inner.component(&id).await }.boxed()
+    fn component<'a>(
+        &'a self,
+        req: ComponentRequest<'_>,
+    ) -> BoxFuture<'a, Result<ComponentResponse, LifecycleError>> {
+        let id = req.id.to_owned();
+        async move { self.inner.component(ComponentRequest { id: &id }).await }.boxed()
     }
 }
 
@@ -92,7 +102,7 @@ mod tests {
         let p = provider();
         let m =
             MetricsLifecycleMonitor::new(ProxySvc::new_null_lifecycle_monitor(), Arc::clone(&p));
-        m.health().await;
+        let _ = m.health(HealthRequest).await;
         let snaps = p.export();
         assert!(
             snaps
@@ -105,10 +115,10 @@ mod tests {
     #[tokio::test]
     async fn test_health_records_unhealthy_overall_after_shutdown() {
         let inner = ProxySvc::new_null_lifecycle_monitor();
-        inner.shutdown().await.ok();
+        inner.shutdown(ShutdownRequest).await.ok();
         let p = provider();
         let m = MetricsLifecycleMonitor::new(inner, Arc::clone(&p));
-        m.health().await;
+        let _ = m.health(HealthRequest).await;
         let snaps = p.export();
         assert!(
             snaps.iter().any(|s| s.name == "edge_component_health"),
@@ -125,6 +135,6 @@ mod tests {
     #[tokio::test]
     async fn test_shutdown_delegates_to_inner() {
         let m = MetricsLifecycleMonitor::new(ProxySvc::new_null_lifecycle_monitor(), provider());
-        assert!(m.shutdown().await.is_ok());
+        assert!(m.shutdown(ShutdownRequest).await.is_ok());
     }
 }

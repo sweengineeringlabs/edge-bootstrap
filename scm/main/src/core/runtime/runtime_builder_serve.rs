@@ -9,10 +9,13 @@ use std::time::Duration;
 use edge_proxy::ProxySvc;
 use swe_edge_egress_grpc::TransportSvc as GrpcTransportSvc;
 use swe_edge_egress_http::HttpTransportSvc;
-use swe_edge_ingress_grpc::TonicGrpcServer;
 use swe_edge_ingress_grpc_reflection::ReflectionService;
-use swe_edge_ingress_http::{AxumHttpServer, HttpServer};
 use swe_edge_ingress_verifier::{JwtVerifier, TokenVerifier};
+use swe_edge_runtime_grpc::{
+    AllowUnauthenticatedFlagRequest, GrpcServerManage, TonicGrpcServer, WithInterceptorsRequest,
+    WithTlsRequest,
+};
+use swe_edge_runtime_http::{AxumHttpServer, HttpServer, ServeWithShutdownRequest};
 use tokio::sync::oneshot;
 
 use crate::api::config::traits::loader::ConfigLoader;
@@ -188,50 +191,66 @@ impl RuntimeBuilder {
                 let signal = async move {
                     let _ = http_rx.await;
                 };
-                if let Err(e) = server.serve_with_shutdown(Box::pin(signal)).await {
+                if let Err(e) = server
+                    .serve_with_shutdown(ServeWithShutdownRequest {
+                        shutdown: Box::pin(signal),
+                    })
+                    .await
+                {
                     tracing::error!("HTTP server error: {e}");
                 }
             })
         });
 
         let (grpc_tx, grpc_rx) = oneshot::channel::<()>();
-        let grpc_task = input.grpc().map(|handler| {
-            // Wrap with load monitor if metrics are enabled.
-            let handler: Arc<dyn swe_edge_ingress_grpc::GrpcIngress> = if let Some(ref c) = counters
-            {
-                Arc::new(GrpcLoadMonitor::new(handler, Arc::clone(c)))
-            } else {
-                handler
-            };
-            // Wrap with reflection if enabled and a dispatcher registry was captured.
-            let handler: Arc<dyn swe_edge_ingress_grpc::GrpcIngress> =
-                if let Some(registry) = reflection_registry {
-                    Arc::new(crate::core::composite::CompositeGrpcIngress::new(
-                        handler,
-                        Arc::new(ReflectionService::new(registry)),
-                    ))
-                } else {
-                    handler
-                };
-            let mut server = TonicGrpcServer::new(grpc_bind, handler);
-            if let Some(tls) = grpc_tls {
-                server = server.with_tls(tls);
-            }
-            if !self.grpc_interceptors.is_empty() {
-                server = server.with_interceptors(self.grpc_interceptors);
-            }
-            if grpc_allow_unauthenticated {
-                server = server.allow_unauthenticated(true);
-            }
-            tokio::spawn(async move {
-                let signal = async move {
-                    let _ = grpc_rx.await;
-                };
-                if let Err(e) = server.serve(signal).await {
-                    tracing::error!("gRPC server error: {e}");
+        let grpc_task = input
+            .grpc()
+            .map(|handler| {
+                // Wrap with load monitor if metrics are enabled.
+                let handler: Arc<dyn swe_edge_ingress_grpc::GrpcIngress> =
+                    if let Some(ref c) = counters {
+                        Arc::new(GrpcLoadMonitor::new(handler, Arc::clone(c)))
+                    } else {
+                        handler
+                    };
+                // Wrap with reflection if enabled and a dispatcher registry was captured.
+                let handler: Arc<dyn swe_edge_ingress_grpc::GrpcIngress> =
+                    if let Some(registry) = reflection_registry {
+                        Arc::new(crate::core::composite::CompositeGrpcIngress::new(
+                            handler,
+                            Arc::new(ReflectionService::new(registry)),
+                        ))
+                    } else {
+                        handler
+                    };
+                let mut server = TonicGrpcServer::new(grpc_bind, handler);
+                if let Some(tls) = grpc_tls {
+                    server = server
+                        .with_tls(WithTlsRequest { tls })
+                        .map_err(|e| RuntimeError::StartFailed(e.to_string()))?;
                 }
+                if !self.grpc_interceptors.is_empty() {
+                    server = server
+                        .with_interceptors(WithInterceptorsRequest {
+                            chain: self.grpc_interceptors,
+                        })
+                        .map_err(|e| RuntimeError::StartFailed(e.to_string()))?;
+                }
+                if grpc_allow_unauthenticated {
+                    server = server
+                        .allow_unauthenticated(AllowUnauthenticatedFlagRequest { allow: true })
+                        .map_err(|e| RuntimeError::StartFailed(e.to_string()))?;
+                }
+                Ok::<_, RuntimeError>(tokio::spawn(async move {
+                    let signal = async move {
+                        let _ = grpc_rx.await;
+                    };
+                    if let Err(e) = server.serve(signal).await {
+                        tracing::error!("gRPC server error: {e}");
+                    }
+                }))
             })
-        });
+            .transpose()?;
 
         // ── Metrics server ────────────────────────────────────────────────────
         let (metrics_tx, metrics_task) =
@@ -245,7 +264,12 @@ impl RuntimeBuilder {
                     let signal = async move {
                         let _ = rx.await;
                     };
-                    if let Err(e) = server.serve_with_shutdown(Box::pin(signal)).await {
+                    if let Err(e) = server
+                        .serve_with_shutdown(ServeWithShutdownRequest {
+                            shutdown: Box::pin(signal),
+                        })
+                        .await
+                    {
                         tracing::error!("metrics server error: {e}");
                     }
                 });

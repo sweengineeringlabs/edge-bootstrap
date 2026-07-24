@@ -23,7 +23,8 @@ pub trait HandlerFactory: Sized {
 /// ```rust,no_run
 /// use swe_edge_configbuilder::{FeatureRegistry, SectionLoaderImpl, OptionalSection};
 /// use swe_edge_bootstrap::{FeatureRegistryExt, HandlerFactory};
-/// use edge_dispatch::{Handler, HandlerContext, HandlerError, OptionalHandler};
+/// use edge_dispatch::{Handler, HandlerError, OptionalHandler};
+/// use edge_application_handler::ExecutionRequest;
 /// use serde::Deserialize;
 ///
 /// #[derive(Deserialize)]
@@ -33,16 +34,19 @@ pub trait HandlerFactory: Sized {
 ///     fn section_name() -> &'static str { "guard" }
 /// }
 ///
+/// #[derive(Clone)]
+/// struct GuardPayload(String);
+/// impl edge_domain::Request for GuardPayload {}
+/// impl edge_domain::Response for GuardPayload {}
+///
 /// struct GuardHandler { token: String }
 ///
 /// #[async_trait::async_trait]
 /// impl Handler for GuardHandler {
-///     type Request = String;
-///     type Response = String;
-///     fn id(&self) -> &str { "guard" }
-///     fn pattern(&self) -> &str { "/guard" }
-///     async fn execute(&self, req: String, _ctx: HandlerContext<'_>) -> Result<String, HandlerError> {
-///         Ok(req)
+///     type Request = GuardPayload;
+///     type Response = GuardPayload;
+///     async fn execute(&self, req: ExecutionRequest<'_, GuardPayload>) -> Result<GuardPayload, HandlerError> {
+///         Ok(req.req)
 ///     }
 /// }
 ///

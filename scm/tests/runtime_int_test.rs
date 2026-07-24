@@ -1,6 +1,6 @@
 //! Integration tests for `RuntimeBuilder`.
 
-use swe_edge_bootstrap::{IngressTlsConfig, Runtime, RuntimeConfig};
+use swe_edge_bootstrap::{PemTlsConfig, Runtime, RuntimeConfig};
 
 /// @covers: builder — builder is constructible with no arguments
 #[test]
@@ -24,14 +24,14 @@ fn test_builder_accepts_app_name() {
 /// @covers: http_tls — accepted without error
 #[test]
 fn test_builder_accepts_http_tls_config() {
-    let tls = IngressTlsConfig::tls("cert.pem", "key.pem");
+    let tls = PemTlsConfig::tls("cert.pem", "key.pem");
     let _builder = Runtime::builder().http_tls(tls);
 }
 
 /// @covers: grpc_tls — mTLS variant accepted
 #[test]
 fn test_builder_accepts_grpc_mtls_config() {
-    let tls = IngressTlsConfig::mtls("cert.pem", "key.pem", "ca.pem");
+    let tls = PemTlsConfig::mtls("cert.pem", "key.pem", "ca.pem");
     let _builder = Runtime::builder().grpc_tls(tls);
 }
 

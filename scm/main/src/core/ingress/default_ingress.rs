@@ -56,47 +56,54 @@ mod tests {
     use futures::future::BoxFuture;
     use std::collections::HashMap;
     use swe_edge_ingress_grpc::{
-        GrpcHealthCheck, GrpcIngressResult, GrpcMetadata, GrpcRequest, GrpcResponse,
+        GrpcHealthCheck, GrpcIngressResult, GrpcMetadataInner, GrpcResponse,
+        HealthCheckRequest as GrpcHealthCheckRequest,
+        HealthCheckResponse as GrpcHealthCheckResponse, UnaryRequest,
     };
     use swe_edge_ingress_http::{
-        HttpHealthCheck, HttpIngressResult, HttpRequest, HttpResponse, SecurityContext,
+        HealthCheckRequest, HealthCheckResponse, HttpFuture, HttpHealthCheck, HttpIngressError,
+        HttpResponse, InboundRequest,
     };
 
     struct DefaultIngressStubHttp;
     impl HttpIngress for DefaultIngressStubHttp {
         fn handle(
             &self,
-            _: HttpRequest,
-            _: SecurityContext,
-        ) -> BoxFuture<'_, HttpIngressResult<HttpResponse>> {
-            Box::pin(async { Ok(HttpResponse::new(200, vec![])) })
+            _: InboundRequest,
+        ) -> HttpFuture<'_, Result<HttpResponse, HttpIngressError>> {
+            HttpFuture::new(async { Ok(HttpResponse::new(200, vec![])) })
         }
-        fn health_check(&self) -> BoxFuture<'_, HttpIngressResult<HttpHealthCheck>> {
-            Box::pin(async { Ok(HttpHealthCheck::healthy()) })
+        fn health_check(
+            &self,
+            _: HealthCheckRequest,
+        ) -> HttpFuture<'_, Result<HealthCheckResponse, HttpIngressError>> {
+            HttpFuture::new(async {
+                Ok(HealthCheckResponse {
+                    health: HttpHealthCheck::healthy(),
+                })
+            })
         }
     }
 
     struct DefaultIngressStubGrpc;
     impl GrpcIngress for DefaultIngressStubGrpc {
-        fn handle_unary(
-            &self,
-            _: GrpcRequest,
-            _: SecurityContext,
-        ) -> BoxFuture<'_, GrpcIngressResult<GrpcResponse>> {
+        fn handle_unary(&self, _: UnaryRequest) -> BoxFuture<'_, GrpcIngressResult<GrpcResponse>> {
             Box::pin(async {
                 Ok(GrpcResponse {
                     body: vec![],
-                    metadata: GrpcMetadata {
+                    metadata: std::sync::Arc::new(GrpcMetadataInner {
                         headers: HashMap::new(),
-                    },
+                    }),
                 })
             })
         }
-        fn health_check(&self) -> BoxFuture<'_, GrpcIngressResult<GrpcHealthCheck>> {
+        fn health_check(
+            &self,
+            _: GrpcHealthCheckRequest,
+        ) -> BoxFuture<'_, GrpcIngressResult<GrpcHealthCheckResponse>> {
             Box::pin(async {
-                Ok(GrpcHealthCheck {
-                    healthy: true,
-                    message: None,
+                Ok(GrpcHealthCheckResponse {
+                    check: Box::new(GrpcHealthCheck::healthy()),
                 })
             })
         }

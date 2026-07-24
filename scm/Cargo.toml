@@ -10,6 +10,10 @@ description  = "edge — process-level assembler: wires ingress + proxy + domain
 keywords     = ["daemon", "runtime", "lifecycle", "systemd", "swe"]
 categories   = ["network-programming"]
 
+[package.metadata.arch]
+application_type = "lib"
+service_type     = "runtime"
+
 [package.metadata.struct-engine]
 application_type = "lib"
 service_type     = "runtime"
@@ -23,7 +27,7 @@ default        = []
 observability  = ["dep:tracing-subscriber", "swe-edge-observ-config/observability"]
 message-broker = ["dep:swe-edge-runtime-message-broker"]
 scheduler      = ["dep:swe-edge-runtime-scheduler"]
-security       = ["dep:swe-edge-security"]
+security       = ["dep:edge-security-runtime", "dep:edge-security-runtime-credential", "dep:edge-security-runtime-authz", "dep:edge-security-runtime-tls"]
 
 [dependencies]
 async-trait        = "0.1"
@@ -38,261 +42,52 @@ toml               = "0.8"
 tracing            = { version = "0.1", default-features = false }
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"], optional = true }
 
-swe-edge-configbuilder           = { git = "https://github.com/sweengineeringlabs/edge-configbuilder.git",  tag = "v0.4.1" }
+swe-edge-configbuilder           = { git = "https://github.com/sweengineeringlabs/edge-configbuilder.git",  tag = "v0.4.2" }
 swe-edge-observ-config           = { git = "https://github.com/sweengineeringlabs/edge-observ-config.git",  tag = "v0.2.1" }
-swe-edge-runtime-message-broker  = { git = "https://github.com/sweengineeringlabs/edge-runtime.git", tag = "v0.3.12", features = ["tokio-rt"], optional = true }
+swe-edge-runtime-message-broker  = { git = "https://github.com/sweengineeringlabs/edge-runtime.git", tag = "v0.3.16", features = ["tokio-rt"], optional = true }
 swe-edge-runtime-scheduler       = { git = "https://github.com/sweengineeringlabs/edge-scheduler.git", tag = "v0.3.6", optional = true }
-swe-edge-security                = { git = "https://github.com/sweengineeringlabs/edge-security.git", tag = "v0.3.3", optional = true }
+edge-security-runtime             = { git = "https://github.com/sweengineeringlabs/edge-security.git", tag = "v0.3.7", optional = true }
+edge-security-runtime-credential  = { git = "https://github.com/sweengineeringlabs/edge-security.git", tag = "v0.3.7", optional = true }
+edge-security-runtime-authz       = { git = "https://github.com/sweengineeringlabs/edge-security.git", tag = "v0.3.7", optional = true }
+edge-security-runtime-tls         = { git = "https://github.com/sweengineeringlabs/edge-security.git", tag = "v0.3.7", optional = true }
 
 edge-proxy                       = { git = "https://github.com/sweengineeringlabs/edge-proxy.git", tag = "v0.3.5" }
-swe-edge-ingress-http            = { package = "swe-edge-ingress-http-transport", git = "https://github.com/sweengineeringlabs/edge-ingress-http.git", tag = "v0.5.1" }
-swe-edge-ingress-grpc            = { package = "swe-edge-ingress-grpc-transport", git = "https://github.com/sweengineeringlabs/edge-ingress-grpc.git", tag = "v0.6.1" }
+swe-edge-ingress-http            = { package = "edge-transport-http-ingress-transport", git = "https://github.com/sweengineeringlabs/edge-ingress-http.git", tag = "v0.5.3" }
+swe-edge-ingress-grpc            = { package = "swe-edge-ingress-grpc-transport", git = "https://github.com/sweengineeringlabs/edge-ingress-grpc.git", tag = "v0.6.3" }
+swe-edge-runtime-grpc            = { git = "https://github.com/sweengineeringlabs/edge-runtime.git", tag = "v0.3.17" }
+swe-edge-runtime-http            = { git = "https://github.com/sweengineeringlabs/edge-runtime.git", tag = "v0.3.17" }
 swe-edge-egress-grpc             = { package = "swe-edge-egress-grpc-transport", git = "https://github.com/sweengineeringlabs/edge-egress-grpc.git", tag = "v0.5.0" }
-swe-edge-egress-http             = { package = "swe-edge-egress-http-transport", git = "https://github.com/sweengineeringlabs/edge-egress-http.git", tag = "v0.4.2" }
+swe-edge-egress-http             = { package = "edge-transport-http-egress-transport", git = "https://github.com/sweengineeringlabs/edge-egress-http.git", tag = "v0.4.5" }
 swe-edge-ingress-verifier        = { git = "https://github.com/sweengineeringlabs/edge-ingress-security.git", tag = "v0.6.3" }
-swe-edge-ingress-grpc-reflection = { git = "https://github.com/sweengineeringlabs/edge-ingress-grpc.git", tag = "v0.6.1" }
+swe-edge-ingress-grpc-reflection = { git = "https://github.com/sweengineeringlabs/edge-ingress-grpc.git", tag = "v0.6.3" }
 edge-domain                      = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.18.0", package = "edge-application", features = ["full"] }
-edge-dispatch                    = { package = "edge-dispatcher", git = "https://github.com/sweengineeringlabs/edge-dispatcher.git", tag = "v0.11.1" }
-swe-observ-metrics               = { package = "swe_justobserv_metrics", git = "ssh://git@github.com/sweengineeringlabs/justobserv.git", tag = "v0.2.1" }
+edge-dispatch                    = { package = "edge-dispatcher", git = "https://github.com/sweengineeringlabs/edge-dispatcher.git", tag = "v0.11.2" }
+swe-observ-metrics               = { package = "swe-observability-metrics", git = "ssh://git@github.com/sweengineeringlabs/justobserv.git", tag = "v0.2.9" }
 
 [[example]]
 name = "hello_edge"
 path = "examples/hello_edge.rs"
 
 [dev-dependencies]
-async-trait       = "0.1"
-edge-llm-provider = { git = "https://github.com/sweengineeringlabs/edge-llm.git", branch = "main" }
+async-trait                = "0.1"
+edge-application-handler  = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.18.0" }
+edge-application-observer = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.18.0" }
 reqwest           = { version = "0.12", features = ["json", "stream", "multipart", "rustls-tls"], default-features = false }
 serde             = { version = "1.0", features = ["derive"] }
 tempfile          = "3"
 tokio             = { version = "1.0", features = ["rt-multi-thread", "sync", "signal", "macros", "time", "net", "test-util"] }
-swe-edge-configbuilder          = { git = "https://github.com/sweengineeringlabs/edge-configbuilder.git", tag = "v0.4.1" }
+swe-edge-configbuilder          = { git = "https://github.com/sweengineeringlabs/edge-configbuilder.git", tag = "v0.4.2" }
 swe-edge-observ-config          = { git = "https://github.com/sweengineeringlabs/edge-observ-config.git", tag = "v0.2.1" }
-swe-edge-runtime-message-broker = { git = "https://github.com/sweengineeringlabs/edge-runtime.git", tag = "v0.3.12", features = ["tokio-rt"] }
+swe-edge-runtime-message-broker = { git = "https://github.com/sweengineeringlabs/edge-runtime.git", tag = "v0.3.16", features = ["tokio-rt"] }
 swe-edge-runtime-scheduler      = { git = "https://github.com/sweengineeringlabs/edge-scheduler.git", tag = "v0.3.6" }
 edge-proxy                      = { git = "https://github.com/sweengineeringlabs/edge-proxy.git", tag = "v0.3.5" }
-swe-edge-ingress-http           = { package = "swe-edge-ingress-http-transport", git = "https://github.com/sweengineeringlabs/edge-ingress-http.git", tag = "v0.5.1" }
-swe-edge-ingress-grpc           = { package = "swe-edge-ingress-grpc-transport", git = "https://github.com/sweengineeringlabs/edge-ingress-grpc.git", tag = "v0.6.1" }
+swe-edge-ingress-http           = { package = "edge-transport-http-ingress-transport", git = "https://github.com/sweengineeringlabs/edge-ingress-http.git", tag = "v0.5.3" }
+swe-edge-ingress-grpc           = { package = "swe-edge-ingress-grpc-transport", git = "https://github.com/sweengineeringlabs/edge-ingress-grpc.git", tag = "v0.6.3" }
+swe-edge-runtime-grpc           = { git = "https://github.com/sweengineeringlabs/edge-runtime.git", tag = "v0.3.17" }
+swe-edge-runtime-http           = { git = "https://github.com/sweengineeringlabs/edge-runtime.git", tag = "v0.3.17" }
 swe-edge-egress-grpc            = { package = "swe-edge-egress-grpc-transport", git = "https://github.com/sweengineeringlabs/edge-egress-grpc.git", tag = "v0.5.0" }
-swe-edge-egress-http            = { package = "swe-edge-egress-http-transport", git = "https://github.com/sweengineeringlabs/edge-egress-http.git", tag = "v0.4.2" }
+swe-edge-egress-http            = { package = "edge-transport-http-egress-transport", git = "https://github.com/sweengineeringlabs/edge-egress-http.git", tag = "v0.4.5" }
 edge-domain                     = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.18.0", package = "edge-application", features = ["full"] }
-
-[[test]]
-name = "runtime_int_test"
-path = "tests/runtime_int_test.rs"
-
-[[test]]
-name = "observability_int_test"
-path = "tests/observability_int_test.rs"
-
-[[test]]
-name = "composite_int_test"
-path = "tests/composite_int_test.rs"
-
-[[test]]
-name = "json_codec_int_test"
-path = "tests/json_codec_int_test.rs"
-
-[[test]]
-name = "ingress_int_test"
-path = "tests/ingress_int_test.rs"
-
-[[test]]
-name = "egress_int_test"
-path = "tests/egress_int_test.rs"
-
-[[test]]
-name = "runtime_manager_int_test"
-path = "tests/runtime_manager_int_test.rs"
-
-[[test]]
-name = "validator_int_test"
-path = "tests/validator_int_test.rs"
-
-[[test]]
-name = "saf_config_loader_int_test"
-path = "tests/saf_config_loader_int_test.rs"
-
-[[test]]
-name = "saf_daemon_int_test"
-path = "tests/saf_daemon_int_test.rs"
-
-[[test]]
-name = "saf_lifecycle_monitor_int_test"
-path = "tests/saf_lifecycle_monitor_int_test.rs"
-
-[[test]]
-name = "metrics_handler_int_test"
-path = "tests/metrics_handler_int_test.rs"
-
-[[test]]
-name = "dep_coverage_int_test"
-path = "tests/dep_coverage_int_test.rs"
-
-[[test]]
-name = "observ_config_int_test"
-path = "tests/observ_config_int_test.rs"
-
-[[test]]
-name = "swe_edge_observ_config_int_test"
-path = "tests/swe_edge_observ_config_int_test.rs"
-
-[[test]]
-name = "runner_int_test"
-path = "tests/runner_int_test.rs"
-
-[[test]]
-name = "runtime_result_int_test"
-path = "tests/runtime_result_int_test.rs"
-
-[[test]]
-name = "shared_counters_int_test"
-path = "tests/shared_counters_int_test.rs"
-
-[[test]]
-name = "message_broker_runtime_int_test"
-path = "tests/message_broker_runtime_int_test.rs"
-
-[[test]]
-name = "composite_grpc_ingress_int_test"
-path = "tests/composite_grpc_ingress_int_test.rs"
-
-[[test]]
-name = "composite_ingress_int_test"
-path = "tests/composite_ingress_int_test.rs"
-
-[[test]]
-name = "config_error_int_test"
-path = "tests/config_error_int_test.rs"
-
-[[test]]
-name = "config_override_int_test"
-path = "tests/config_override_int_test.rs"
-
-[[test]]
-name = "application_config_loader_int_test"
-path = "tests/application_config_loader_int_test.rs"
-
-[[test]]
-name = "default_egress_int_test"
-path = "tests/default_egress_int_test.rs"
-
-[[test]]
-name = "runtime_error_int_test"
-path = "tests/runtime_error_int_test.rs"
-
-[[test]]
-name = "default_ingress_int_test"
-path = "tests/default_ingress_int_test.rs"
-
-[[test]]
-name = "metrics_exporter_int_test"
-path = "tests/metrics_exporter_int_test.rs"
-
-[[test]]
-name = "autoscale_policy_int_test"
-path = "tests/autoscale_policy_int_test.rs"
-
-[[test]]
-name = "grpc_load_monitor_int_test"
-path = "tests/grpc_load_monitor_int_test.rs"
-
-[[test]]
-name = "http_load_monitor_int_test"
-path = "tests/http_load_monitor_int_test.rs"
-
-[[test]]
-name = "lifecycle_observer_int_test"
-path = "tests/lifecycle_observer_int_test.rs"
-
-[[test]]
-name = "metrics_config_int_test"
-path = "tests/metrics_config_int_test.rs"
-
-[[test]]
-name = "ring_buffer_int_test"
-path = "tests/ring_buffer_int_test.rs"
-
-[[test]]
-name = "sampler_int_test"
-path = "tests/sampler_int_test.rs"
-
-[[test]]
-name = "traffic_counters_int_test"
-path = "tests/traffic_counters_int_test.rs"
-
-[[test]]
-name = "runtime_builder_serve_int_test"
-path = "tests/runtime_builder_serve_int_test.rs"
-
-[[test]]
-name = "default_runtime_manager_int_test"
-path = "tests/default_runtime_manager_int_test.rs"
-
-[[test]]
-name = "service_registry_int_test"
-path = "tests/service_registry_int_test.rs"
-
-[[test]]
-name = "traits_int_test"
-path = "tests/traits_int_test.rs"
-
-[[test]]
-name = "runtime_config_int_test"
-path = "tests/runtime_config_int_test.rs"
-
-[[test]]
-name = "runtime_status_int_test"
-path = "tests/runtime_status_int_test.rs"
-
-[[test]]
-name = "component_health_int_test"
-path = "tests/component_health_int_test.rs"
-
-[[test]]
-name = "runtime_health_int_test"
-path = "tests/runtime_health_int_test.rs"
-
-[[test]]
-name = "config_validator_int_test"
-path = "tests/config_validator_int_test.rs"
-
-[[test]]
-name = "scheduler_int_test"
-path = "tests/scheduler_int_test.rs"
-
-[[test]]
-name = "server_config_loader_int_test"
-path = "tests/server_config_loader_int_test.rs"
-
-[[test]]
-name = "server_monitor_int_test"
-path = "tests/server_monitor_int_test.rs"
-
-[[test]]
-name = "server_svc_int_test"
-path = "tests/server_svc_int_test.rs"
-
-[[test]]
-name = "runtime_extension_int_test"
-path = "tests/runtime_extension_int_test.rs"
-
-[[test]]
-name = "tracing_initializer_int_test"
-path = "tests/tracing_initializer_int_test.rs"
-
-[[test]]
-name = "configbuilder_int_test"
-path = "tests/configbuilder_int_test.rs"
-
-[[test]]
-name = "health_handler_int_test"
-path = "tests/health_handler_int_test.rs"
-
-[[test]]
-name             = "security_feature_int_test"
-path             = "tests/security_feature_int_test.rs"
-required-features = ["security"]
 
 [lints.rust]
 unsafe_code  = "deny"

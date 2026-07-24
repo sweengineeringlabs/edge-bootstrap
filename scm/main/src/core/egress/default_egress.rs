@@ -35,24 +35,33 @@ impl Egress for DefaultEgress {
 mod tests {
     use super::*;
     use futures::future::BoxFuture;
-    use swe_edge_egress_http::{HttpEgressError, HttpEgressResult, HttpStreamResponse};
+    use swe_edge_egress_http::{
+        ConfigRequest, ConfigResponse, HealthCheckRequest, HttpConfig, HttpEgressError,
+        HttpStreamResponse,
+    };
 
     struct DefaultEgressStubHttp;
+    #[async_trait::async_trait]
     impl HttpEgress for DefaultEgressStubHttp {
-        fn send(
+        async fn send(
             &self,
             _: swe_edge_egress_http::HttpRequest,
-        ) -> BoxFuture<'_, HttpEgressResult<swe_edge_egress_http::HttpResponse>> {
-            Box::pin(async { Err(HttpEgressError::Internal("stub".into())) })
+        ) -> Result<swe_edge_egress_http::HttpResponse, HttpEgressError> {
+            Err(HttpEgressError::Internal("stub".into()))
         }
-        fn send_stream(
+        async fn send_stream(
             &self,
             _: swe_edge_egress_http::HttpRequest,
-        ) -> BoxFuture<'_, HttpEgressResult<HttpStreamResponse>> {
-            Box::pin(async { Err(HttpEgressError::Internal("stub".into())) })
+        ) -> Result<HttpStreamResponse, HttpEgressError> {
+            Err(HttpEgressError::Internal("stub".into()))
         }
-        fn health_check(&self) -> BoxFuture<'_, HttpEgressResult<()>> {
-            Box::pin(async { Ok(()) })
+        async fn health_check(&self, _: HealthCheckRequest) -> Result<(), HttpEgressError> {
+            Ok(())
+        }
+        fn config(&self, _: ConfigRequest) -> Result<ConfigResponse, HttpEgressError> {
+            Ok(ConfigResponse {
+                config: HttpConfig::default(),
+            })
         }
     }
 

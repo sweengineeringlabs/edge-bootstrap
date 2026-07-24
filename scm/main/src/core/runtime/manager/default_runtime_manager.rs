@@ -4,7 +4,10 @@ use std::time::Instant;
 use futures::future::BoxFuture;
 use parking_lot::Mutex;
 
-use edge_proxy::{HealthStatus, LifecycleMonitor};
+use edge_proxy::{
+    HealthRequest, HealthResponse, HealthStatus, LifecycleMonitor, ShutdownRequest,
+    StartBackgroundTasksRequest,
+};
 
 use crate::api::egress::Egress;
 use crate::api::ingress::Ingress;
@@ -114,18 +117,29 @@ impl RuntimeManager for DefaultRuntimeManager {
                 ));
             }
 
-            self.lifecycle.start_background_tasks().await;
+            self.lifecycle
+                .start_background_tasks(StartBackgroundTasksRequest)
+                .await
+                .map_err(|e| RuntimeError::StartFailed(e.to_string()))?;
 
             // Probe each configured ingress transport to surface misconfigurations early.
             if let Some(h) = self.ingress.http() {
-                let _ = h.health_check().await;
+                let _ = h
+                    .health_check(swe_edge_ingress_http::HealthCheckRequest)
+                    .await;
             }
             if let Some(g) = self.ingress.grpc() {
-                let _ = g.health_check().await;
+                let _ = g
+                    .health_check(swe_edge_ingress_grpc::HealthCheckRequest)
+                    .await;
             }
 
             // Probe egress.
-            let _ = self.egress.http().health_check().await;
+            let _ = self
+                .egress
+                .http()
+                .health_check(swe_edge_egress_http::HealthCheckRequest)
+                .await;
             if let Some(g) = self.egress.grpc() {
                 let _ = g.health_check().await;
             }
@@ -172,7 +186,7 @@ impl RuntimeManager for DefaultRuntimeManager {
             }
 
             self.lifecycle
-                .shutdown()
+                .shutdown(ShutdownRequest)
                 .await
                 .map_err(|e| RuntimeError::ShutdownFailed(e.to_string()))?;
 
@@ -187,7 +201,14 @@ impl RuntimeManager for DefaultRuntimeManager {
     fn health(&self) -> BoxFuture<'_, RuntimeHealth> {
         Box::pin(async move {
             let status = *self.status.lock();
-            let report = self.lifecycle.health().await;
+            let report = self
+                .lifecycle
+                .health(HealthRequest)
+                .await
+                .unwrap_or_else(|_| HealthResponse {
+                    overall: HealthStatus::Unhealthy,
+                    components: Vec::new(),
+                });
 
             let uptime_secs = self
                 .started_at
@@ -209,7 +230,10 @@ impl RuntimeManager for DefaultRuntimeManager {
 
             // Report health for each configured ingress transport.
             if let Some(h) = self.ingress.http() {
-                match h.health_check().await {
+                match h
+                    .health_check(swe_edge_ingress_http::HealthCheckRequest)
+                    .await
+                {
                     Ok(_) => components.push(ComponentHealth::healthy("ingress.http")),
                     Err(e) => {
                         components.push(ComponentHealth::unhealthy("ingress.http", e.to_string()))
@@ -217,7 +241,10 @@ impl RuntimeManager for DefaultRuntimeManager {
                 }
             }
             if let Some(g) = self.ingress.grpc() {
-                match g.health_check().await {
+                match g
+                    .health_check(swe_edge_ingress_grpc::HealthCheckRequest)
+                    .await
+                {
                     Ok(_) => components.push(ComponentHealth::healthy("ingress.grpc")),
                     Err(e) => {
                         components.push(ComponentHealth::unhealthy("ingress.grpc", e.to_string()))
@@ -225,7 +252,12 @@ impl RuntimeManager for DefaultRuntimeManager {
                 }
             }
             // Report egress transport health.
-            match self.egress.http().health_check().await {
+            match self
+                .egress
+                .http()
+                .health_check(swe_edge_egress_http::HealthCheckRequest)
+                .await
+            {
                 Ok(_) => components.push(ComponentHealth::healthy("egress.http")),
                 Err(e) => components.push(ComponentHealth::unhealthy("egress.http", e.to_string())),
             }
@@ -263,7 +295,10 @@ mod tests {
     use super::*;
     use crate::core::egress::DefaultEgress;
     use crate::core::ingress::DefaultIngress;
-    use edge_proxy::{ComponentHealth, HealthReport, HealthStatus, LifecycleError};
+    use edge_proxy::{
+        ComponentHealth, ComponentRequest, ComponentResponse, HealthResponse, HealthStatus,
+        LifecycleError, StatusRequest, StatusResponse,
+    };
     use futures::future::BoxFuture;
     use futures::FutureExt;
     use std::collections::HashMap;
@@ -272,32 +307,54 @@ mod tests {
         GrpcRequest as EgressGrpcRequest, GrpcResponse as EgressGrpcResponse,
     };
     use swe_edge_egress_http::{
-        HttpEgressResult, HttpRequest as EgressReq, HttpResponse as EgressResp, HttpStreamResponse,
+        ConfigRequest as EgressConfigRequest, ConfigResponse as EgressConfigResponse,
+        HealthCheckRequest as EgressHealthCheckRequest, HttpByteStream, HttpConfig,
+        HttpEgressError, HttpRequest as EgressReq, HttpResponse as EgressResp, HttpStreamResponse,
     };
     use swe_edge_ingress_grpc::{
-        GrpcHealthCheck, GrpcIngress, GrpcIngressResult, GrpcMetadata, GrpcRequest, GrpcResponse,
+        GrpcHealthCheck, GrpcIngress, GrpcIngressResult, GrpcMetadataInner, GrpcResponse,
+        HealthCheckRequest as GrpcHealthCheckRequest,
+        HealthCheckResponse as GrpcHealthCheckResponse, UnaryRequest,
     };
     use swe_edge_ingress_http::{
-        HttpHealthCheck, HttpIngressResult, HttpRequest, HttpResponse, SecurityContext,
+        HealthCheckRequest, HealthCheckResponse, HttpFuture, HttpHealthCheck, HttpIngressError,
+        HttpResponse, InboundRequest,
     };
 
     struct DefaultRuntimeManagerStubLifecycle;
 
     impl LifecycleMonitor for DefaultRuntimeManagerStubLifecycle {
-        fn health(&self) -> BoxFuture<'_, HealthReport> {
-            async move { HealthReport::from_components(vec![]) }.boxed()
+        fn health(
+            &self,
+            _req: HealthRequest,
+        ) -> BoxFuture<'_, Result<HealthResponse, LifecycleError>> {
+            async move { Ok(HealthResponse::from_components(vec![])) }.boxed()
         }
-        fn start_background_tasks(&self) -> BoxFuture<'_, ()> {
-            async move {}.boxed()
-        }
-        fn shutdown(&self) -> BoxFuture<'_, Result<(), LifecycleError>> {
+        fn start_background_tasks(
+            &self,
+            _req: StartBackgroundTasksRequest,
+        ) -> BoxFuture<'_, Result<(), LifecycleError>> {
             async move { Ok(()) }.boxed()
         }
-        fn status(&self) -> BoxFuture<'_, HealthStatus> {
-            async move { HealthStatus::Healthy }.boxed()
+        fn shutdown(&self, _req: ShutdownRequest) -> BoxFuture<'_, Result<(), LifecycleError>> {
+            async move { Ok(()) }.boxed()
         }
-        fn component(&self, _id: &str) -> BoxFuture<'_, Option<ComponentHealth>> {
-            async move { None }.boxed()
+        fn status(
+            &self,
+            _req: StatusRequest,
+        ) -> BoxFuture<'_, Result<StatusResponse, LifecycleError>> {
+            async move {
+                Ok(StatusResponse {
+                    status: HealthStatus::Healthy,
+                })
+            }
+            .boxed()
+        }
+        fn component<'a>(
+            &'a self,
+            _req: ComponentRequest<'_>,
+        ) -> BoxFuture<'a, Result<ComponentResponse, LifecycleError>> {
+            async move { Ok(ComponentResponse { health: None }) }.boxed()
         }
     }
 
@@ -305,58 +362,66 @@ mod tests {
     impl swe_edge_ingress_http::HttpIngress for DefaultRuntimeManagerStubHttp {
         fn handle(
             &self,
-            _: HttpRequest,
-            _ctx: SecurityContext,
-        ) -> BoxFuture<'_, HttpIngressResult<HttpResponse>> {
-            Box::pin(async { Ok(HttpResponse::new(200, vec![])) })
+            _: InboundRequest,
+        ) -> HttpFuture<'_, Result<HttpResponse, HttpIngressError>> {
+            HttpFuture::new(async { Ok(HttpResponse::new(200, vec![])) })
         }
-        fn health_check(&self) -> BoxFuture<'_, HttpIngressResult<HttpHealthCheck>> {
-            Box::pin(async { Ok(HttpHealthCheck::healthy()) })
+        fn health_check(
+            &self,
+            _: HealthCheckRequest,
+        ) -> HttpFuture<'_, Result<HealthCheckResponse, HttpIngressError>> {
+            HttpFuture::new(async {
+                Ok(HealthCheckResponse {
+                    health: HttpHealthCheck::healthy(),
+                })
+            })
         }
     }
 
     struct DefaultRuntimeManagerStubGrpc;
     impl GrpcIngress for DefaultRuntimeManagerStubGrpc {
-        fn handle_unary(
-            &self,
-            _: GrpcRequest,
-            _ctx: SecurityContext,
-        ) -> BoxFuture<'_, GrpcIngressResult<GrpcResponse>> {
+        fn handle_unary(&self, _: UnaryRequest) -> BoxFuture<'_, GrpcIngressResult<GrpcResponse>> {
             Box::pin(async {
                 Ok(GrpcResponse {
                     body: vec![],
-                    metadata: GrpcMetadata {
+                    metadata: std::sync::Arc::new(GrpcMetadataInner {
                         headers: HashMap::new(),
-                    },
+                    }),
                 })
             })
         }
-        fn health_check(&self) -> BoxFuture<'_, GrpcIngressResult<GrpcHealthCheck>> {
+        fn health_check(
+            &self,
+            _: GrpcHealthCheckRequest,
+        ) -> BoxFuture<'_, GrpcIngressResult<GrpcHealthCheckResponse>> {
             Box::pin(async {
-                Ok(GrpcHealthCheck {
-                    healthy: true,
-                    message: None,
+                Ok(GrpcHealthCheckResponse {
+                    check: Box::new(GrpcHealthCheck::healthy()),
                 })
             })
         }
     }
 
     struct DefaultRuntimeManagerStubHttpOut;
+    #[async_trait::async_trait]
     impl swe_edge_egress_http::HttpEgress for DefaultRuntimeManagerStubHttpOut {
-        fn send(&self, _: EgressReq) -> BoxFuture<'_, HttpEgressResult<EgressResp>> {
-            Box::pin(async { Ok(EgressResp::new(200, vec![])) })
+        async fn send(&self, _: EgressReq) -> Result<EgressResp, HttpEgressError> {
+            Ok(EgressResp::new(200, vec![]))
         }
-        fn send_stream(&self, _: EgressReq) -> BoxFuture<'_, HttpEgressResult<HttpStreamResponse>> {
-            Box::pin(async {
-                Ok(HttpStreamResponse {
-                    status: 200,
-                    headers: Default::default(),
-                    body: Box::pin(futures::stream::empty()),
-                })
+        async fn send_stream(&self, _: EgressReq) -> Result<HttpStreamResponse, HttpEgressError> {
+            Ok(HttpStreamResponse {
+                status: 200,
+                headers: Default::default(),
+                body: HttpByteStream::new(futures::stream::empty()),
             })
         }
-        fn health_check(&self) -> BoxFuture<'_, HttpEgressResult<()>> {
-            Box::pin(async { Ok(()) })
+        async fn health_check(&self, _: EgressHealthCheckRequest) -> Result<(), HttpEgressError> {
+            Ok(())
+        }
+        fn config(&self, _: EgressConfigRequest) -> Result<EgressConfigResponse, HttpEgressError> {
+            Ok(EgressConfigResponse {
+                config: HttpConfig::default(),
+            })
         }
     }
 

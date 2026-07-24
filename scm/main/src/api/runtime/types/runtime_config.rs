@@ -1,9 +1,9 @@
 //! RuntimeConfig — process-level configuration for the daemon.
 
+use edge_security_runtime_tls::PemTlsConfig;
 use serde::{Deserialize, Serialize};
 use swe_edge_egress_grpc::GrpcChannelConfig;
 use swe_edge_egress_http::HttpConfig;
-use swe_edge_ingress_http::IngressTlsConfig;
 use swe_edge_ingress_verifier::JwtConfig;
 
 pub use crate::api::config::ObservabilityConfig;
@@ -29,9 +29,9 @@ pub struct RuntimeConfig {
     // ── TLS ───────────────────────────────────────────────────────────────────
     /// TLS/mTLS for the HTTP server.  Absent = plain HTTP.
     /// Set `client_ca_pem_path` to enable mTLS.
-    pub http_tls: Option<IngressTlsConfig>,
+    pub http_tls: Option<PemTlsConfig>,
     /// TLS/mTLS for the gRPC server.  Absent = plain gRPC.
-    pub grpc_tls: Option<IngressTlsConfig>,
+    pub grpc_tls: Option<PemTlsConfig>,
 
     // ── Auth ──────────────────────────────────────────────────────────────────
     /// JWT bearer auth for the HTTP server.  Absent = no token enforcement.

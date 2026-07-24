@@ -11,7 +11,7 @@ async fn test_observe_lifecycle_monitor() {
     let provider: Arc<dyn MetricsProvider> = Arc::new(create_local_metrics_backend());
     let inner = ProxySvc::new_null_lifecycle_monitor();
     let observed = ServerMonitor::observe(inner, Arc::clone(&provider));
-    observed.health().await;
+    let _ = observed.health(edge_proxy::HealthRequest).await;
     let snaps = provider.export();
     assert!(
         snaps.iter().any(|s| s.name == "edge_component_health"),

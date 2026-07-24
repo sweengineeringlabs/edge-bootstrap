@@ -204,9 +204,11 @@ impl Runtime {
         egress: Arc<dyn Egress>,
         lifecycle: Arc<dyn LifecycleMonitor>,
     ) -> RuntimeResult<()> {
-        use swe_edge_ingress_grpc::TonicGrpcServer;
-        use swe_edge_ingress_http::{AxumHttpServer, HttpServer};
         use swe_edge_ingress_verifier::{JwtVerifier, TokenVerifier};
+        use swe_edge_runtime_grpc::{
+            AllowUnauthenticatedFlagRequest, GrpcServerManage, TonicGrpcServer, WithTlsRequest,
+        };
+        use swe_edge_runtime_http::{AxumHttpServer, HttpServer, ServeWithShutdownRequest};
         use tokio::sync::oneshot;
 
         let timeout_secs = config.shutdown_timeout_secs;
@@ -239,30 +241,42 @@ impl Runtime {
                 let signal = async move {
                     let _ = http_shutdown_rx.await;
                 };
-                if let Err(e) = server.serve_with_shutdown(Box::pin(signal)).await {
+                if let Err(e) = server
+                    .serve_with_shutdown(ServeWithShutdownRequest {
+                        shutdown: Box::pin(signal),
+                    })
+                    .await
+                {
                     tracing::error!("HTTP server error: {e}");
                 }
             })
         });
 
         let (grpc_shutdown_tx, grpc_shutdown_rx) = oneshot::channel::<()>();
-        let grpc_task = ingress.grpc().map(|handler| {
-            let mut server = TonicGrpcServer::new(grpc_bind, handler);
-            if let Some(tls) = grpc_tls {
-                server = server.with_tls(tls);
-            }
-            if grpc_allow_unauthenticated {
-                server = server.allow_unauthenticated(true);
-            }
-            tokio::spawn(async move {
-                let signal = async move {
-                    let _ = grpc_shutdown_rx.await;
-                };
-                if let Err(e) = server.serve(signal).await {
-                    tracing::error!("gRPC server error: {e}");
+        let grpc_task = ingress
+            .grpc()
+            .map(|handler| {
+                let mut server = TonicGrpcServer::new(grpc_bind, handler);
+                if let Some(tls) = grpc_tls {
+                    server = server
+                        .with_tls(WithTlsRequest { tls })
+                        .map_err(|e| RuntimeError::StartFailed(e.to_string()))?;
                 }
+                if grpc_allow_unauthenticated {
+                    server = server
+                        .allow_unauthenticated(AllowUnauthenticatedFlagRequest { allow: true })
+                        .map_err(|e| RuntimeError::StartFailed(e.to_string()))?;
+                }
+                Ok::<_, RuntimeError>(tokio::spawn(async move {
+                    let signal = async move {
+                        let _ = grpc_shutdown_rx.await;
+                    };
+                    if let Err(e) = server.serve(signal).await {
+                        tracing::error!("gRPC server error: {e}");
+                    }
+                }))
             })
-        });
+            .transpose()?;
 
         let mgr = Runtime::runtime_manager(config, ingress, egress, lifecycle);
         let result =

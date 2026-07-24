@@ -3,10 +3,10 @@
 use crate::api::config::error::config_error::ConfigError;
 use crate::api::monitor::{AutoscalePolicy, MetricsConfig};
 use crate::api::runtime::RuntimeConfig;
+use edge_security_runtime_tls::PemTlsConfig;
 use serde::Deserialize;
 use swe_edge_egress_grpc::GrpcChannelConfig;
 use swe_edge_egress_http::HttpConfig;
-use swe_edge_ingress_http::IngressTlsConfig;
 use swe_edge_ingress_verifier::JwtConfig;
 use swe_edge_observ_config::ObservabilityConfig;
 
@@ -21,8 +21,8 @@ pub(crate) struct ConfigOverride {
     pub(crate) shutdown_timeout_secs: Option<u64>,
     pub(crate) systemd_notify: Option<bool>,
     pub(crate) tenant_id: Option<String>,
-    pub(crate) http_tls: Option<IngressTlsConfig>,
-    pub(crate) grpc_tls: Option<IngressTlsConfig>,
+    pub(crate) http_tls: Option<PemTlsConfig>,
+    pub(crate) grpc_tls: Option<PemTlsConfig>,
     pub(crate) http_auth: Option<JwtConfig>,
     pub(crate) grpc_allow_unauthenticated: Option<bool>,
     pub(crate) egress_http: Option<HttpConfig>,
