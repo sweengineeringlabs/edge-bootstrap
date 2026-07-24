@@ -1,4 +1,4 @@
-//! [`FeatureRegistryExt`] — bridge from `FeatureRegistry` to `OptionalHandler`.
+//! [`FeatureHandlerBridge`] — bridge from `FeatureRegistry` to `OptionalHandler`.
 
 use edge_dispatch::OptionalHandler;
 use swe_edge_configbuilder::{FeatureRegistry, FeatureState, OptionalSection, SectionLoaderImpl};
@@ -22,7 +22,7 @@ pub trait HandlerFactory: Sized {
 ///
 /// ```rust,no_run
 /// use swe_edge_configbuilder::{FeatureRegistry, SectionLoaderImpl, OptionalSection};
-/// use swe_edge_bootstrap::{FeatureRegistryExt, HandlerFactory};
+/// use swe_edge_bootstrap::{FeatureHandlerBridge, HandlerFactory};
 /// use edge_dispatch::{Handler, HandlerError, OptionalHandler};
 /// use edge_application_handler::ExecutionRequest;
 /// use serde::Deserialize;
@@ -63,7 +63,7 @@ pub trait HandlerFactory: Sized {
 ///     registry.build_handler::<GuardConfig, GuardHandler>(&loader).unwrap();
 /// # }
 /// ```
-pub trait FeatureRegistryExt {
+pub trait FeatureHandlerBridge {
     /// Load feature config `C` from `loader` and construct `H` via [`HandlerFactory::build`].
     ///
     /// - If the feature is enabled: calls `H::build(cfg)` and returns an enabled `OptionalHandler<H>`.
@@ -78,7 +78,7 @@ pub trait FeatureRegistryExt {
         H: HandlerFactory<Config = C>;
 }
 
-impl FeatureRegistryExt for FeatureRegistry {
+impl FeatureHandlerBridge for FeatureRegistry {
     fn build_handler<C, H>(
         &mut self,
         loader: &SectionLoaderImpl,

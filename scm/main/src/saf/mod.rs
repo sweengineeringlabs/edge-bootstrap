@@ -25,7 +25,7 @@ pub use swe_edge_ingress_verifier::{
 };
 
 // ── Handler decorators + config-driven assembly ───────────────────────────────
-pub use crate::api::config::{FeatureRegistryExt, HandlerFactory};
+pub use crate::api::config::{FeatureHandlerBridge, HandlerFactory};
 pub use edge_dispatch::{
     Cache, CacheAsideHandler, CacheAsideResponse, EventEmittingHandler, FallbackHandler,
     FallbackPolicy, MemoryCache, OptionalHandler, TimeoutHandler, TimeoutPolicy,

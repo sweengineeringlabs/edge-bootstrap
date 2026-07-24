@@ -12,8 +12,7 @@
 
 mod api;
 mod core;
-mod gateway;
 mod saf;
 mod spi;
 
-pub use crate::gateway::*;
+pub use crate::saf::*;
