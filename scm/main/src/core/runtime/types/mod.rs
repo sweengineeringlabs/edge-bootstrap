@@ -1,7 +1,7 @@
 //! Runtime SAF-facing factory types — behavior-bearing, not port contracts.
 //!
 //! `Runtime`, `RuntimeBuilder`, `ServerConfigLoader`, and `ServerMonitor` are
-//! defined here (not in `swe-edge-bootstrap-runtime-port`) because their real
+//! defined here (not in `swe-edge-bootstrap-runtime`) because their real
 //! methods are implemented across this file, `runtime_builder_serve.rs`, and
 //! `saf::bootstrap_svc` — all within this crate. Rust's orphan rules require
 //! a type and every inherent `impl` of it to share one crate, so these

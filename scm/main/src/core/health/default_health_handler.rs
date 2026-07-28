@@ -8,8 +8,8 @@ use swe_edge_ingress_http::{
     HttpIngressError, HttpMethod, HttpRequest, HttpResponse, InboundRequest,
 };
 
-use swe_edge_bootstrap_health_port::HealthHandler;
-use swe_edge_bootstrap_runtime_port::RuntimeManager;
+use swe_edge_bootstrap_health::HealthHandler;
+use swe_edge_bootstrap_runtime::RuntimeManager;
 
 /// HTTP handler that aggregates health from all runtime components.
 ///
@@ -30,7 +30,11 @@ impl DefaultHealthHandler {
     }
 }
 
-impl HealthHandler for DefaultHealthHandler {}
+impl HealthHandler for DefaultHealthHandler {
+    fn health(&self) -> BoxFuture<'_, swe_edge_bootstrap_runtime::RuntimeHealth> {
+        self.manager.health()
+    }
+}
 
 impl HttpIngress for DefaultHealthHandler {
     fn handle(
@@ -86,14 +90,14 @@ impl HttpIngress for DefaultHealthHandler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use swe_edge_bootstrap_runtime_port::{ComponentHealth, RuntimeHealth, RuntimeStatus};
+    use swe_edge_bootstrap_runtime::{ComponentHealth, RuntimeHealth, RuntimeStatus};
 
     struct AlwaysHealthyManager;
     impl RuntimeManager for AlwaysHealthyManager {
-        fn start(&self) -> BoxFuture<'_, swe_edge_bootstrap_runtime_port::RuntimeResult<()>> {
+        fn start(&self) -> BoxFuture<'_, swe_edge_bootstrap_runtime::RuntimeResult<()>> {
             Box::pin(async { Ok(()) })
         }
-        fn shutdown(&self) -> BoxFuture<'_, swe_edge_bootstrap_runtime_port::RuntimeResult<()>> {
+        fn shutdown(&self) -> BoxFuture<'_, swe_edge_bootstrap_runtime::RuntimeResult<()>> {
             Box::pin(async { Ok(()) })
         }
         fn health(&self) -> BoxFuture<'_, RuntimeHealth> {
@@ -109,10 +113,10 @@ mod tests {
 
     struct DegradedManager;
     impl RuntimeManager for DegradedManager {
-        fn start(&self) -> BoxFuture<'_, swe_edge_bootstrap_runtime_port::RuntimeResult<()>> {
+        fn start(&self) -> BoxFuture<'_, swe_edge_bootstrap_runtime::RuntimeResult<()>> {
             Box::pin(async { Ok(()) })
         }
-        fn shutdown(&self) -> BoxFuture<'_, swe_edge_bootstrap_runtime_port::RuntimeResult<()>> {
+        fn shutdown(&self) -> BoxFuture<'_, swe_edge_bootstrap_runtime::RuntimeResult<()>> {
             Box::pin(async { Ok(()) })
         }
         fn health(&self) -> BoxFuture<'_, RuntimeHealth> {
@@ -226,5 +230,13 @@ mod tests {
     fn test_new_stores_custom_path() {
         let h = DefaultHealthHandler::new(Arc::new(AlwaysHealthyManager), "/livez");
         assert_eq!(h.path, "/livez");
+    }
+
+    #[tokio::test]
+    async fn test_health_delegates_to_manager() {
+        let h = degraded_handler();
+        let health = h.health().await;
+        assert_eq!(health.status, RuntimeStatus::Degraded);
+        assert_eq!(health.uptime_secs, 10);
     }
 }

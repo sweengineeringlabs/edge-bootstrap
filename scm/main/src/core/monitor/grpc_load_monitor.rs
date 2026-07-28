@@ -7,7 +7,7 @@ use swe_edge_ingress_grpc::{
     StreamRequest, StreamResponse, UnaryRequest,
 };
 
-use swe_edge_bootstrap_monitor_port::SharedCounters;
+use swe_edge_bootstrap_monitor::SharedCounters;
 
 /// Wraps a `GrpcIngress` handler; records load metrics on every call.
 pub(crate) struct GrpcLoadMonitor {
@@ -21,7 +21,7 @@ impl GrpcLoadMonitor {
     }
 }
 
-impl swe_edge_bootstrap_monitor_port::GrpcLoadMonitor for GrpcLoadMonitor {}
+impl swe_edge_bootstrap_monitor::GrpcLoadMonitor for GrpcLoadMonitor {}
 
 impl GrpcIngress for GrpcLoadMonitor {
     fn handle_unary(
@@ -65,7 +65,7 @@ impl GrpcIngress for GrpcLoadMonitor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use swe_edge_bootstrap_monitor_port::TrafficCounters;
+    use swe_edge_bootstrap_monitor::TrafficCounters;
     use std::sync::Arc;
     use swe_edge_ingress_grpc::GrpcHealthCheck;
     use swe_observ_metrics::create_local_metrics_backend;

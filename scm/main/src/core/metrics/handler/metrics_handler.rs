@@ -11,7 +11,7 @@ use swe_edge_ingress_http::{
 };
 use swe_observ_metrics::{MetricType, MetricsProvider};
 
-use swe_edge_bootstrap_monitor_port::SharedCounters;
+use swe_edge_bootstrap_monitor::SharedCounters;
 
 /// Serves the Prometheus text exposition endpoint.
 ///
@@ -57,7 +57,17 @@ impl MetricsHandler {
     }
 }
 
-impl swe_edge_bootstrap_metrics_port::traits::metrics_handler::MetricsHandler for MetricsHandler {}
+impl swe_edge_bootstrap_metrics::traits::metrics_handler::MetricsHandler for MetricsHandler {}
+
+impl swe_edge_bootstrap_metrics::MetricsExporter for MetricsHandler {
+    fn counters(&self) -> &SharedCounters {
+        &self.counters
+    }
+
+    fn path(&self) -> &str {
+        &self.path
+    }
+}
 
 impl HttpIngress for MetricsHandler {
     fn handle(
@@ -111,7 +121,7 @@ impl HttpIngress for MetricsHandler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use swe_edge_bootstrap_monitor_port::TrafficCounters;
+    use swe_edge_bootstrap_monitor::TrafficCounters;
     use std::sync::Arc;
     use swe_observ_metrics::create_local_metrics_backend;
 
@@ -208,5 +218,21 @@ mod tests {
         let counters = Arc::new(TrafficCounters::new(provider));
         let h = MetricsHandler::new(counters, "/custom");
         assert_eq!(h.path, "/custom");
+    }
+
+    #[test]
+    fn test_metrics_exporter_path_matches_configured_path() {
+        use swe_edge_bootstrap_metrics::MetricsExporter;
+        let h = handler_with_data();
+        assert_eq!(h.path(), "/metrics");
+    }
+
+    #[test]
+    fn test_metrics_exporter_counters_is_same_instance() {
+        use swe_edge_bootstrap_metrics::MetricsExporter;
+        let provider = Arc::new(create_local_metrics_backend());
+        let counters = Arc::new(TrafficCounters::new(provider));
+        let h = MetricsHandler::new(Arc::clone(&counters), "/metrics");
+        assert!(std::sync::Arc::ptr_eq(h.counters(), &counters));
     }
 }

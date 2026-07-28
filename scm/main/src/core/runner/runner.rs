@@ -2,8 +2,8 @@
 
 use std::time::Duration;
 
-use swe_edge_bootstrap_runtime_port::RuntimeManager;
-use swe_edge_bootstrap_runtime_port::{RuntimeError, RuntimeResult};
+use swe_edge_bootstrap_runtime::RuntimeManager;
+use swe_edge_bootstrap_runtime::{RuntimeError, RuntimeResult};
 
 /// Zero-size orchestrator for the start → await-signal → shutdown cycle.
 ///
@@ -43,7 +43,7 @@ impl DaemonRunner {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use swe_edge_bootstrap_runtime_port::{RuntimeHealth, RuntimeStatus};
+    use swe_edge_bootstrap_runtime::{RuntimeHealth, RuntimeStatus};
     use futures::future::BoxFuture;
 
     struct DaemonRunnerOkManager;

@@ -18,7 +18,7 @@ pub(crate) struct MetricsLifecycleMonitor {
     provider: Arc<dyn MetricsProvider>,
 }
 
-impl swe_edge_bootstrap_monitor_port::LifecycleObserver for MetricsLifecycleMonitor {}
+impl swe_edge_bootstrap_monitor::LifecycleObserver for MetricsLifecycleMonitor {}
 
 impl MetricsLifecycleMonitor {
     pub(crate) fn new(

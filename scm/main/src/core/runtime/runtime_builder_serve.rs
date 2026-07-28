@@ -26,10 +26,10 @@ use crate::core::monitor::{BackgroundSampler, GrpcLoadMonitor, HttpLoadMonitor};
 use crate::core::runner::DaemonRunner;
 use crate::core::runtime::manager::DefaultRuntimeManager;
 use crate::core::RuntimeBuilder;
-use swe_edge_bootstrap_config_port::ConfigLoader;
-use swe_edge_bootstrap_ingress_port::Ingress;
-use swe_edge_bootstrap_monitor_port::{SharedCounters, TrafficCounters};
-use swe_edge_bootstrap_runtime_port::{RuntimeError, RuntimeResult};
+use swe_edge_bootstrap_config::ConfigLoader;
+use swe_edge_bootstrap_ingress::Ingress;
+use swe_edge_bootstrap_monitor::{SharedCounters, TrafficCounters};
+use swe_edge_bootstrap_runtime::{RuntimeError, RuntimeResult};
 use swe_observ_metrics::create_local_metrics_backend;
 
 const DEFAULT_APP_NAME: &str = "swe-edge";
@@ -57,7 +57,7 @@ impl RuntimeBuilder {
                 .as_ref()
                 .or_else(|| config.observability.as_ref().map(|o| &o.tracing));
             if let Some(cfg) = tracing_cfg {
-                swe_edge_bootstrap_runtime_port::TracingInitializer::init(cfg);
+                swe_edge_bootstrap_runtime::TracingInitializer::init(cfg);
             }
         }
 
@@ -344,7 +344,7 @@ impl RuntimeBuilderServe {
 #[cfg(test)]
 mod tests {
     use crate::core::Runtime;
-    use swe_edge_bootstrap_runtime_port::RuntimeError;
+    use swe_edge_bootstrap_runtime::RuntimeError;
 
     /// @covers: serve
     #[test]

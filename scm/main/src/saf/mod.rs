@@ -3,16 +3,16 @@
 mod bootstrap_svc;
 
 pub use crate::core::{Runtime, RuntimeBuilder, ServerConfigLoader, ServerMonitor};
-pub use swe_edge_bootstrap_config_port::ConfigError;
-pub use swe_edge_bootstrap_config_port::ConfigLoader;
-pub use swe_edge_bootstrap_egress_port::Egress;
-pub use swe_edge_bootstrap_health_port::HealthHandler;
-pub use swe_edge_bootstrap_ingress_port::Ingress;
-pub use swe_edge_bootstrap_runtime_port::ComponentHealth;
-pub use swe_edge_bootstrap_runtime_port::RuntimeManager;
-pub use swe_edge_bootstrap_runtime_port::ServiceRegistry;
-pub use swe_edge_bootstrap_runtime_port::{RuntimeConfig, RuntimeHealth, RuntimeStatus};
-pub use swe_edge_bootstrap_runtime_port::{RuntimeError, RuntimeResult};
+pub use swe_edge_bootstrap_config::ConfigError;
+pub use swe_edge_bootstrap_config::ConfigLoader;
+pub use swe_edge_bootstrap_egress::Egress;
+pub use swe_edge_bootstrap_health::HealthHandler;
+pub use swe_edge_bootstrap_ingress::Ingress;
+pub use swe_edge_bootstrap_runtime::ComponentHealth;
+pub use swe_edge_bootstrap_runtime::RuntimeManager;
+pub use swe_edge_bootstrap_runtime::ServiceRegistry;
+pub use swe_edge_bootstrap_runtime::{RuntimeConfig, RuntimeHealth, RuntimeStatus};
+pub use swe_edge_bootstrap_runtime::{RuntimeError, RuntimeResult};
 
 // ── Auth / TLS ────────────────────────────────────────────────────────────────
 pub use edge_security_runtime_tls::PemTlsConfig;
@@ -24,7 +24,7 @@ pub use swe_edge_ingress_verifier::{
 };
 
 // ── Handler decorators + config-driven assembly ───────────────────────────────
-pub use swe_edge_bootstrap_config_port::{FeatureHandlerBridge, HandlerFactory};
+pub use swe_edge_bootstrap_config::{FeatureHandlerBridge, HandlerFactory};
 pub use edge_dispatch::{
     Cache, CacheAsideHandler, CacheAsideResponse, EventEmittingHandler, FallbackHandler,
     FallbackPolicy, MemoryCache, OptionalHandler, TimeoutHandler, TimeoutPolicy,
@@ -51,13 +51,13 @@ pub use swe_edge_egress_http::{HttpEgress, HttpEgressError, HttpEgressResult, Ht
 pub use edge_proxy::{HealthResponse, LifecycleMonitor, ProxySvc};
 
 // ── Load monitoring / auto-scaling ────────────────────────────────────────────
-pub use swe_edge_bootstrap_monitor_port::RingBuffer;
-pub use swe_edge_bootstrap_monitor_port::{AutoscalePolicy, MetricsConfig, SharedCounters, TrafficCounters};
+pub use swe_edge_bootstrap_monitor::RingBuffer;
+pub use swe_edge_bootstrap_monitor::{AutoscalePolicy, MetricsConfig, SharedCounters, TrafficCounters};
 pub use swe_observ_metrics::{MetricSnapshot, MetricType, MetricsProvider};
 
 // ── Observability ─────────────────────────────────────────────────────────────
 #[cfg(feature = "observability")]
-pub use swe_edge_bootstrap_runtime_port::TracingInitializer;
+pub use swe_edge_bootstrap_runtime::TracingInitializer;
 pub use swe_edge_observ_config::{ObservabilityConfig, TracingConfig, TracingFormat, TracingLevel};
 
 // ── Scheduler ─────────────────────────────────────────────────────────────────

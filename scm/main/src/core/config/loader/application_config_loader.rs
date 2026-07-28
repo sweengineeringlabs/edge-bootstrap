@@ -4,9 +4,9 @@ use std::env;
 use std::path::{Path, PathBuf};
 
 use crate::core::config::types::ConfigOverride;
-use swe_edge_bootstrap_config_port::ConfigError;
-use swe_edge_bootstrap_config_port::ConfigLoader;
-use swe_edge_bootstrap_runtime_port::RuntimeConfig;
+use swe_edge_bootstrap_config::ConfigError;
+use swe_edge_bootstrap_config::ConfigLoader;
+use swe_edge_bootstrap_runtime::RuntimeConfig;
 
 /// Refuse to read a config file larger than this — prevents accidental or
 /// deliberate memory exhaustion via an oversized TOML blob.
@@ -185,7 +185,7 @@ impl ApplicationConfigLoader {
     }
 }
 
-impl swe_edge_bootstrap_config_port::ApplicationConfigLoader for ApplicationConfigLoader {}
+impl swe_edge_bootstrap_config::ApplicationConfigLoader for ApplicationConfigLoader {}
 
 impl ConfigLoader for ApplicationConfigLoader {
     fn load(&self) -> Result<RuntimeConfig, ConfigError> {

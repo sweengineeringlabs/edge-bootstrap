@@ -17,8 +17,8 @@ use swe_edge_ingress_http::{
 };
 use swe_edge_ingress_verifier::TokenVerifier;
 
-use swe_edge_bootstrap_runtime_port::RuntimeConfig;
-use swe_edge_bootstrap_runtime_port::ServiceRegistry;
+use swe_edge_bootstrap_runtime::RuntimeConfig;
+use swe_edge_bootstrap_runtime::ServiceRegistry;
 
 /// Builder for assembling and starting an edge runtime.
 pub struct RuntimeBuilder {

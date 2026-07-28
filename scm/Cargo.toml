@@ -1,17 +1,17 @@
 [workspace]
 resolver = "2"
 members = [
-  "main/composite-port",
-  "main/config-port",
-  "main/egress-port",
-  "main/health-port",
-  "main/ingress-port",
-  "main/json-port",
-  "main/metrics-port",
-  "main/monitor-port",
-  "main/runner-port",
-  "main/runtime-port",
-  "main/validator-port",
+  "main/port/composite",
+  "main/port/config",
+  "main/port/egress",
+  "main/port/health",
+  "main/port/ingress",
+  "main/port/json",
+  "main/port/metrics",
+  "main/port/monitor",
+  "main/port/runner",
+  "main/port/runtime",
+  "main/port/validator",
 ]
 
 [workspace.package]
@@ -48,23 +48,23 @@ path = "main/src/lib.rs"
 
 [features]
 default        = []
-observability  = ["dep:tracing-subscriber", "swe-edge-observ-config/observability", "swe-edge-bootstrap-runtime-port/observability"]
-message-broker = ["dep:swe-edge-runtime-message-broker", "swe-edge-bootstrap-runtime-port/message-broker"]
-scheduler      = ["dep:swe-edge-runtime-scheduler", "swe-edge-bootstrap-runtime-port/scheduler"]
+observability  = ["dep:tracing-subscriber", "swe-edge-observ-config/observability", "swe-edge-bootstrap-runtime/observability"]
+message-broker = ["dep:swe-edge-runtime-message-broker", "swe-edge-bootstrap-runtime/message-broker"]
+scheduler      = ["dep:swe-edge-runtime-scheduler", "swe-edge-bootstrap-runtime/scheduler"]
 security       = ["dep:edge-security-runtime", "dep:edge-security-runtime-credential", "dep:edge-security-runtime-authz", "dep:edge-security-runtime-tls"]
 
 [dependencies]
-swe-edge-bootstrap-composite-port = { path = "main/composite-port" }
-swe-edge-bootstrap-config-port     = { path = "main/config-port" }
-swe-edge-bootstrap-egress-port     = { path = "main/egress-port" }
-swe-edge-bootstrap-health-port     = { path = "main/health-port" }
-swe-edge-bootstrap-ingress-port    = { path = "main/ingress-port" }
-swe-edge-bootstrap-json-port       = { path = "main/json-port" }
-swe-edge-bootstrap-metrics-port    = { path = "main/metrics-port" }
-swe-edge-bootstrap-monitor-port    = { path = "main/monitor-port" }
-swe-edge-bootstrap-runner-port     = { path = "main/runner-port" }
-swe-edge-bootstrap-runtime-port    = { path = "main/runtime-port" }
-swe-edge-bootstrap-validator-port  = { path = "main/validator-port" }
+swe-edge-bootstrap-composite = { path = "main/port/composite" }
+swe-edge-bootstrap-config     = { path = "main/port/config" }
+swe-edge-bootstrap-egress     = { path = "main/port/egress" }
+swe-edge-bootstrap-health     = { path = "main/port/health" }
+swe-edge-bootstrap-ingress    = { path = "main/port/ingress" }
+swe-edge-bootstrap-json       = { path = "main/port/json" }
+swe-edge-bootstrap-metrics    = { path = "main/port/metrics" }
+swe-edge-bootstrap-monitor    = { path = "main/port/monitor" }
+swe-edge-bootstrap-runner     = { path = "main/port/runner" }
+swe-edge-bootstrap-runtime    = { path = "main/port/runtime" }
+swe-edge-bootstrap-validator  = { path = "main/port/validator" }
 
 async-trait        = "0.1"
 dirs               = "5"

@@ -23,6 +23,31 @@ observability, lifecycle) into a single deployable process via a fluent `Runtime
 - **`LifecycleMonitor`** — wires `GrpcLoadMonitor` + `HttpLoadMonitor` + `Sampler` into a single
   observer; drives autoscale decisions and exposes a `/health` surface
 
+## Port trait relationships
+
+Each `main/port/*` crate is a standalone, implementation-free trait contract (see
+[`docs/`](docs/README.md)). Ports are not siloed — a trait in one port crate may be bounded by,
+or reference the types of, a trait in another. Expressing that at the type level (supertraits,
+trait bounds, associated types) rather than only in doc comments is what makes the dependency
+graph between ports obvious from the code itself.
+
+| Port crate    | Trait                              | Relationship                                                              | Status |
+|----------------|-------------------------------------|----------------------------------------------------------------------------|--------|
+| `validator`    | `ConfigValidator`                   | `: Validator<Target = runtime::RuntimeConfig, Error = runtime::RuntimeError>` | done |
+| `config`       | `ConfigLoader`                      | `load() -> Result<runtime::RuntimeConfig, ConfigError>`                    | done |
+| `config`       | `ApplicationConfigLoader`           | `: ConfigLoader` (intra-crate supertrait)                                  | done |
+| `metrics`      | `MetricsExporter`                   | `counters() -> &monitor::SharedCounters`                                   | done |
+| `runtime`      | `RuntimeConfig`                     | `metrics: Option<monitor::MetricsConfig>`, `autoscale: Option<monitor::AutoscalePolicy>` | done |
+| `runner`       | `Runner`                            | `type Manager: RuntimeManager` associated type — `run()` is bound to a real manager, not just `runtime::RuntimeResult` | done — no adapter yet ([#2](https://github.com/sweengineeringlabs/edge-bootstrap/issues/2)) |
+| `composite`    | `CompositeIngress`                  | `: ingress::Ingress` supertrait (composite routing is a specialization of ingress supply) | done — no adapter yet ([#2](https://github.com/sweengineeringlabs/edge-bootstrap/issues/2)) |
+| `health`       | `HealthHandler`                     | `fn health(&self) -> BoxFuture<'_, runtime::RuntimeHealth>`                | done |
+| `metrics`      | `MetricsHandler`                    | `: HttpIngress + MetricsExporter` supertrait (intra-crate)                 | done |
+| `monitor`      | `Sampler`                           | `fn counters(&self) -> &monitor::SharedCounters`                           | done |
+
+`composite::CompositeIngress` and `runner::Runner` additionally have no concrete
+implementation yet in `core/` — tracked in
+[#2](https://github.com/sweengineeringlabs/edge-bootstrap/issues/2).
+
 ## Building
 
 ```bash

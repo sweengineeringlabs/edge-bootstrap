@@ -1,6 +1,6 @@
 use std::sync::atomic::Ordering;
 
-use swe_edge_bootstrap_monitor_port::{AutoscalePolicy, SharedCounters};
+use swe_edge_bootstrap_monitor::{AutoscalePolicy, SharedCounters};
 
 /// Ticks every second: pushes derived gauges into the provider and checks
 /// autoscale thresholds.
@@ -9,7 +9,11 @@ pub(crate) struct BackgroundSampler {
     policy: Option<AutoscalePolicy>,
 }
 
-impl swe_edge_bootstrap_monitor_port::Sampler for BackgroundSampler {}
+impl swe_edge_bootstrap_monitor::Sampler for BackgroundSampler {
+    fn counters(&self) -> &SharedCounters {
+        &self.counters
+    }
+}
 
 impl BackgroundSampler {
     pub(crate) fn new(counters: SharedCounters, policy: Option<AutoscalePolicy>) -> Self {
@@ -62,7 +66,7 @@ impl BackgroundSampler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use swe_edge_bootstrap_monitor_port::TrafficCounters;
+    use swe_edge_bootstrap_monitor::TrafficCounters;
     use std::sync::Arc;
     use swe_observ_metrics::create_local_metrics_backend;
 
@@ -75,6 +79,14 @@ mod tests {
     #[test]
     fn test_background_sampler_new_does_not_panic() {
         let _s = BackgroundSampler::new(counters(), None);
+    }
+
+    #[test]
+    fn test_sampler_counters_is_same_instance() {
+        use swe_edge_bootstrap_monitor::Sampler;
+        let c = counters();
+        let s = BackgroundSampler::new(Arc::clone(&c), None);
+        assert!(Arc::ptr_eq(s.counters(), &c));
     }
 
     #[test]
