@@ -23,6 +23,15 @@ observability, lifecycle) into a single deployable process via a fluent `Runtime
 - **`LifecycleMonitor`** — wires `GrpcLoadMonitor` + `HttpLoadMonitor` + `Sampler` into a single
   observer; drives autoscale decisions and exposes a `/health` surface
 
+## Layout
+
+`main/port/*` holds the trait contracts (zero implementation); `main/adapter/src/`
+holds the one real implementation that wires them together — `core/` for the concrete
+adapters (`core/health/default_health_handler.rs`, `core/egress/default_egress.rs`,
+etc.), plus `saf/` (the fluent `RuntimeBuilder`/`ServerSvc` assembly layer) and `spi/`
+(runtime extension points). `port` and `adapter` are parallel, equally-named concepts
+under `main/`.
+
 ## Port trait relationships
 
 Each `main/port/*` crate is a standalone, implementation-free trait contract (see
@@ -45,7 +54,7 @@ graph between ports obvious from the code itself.
 | `monitor`      | `Sampler`                           | `fn counters(&self) -> &monitor::SharedCounters`                           | done |
 
 `composite::CompositeIngress` and `runner::Runner` additionally have no concrete
-implementation yet in `core/` — tracked in
+implementation yet in `main/adapter/src/core/` — tracked in
 [#2](https://github.com/sweengineeringlabs/edge-bootstrap/issues/2).
 
 ## Building

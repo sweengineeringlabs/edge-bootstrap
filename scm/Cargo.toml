@@ -44,7 +44,7 @@ service_type     = "runtime"
 
 [lib]
 name = "swe_edge_bootstrap"
-path = "main/src/lib.rs"
+path = "main/adapter/src/lib.rs"
 
 [features]
 default        = []
