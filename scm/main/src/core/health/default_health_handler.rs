@@ -8,8 +8,8 @@ use swe_edge_ingress_http::{
     HttpIngressError, HttpMethod, HttpRequest, HttpResponse, InboundRequest,
 };
 
-use crate::api::health::HealthHandler;
-use crate::api::runtime::traits::runtime_manager::RuntimeManager;
+use swe_edge_bootstrap_health_port::HealthHandler;
+use swe_edge_bootstrap_runtime_port::RuntimeManager;
 
 /// HTTP handler that aggregates health from all runtime components.
 ///
@@ -86,15 +86,14 @@ impl HttpIngress for DefaultHealthHandler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::api::runtime::types::health::{ComponentHealth, RuntimeHealth};
-    use crate::api::runtime::types::runtime_status::RuntimeStatus;
+    use swe_edge_bootstrap_runtime_port::{ComponentHealth, RuntimeHealth, RuntimeStatus};
 
     struct AlwaysHealthyManager;
     impl RuntimeManager for AlwaysHealthyManager {
-        fn start(&self) -> BoxFuture<'_, crate::api::runtime::RuntimeResult<()>> {
+        fn start(&self) -> BoxFuture<'_, swe_edge_bootstrap_runtime_port::RuntimeResult<()>> {
             Box::pin(async { Ok(()) })
         }
-        fn shutdown(&self) -> BoxFuture<'_, crate::api::runtime::RuntimeResult<()>> {
+        fn shutdown(&self) -> BoxFuture<'_, swe_edge_bootstrap_runtime_port::RuntimeResult<()>> {
             Box::pin(async { Ok(()) })
         }
         fn health(&self) -> BoxFuture<'_, RuntimeHealth> {
@@ -110,10 +109,10 @@ mod tests {
 
     struct DegradedManager;
     impl RuntimeManager for DegradedManager {
-        fn start(&self) -> BoxFuture<'_, crate::api::runtime::RuntimeResult<()>> {
+        fn start(&self) -> BoxFuture<'_, swe_edge_bootstrap_runtime_port::RuntimeResult<()>> {
             Box::pin(async { Ok(()) })
         }
-        fn shutdown(&self) -> BoxFuture<'_, crate::api::runtime::RuntimeResult<()>> {
+        fn shutdown(&self) -> BoxFuture<'_, swe_edge_bootstrap_runtime_port::RuntimeResult<()>> {
             Box::pin(async { Ok(()) })
         }
         fn health(&self) -> BoxFuture<'_, RuntimeHealth> {

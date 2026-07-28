@@ -8,9 +8,13 @@ use swe_edge_ingress_grpc::{
     StreamResponse, UnaryRequest,
 };
 
-pub(crate) use crate::api::composite::types::composite_grpc_ingress::CompositeGrpcIngress;
-
 const REFLECTION_PREFIX: &str = "/grpc.reflection.";
+
+/// Holds the primary and reflection gRPC handlers for composite routing.
+pub(crate) struct CompositeGrpcIngress {
+    primary: Arc<dyn GrpcIngress>,
+    reflection: Arc<dyn GrpcIngress>,
+}
 
 impl CompositeGrpcIngress {
     pub(crate) fn new(primary: Arc<dyn GrpcIngress>, reflection: Arc<dyn GrpcIngress>) -> Self {

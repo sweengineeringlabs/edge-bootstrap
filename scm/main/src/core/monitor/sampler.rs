@@ -1,6 +1,6 @@
 use std::sync::atomic::Ordering;
 
-use crate::api::monitor::{AutoscalePolicy, SharedCounters};
+use swe_edge_bootstrap_monitor_port::{AutoscalePolicy, SharedCounters};
 
 /// Ticks every second: pushes derived gauges into the provider and checks
 /// autoscale thresholds.
@@ -9,7 +9,7 @@ pub(crate) struct BackgroundSampler {
     policy: Option<AutoscalePolicy>,
 }
 
-impl crate::api::monitor::Sampler for BackgroundSampler {}
+impl swe_edge_bootstrap_monitor_port::Sampler for BackgroundSampler {}
 
 impl BackgroundSampler {
     pub(crate) fn new(counters: SharedCounters, policy: Option<AutoscalePolicy>) -> Self {
@@ -62,7 +62,7 @@ impl BackgroundSampler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::api::monitor::TrafficCounters;
+    use swe_edge_bootstrap_monitor_port::TrafficCounters;
     use std::sync::Arc;
     use swe_observ_metrics::create_local_metrics_backend;
 

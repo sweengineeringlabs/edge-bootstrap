@@ -5,7 +5,7 @@ use std::sync::Arc;
 use swe_edge_ingress_grpc::GrpcIngress;
 use swe_edge_ingress_http::HttpIngress;
 
-use crate::api::ingress::Ingress;
+use swe_edge_bootstrap_ingress_port::Ingress;
 
 pub(crate) struct DefaultIngress {
     http: Option<Arc<dyn HttpIngress>>,

@@ -6,21 +6,21 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::api::config::traits::loader::ConfigLoader;
-use crate::api::config::ConfigError;
-use crate::api::egress::Egress;
-use crate::api::ingress::Ingress;
-use crate::api::runtime::Runtime;
-use crate::api::runtime::RuntimeConfig;
-use crate::api::runtime::ServerConfigLoader;
-use crate::api::runtime::ServerMonitor;
-use crate::api::runtime::{RuntimeError, RuntimeResult};
-use crate::api::validator::Validator;
 use crate::core::egress::DefaultEgress;
 use crate::core::ingress::DefaultIngress;
 use crate::core::runner::DaemonRunner;
 use crate::core::validator::ConfigValidator;
 use crate::core::ApplicationConfigLoader;
+use crate::core::{Runtime, ServerConfigLoader, ServerMonitor};
+use swe_edge_bootstrap_config_port::ConfigError;
+use swe_edge_bootstrap_config_port::ConfigLoader;
+use swe_edge_bootstrap_egress_port::Egress;
+use swe_edge_bootstrap_health_port::HealthHandler;
+use swe_edge_bootstrap_ingress_port::Ingress;
+use swe_edge_bootstrap_runtime_port::RuntimeConfig;
+use swe_edge_bootstrap_runtime_port::RuntimeManager;
+use swe_edge_bootstrap_runtime_port::{RuntimeError, RuntimeResult};
+use swe_edge_bootstrap_validator_port::Validator;
 use edge_proxy::LifecycleMonitor;
 use swe_observ_metrics::MetricsProvider;
 
@@ -170,9 +170,7 @@ impl ServerMonitor {
     /// // Wire `health` into your HttpIngress composite.
     /// # }
     /// ```
-    pub fn health_handler(
-        manager: Arc<dyn crate::api::runtime::traits::runtime_manager::RuntimeManager>,
-    ) -> impl crate::api::health::HealthHandler {
+    pub fn health_handler(manager: Arc<dyn RuntimeManager>) -> impl HealthHandler {
         crate::core::health::DefaultHealthHandler::new(manager, "/health")
     }
 }
@@ -187,7 +185,7 @@ impl Runtime {
         ingress: Arc<dyn Ingress>,
         egress: Arc<dyn Egress>,
         lifecycle: Arc<dyn LifecycleMonitor>,
-    ) -> impl crate::api::runtime::traits::runtime_manager::RuntimeManager {
+    ) -> impl RuntimeManager {
         let mgr = crate::core::DefaultRuntimeManager::new(config, ingress, egress, lifecycle);
         mgr
     }
@@ -324,7 +322,7 @@ impl Runtime {
     /// Construct an egress adapter holding an HTTP-only outbound client.
     pub fn http_egress(
         http: Arc<dyn swe_edge_egress_http::HttpEgress>,
-    ) -> impl crate::api::egress::Egress {
+    ) -> impl Egress {
         let egress = DefaultEgress::new_http(http);
         egress
     }
@@ -333,29 +331,25 @@ impl Runtime {
     pub fn http_grpc_egress(
         http: Arc<dyn swe_edge_egress_http::HttpEgress>,
         grpc: Arc<dyn swe_edge_egress_grpc::GrpcEgress>,
-    ) -> impl crate::api::egress::Egress {
+    ) -> impl Egress {
         let egress = DefaultEgress::new_http(http).with_grpc(grpc);
         egress
     }
 
     /// Construct an ingress adapter with no transports (add via `with_http`/`with_grpc` on serve).
-    pub fn empty_ingress() -> impl crate::api::ingress::Ingress {
+    pub fn empty_ingress() -> impl Ingress {
         let ingress = DefaultIngress::empty();
         ingress
     }
 
     /// Construct an ingress adapter bound to an HTTP transport.
-    pub fn http_ingress(
-        http: Arc<dyn swe_edge_ingress_http::HttpIngress>,
-    ) -> impl crate::api::ingress::Ingress {
+    pub fn http_ingress(http: Arc<dyn swe_edge_ingress_http::HttpIngress>) -> impl Ingress {
         let ingress = DefaultIngress::new_http(http);
         ingress
     }
 
     /// Construct an ingress adapter bound to a gRPC transport.
-    pub fn grpc_ingress(
-        grpc: Arc<dyn swe_edge_ingress_grpc::GrpcIngress>,
-    ) -> impl crate::api::ingress::Ingress {
+    pub fn grpc_ingress(grpc: Arc<dyn swe_edge_ingress_grpc::GrpcIngress>) -> impl Ingress {
         let ingress = DefaultIngress::new_grpc(grpc);
         ingress
     }
@@ -364,7 +358,7 @@ impl Runtime {
     pub fn http_grpc_ingress(
         http: Arc<dyn swe_edge_ingress_http::HttpIngress>,
         grpc: Arc<dyn swe_edge_ingress_grpc::GrpcIngress>,
-    ) -> impl crate::api::ingress::Ingress {
+    ) -> impl Ingress {
         let ingress = DefaultIngress::new_http(http).with_grpc(grpc);
         ingress
     }

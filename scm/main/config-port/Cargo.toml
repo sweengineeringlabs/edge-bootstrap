@@ -1,0 +1,39 @@
+[package]
+name                   = "swe-edge-bootstrap-config-port"
+version.workspace      = true
+edition.workspace      = true
+license.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+repository.workspace   = true
+description = "swe-edge-bootstrap — layered config loading ports (traits + errors, zero implementation)"
+keywords    = ["config", "ports"]
+categories  = ["network-programming"]
+
+[package.metadata.arch]
+application_type = "port"
+service_type     = "port"
+
+[lib]
+name = "swe_edge_bootstrap_config_port"
+path = "src/lib.rs"
+
+[dependencies]
+edge-dispatch = { package = "edge-dispatcher", git = "https://github.com/sweengineeringlabs/edge-dispatcher.git", tag = "v0.11.2" }
+edge-domain   = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.18.0", package = "edge-application", features = ["full"] }
+serde         = { version = "1.0", features = ["derive"] }
+swe-edge-bootstrap-runtime-port = { path = "../runtime-port" }
+swe-edge-configbuilder = { git = "https://github.com/sweengineeringlabs/edge-configbuilder.git", tag = "v0.4.2" }
+thiserror     = "2"
+
+[dev-dependencies]
+async-trait               = "0.1"
+edge-application-handler  = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.18.0" }
+
+[lints.rust]
+unsafe_code  = "deny"
+missing_docs = "warn"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"

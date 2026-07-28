@@ -10,7 +10,6 @@
     missing_docs
 )]
 
-mod api;
 mod core;
 mod saf;
 mod spi;

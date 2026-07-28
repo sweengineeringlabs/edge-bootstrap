@@ -2,8 +2,8 @@
 
 use std::time::Duration;
 
-use crate::api::runtime::traits::runtime_manager::RuntimeManager;
-use crate::api::runtime::{RuntimeError, RuntimeResult};
+use swe_edge_bootstrap_runtime_port::RuntimeManager;
+use swe_edge_bootstrap_runtime_port::{RuntimeError, RuntimeResult};
 
 /// Zero-size orchestrator for the start → await-signal → shutdown cycle.
 ///
@@ -15,7 +15,7 @@ impl DaemonRunner {
     /// Start `manager`, await `signal`, then shut down within `shutdown_timeout_secs`.
     ///
     /// Consumers should use [`crate::saf::daemon::run`] or
-    /// [`RuntimeBuilder::serve`](crate::api::runtime::RuntimeBuilder).
+    /// [`RuntimeBuilder::serve`](crate::core::RuntimeBuilder).
     pub(crate) async fn run_until_signal<F>(
         manager: impl RuntimeManager,
         shutdown_timeout_secs: u64,
@@ -43,7 +43,7 @@ impl DaemonRunner {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::api::runtime::{RuntimeHealth, RuntimeStatus};
+    use swe_edge_bootstrap_runtime_port::{RuntimeHealth, RuntimeStatus};
     use futures::future::BoxFuture;
 
     struct DaemonRunnerOkManager;

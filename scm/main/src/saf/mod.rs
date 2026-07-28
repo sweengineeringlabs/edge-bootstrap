@@ -2,18 +2,17 @@
 
 mod bootstrap_svc;
 
-pub use crate::api::config::traits::loader::ConfigLoader;
-pub use crate::api::config::ConfigError;
-pub use crate::api::egress::Egress;
-pub use crate::api::health::HealthHandler;
-pub use crate::api::ingress::Ingress;
-pub use crate::api::runtime::traits::runtime_manager::RuntimeManager;
-pub use crate::api::runtime::types::health::ComponentHealth;
-pub use crate::api::runtime::ServiceRegistry;
-pub use crate::api::runtime::{Runtime, RuntimeBuilder};
-pub use crate::api::runtime::{RuntimeConfig, RuntimeHealth, RuntimeStatus};
-pub use crate::api::runtime::{RuntimeError, RuntimeResult};
-pub use crate::api::runtime::{ServerConfigLoader, ServerMonitor};
+pub use crate::core::{Runtime, RuntimeBuilder, ServerConfigLoader, ServerMonitor};
+pub use swe_edge_bootstrap_config_port::ConfigError;
+pub use swe_edge_bootstrap_config_port::ConfigLoader;
+pub use swe_edge_bootstrap_egress_port::Egress;
+pub use swe_edge_bootstrap_health_port::HealthHandler;
+pub use swe_edge_bootstrap_ingress_port::Ingress;
+pub use swe_edge_bootstrap_runtime_port::ComponentHealth;
+pub use swe_edge_bootstrap_runtime_port::RuntimeManager;
+pub use swe_edge_bootstrap_runtime_port::ServiceRegistry;
+pub use swe_edge_bootstrap_runtime_port::{RuntimeConfig, RuntimeHealth, RuntimeStatus};
+pub use swe_edge_bootstrap_runtime_port::{RuntimeError, RuntimeResult};
 
 // ── Auth / TLS ────────────────────────────────────────────────────────────────
 pub use edge_security_runtime_tls::PemTlsConfig;
@@ -25,7 +24,7 @@ pub use swe_edge_ingress_verifier::{
 };
 
 // ── Handler decorators + config-driven assembly ───────────────────────────────
-pub use crate::api::config::{FeatureHandlerBridge, HandlerFactory};
+pub use swe_edge_bootstrap_config_port::{FeatureHandlerBridge, HandlerFactory};
 pub use edge_dispatch::{
     Cache, CacheAsideHandler, CacheAsideResponse, EventEmittingHandler, FallbackHandler,
     FallbackPolicy, MemoryCache, OptionalHandler, TimeoutHandler, TimeoutPolicy,
@@ -52,13 +51,13 @@ pub use swe_edge_egress_http::{HttpEgress, HttpEgressError, HttpEgressResult, Ht
 pub use edge_proxy::{HealthResponse, LifecycleMonitor, ProxySvc};
 
 // ── Load monitoring / auto-scaling ────────────────────────────────────────────
-pub use crate::api::monitor::types::ring_buffer::RingBuffer;
-pub use crate::api::monitor::{AutoscalePolicy, MetricsConfig, SharedCounters, TrafficCounters};
+pub use swe_edge_bootstrap_monitor_port::RingBuffer;
+pub use swe_edge_bootstrap_monitor_port::{AutoscalePolicy, MetricsConfig, SharedCounters, TrafficCounters};
 pub use swe_observ_metrics::{MetricSnapshot, MetricType, MetricsProvider};
 
 // ── Observability ─────────────────────────────────────────────────────────────
 #[cfg(feature = "observability")]
-pub use crate::api::runtime::TracingInitializer;
+pub use swe_edge_bootstrap_runtime_port::TracingInitializer;
 pub use swe_edge_observ_config::{ObservabilityConfig, TracingConfig, TracingFormat, TracingLevel};
 
 // ── Scheduler ─────────────────────────────────────────────────────────────────

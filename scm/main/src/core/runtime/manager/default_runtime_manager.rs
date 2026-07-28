@@ -9,12 +9,12 @@ use edge_proxy::{
     StartBackgroundTasksRequest,
 };
 
-use crate::api::egress::Egress;
-use crate::api::ingress::Ingress;
-use crate::api::runtime::traits::runtime_manager::RuntimeManager;
-use crate::api::runtime::types::health::ComponentHealth;
-use crate::api::runtime::{RuntimeConfig, RuntimeHealth, RuntimeStatus};
-use crate::api::runtime::{RuntimeError, RuntimeResult};
+use swe_edge_bootstrap_egress_port::Egress;
+use swe_edge_bootstrap_ingress_port::Ingress;
+use swe_edge_bootstrap_runtime_port::ComponentHealth;
+use swe_edge_bootstrap_runtime_port::RuntimeManager;
+use swe_edge_bootstrap_runtime_port::{RuntimeConfig, RuntimeHealth, RuntimeStatus};
+use swe_edge_bootstrap_runtime_port::{RuntimeError, RuntimeResult};
 
 pub(crate) struct DefaultRuntimeManager {
     config: RuntimeConfig,

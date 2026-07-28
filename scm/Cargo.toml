@@ -1,21 +1,45 @@
-[package]
-name         = "swe-edge-bootstrap"
+[workspace]
+resolver = "2"
+members = [
+  "main/composite-port",
+  "main/config-port",
+  "main/egress-port",
+  "main/health-port",
+  "main/ingress-port",
+  "main/json-port",
+  "main/metrics-port",
+  "main/monitor-port",
+  "main/runner-port",
+  "main/runtime-port",
+  "main/validator-port",
+]
+
+[workspace.package]
 version      = "0.1.0"
 edition      = "2021"
 license      = "MIT OR Apache-2.0"
 rust-version = "1.95"
 authors      = ["SWE Engineering Labs"]
 repository   = "https://github.com/sweengineeringlabs/edge-bootstrap"
+
+[package]
+name         = "swe-edge-bootstrap"
+version.workspace      = true
+edition.workspace      = true
+license.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+repository.workspace   = true
 description  = "edge — process-level assembler: wires ingress + proxy + domain + egress, lifecycle, and systemd notify."
 keywords     = ["daemon", "runtime", "lifecycle", "systemd", "swe"]
 categories   = ["network-programming"]
 
 [package.metadata.arch]
-application_type = "lib"
+application_type = "gateway"
 service_type     = "runtime"
 
 [package.metadata.struct-engine]
-application_type = "lib"
+application_type = "gateway"
 service_type     = "runtime"
 
 [lib]
@@ -24,12 +48,24 @@ path = "main/src/lib.rs"
 
 [features]
 default        = []
-observability  = ["dep:tracing-subscriber", "swe-edge-observ-config/observability"]
-message-broker = ["dep:swe-edge-runtime-message-broker"]
-scheduler      = ["dep:swe-edge-runtime-scheduler"]
+observability  = ["dep:tracing-subscriber", "swe-edge-observ-config/observability", "swe-edge-bootstrap-runtime-port/observability"]
+message-broker = ["dep:swe-edge-runtime-message-broker", "swe-edge-bootstrap-runtime-port/message-broker"]
+scheduler      = ["dep:swe-edge-runtime-scheduler", "swe-edge-bootstrap-runtime-port/scheduler"]
 security       = ["dep:edge-security-runtime", "dep:edge-security-runtime-credential", "dep:edge-security-runtime-authz", "dep:edge-security-runtime-tls"]
 
 [dependencies]
+swe-edge-bootstrap-composite-port = { path = "main/composite-port" }
+swe-edge-bootstrap-config-port     = { path = "main/config-port" }
+swe-edge-bootstrap-egress-port     = { path = "main/egress-port" }
+swe-edge-bootstrap-health-port     = { path = "main/health-port" }
+swe-edge-bootstrap-ingress-port    = { path = "main/ingress-port" }
+swe-edge-bootstrap-json-port       = { path = "main/json-port" }
+swe-edge-bootstrap-metrics-port    = { path = "main/metrics-port" }
+swe-edge-bootstrap-monitor-port    = { path = "main/monitor-port" }
+swe-edge-bootstrap-runner-port     = { path = "main/runner-port" }
+swe-edge-bootstrap-runtime-port    = { path = "main/runtime-port" }
+swe-edge-bootstrap-validator-port  = { path = "main/validator-port" }
+
 async-trait        = "0.1"
 dirs               = "5"
 futures            = "0.3"

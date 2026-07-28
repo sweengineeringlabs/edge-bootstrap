@@ -18,11 +18,6 @@ use swe_edge_runtime_grpc::{
 use swe_edge_runtime_http::{AxumHttpServer, HttpServer, ServeWithShutdownRequest};
 use tokio::sync::oneshot;
 
-use crate::api::config::traits::loader::ConfigLoader;
-use crate::api::ingress::Ingress;
-use crate::api::monitor::{SharedCounters, TrafficCounters};
-use crate::api::runtime::RuntimeBuilder;
-use crate::api::runtime::{RuntimeError, RuntimeResult};
 use crate::core::config::loader::ApplicationConfigLoader;
 use crate::core::egress::DefaultEgress;
 use crate::core::ingress::DefaultIngress;
@@ -30,6 +25,11 @@ use crate::core::metrics::handler::MetricsHandler;
 use crate::core::monitor::{BackgroundSampler, GrpcLoadMonitor, HttpLoadMonitor};
 use crate::core::runner::DaemonRunner;
 use crate::core::runtime::manager::DefaultRuntimeManager;
+use crate::core::RuntimeBuilder;
+use swe_edge_bootstrap_config_port::ConfigLoader;
+use swe_edge_bootstrap_ingress_port::Ingress;
+use swe_edge_bootstrap_monitor_port::{SharedCounters, TrafficCounters};
+use swe_edge_bootstrap_runtime_port::{RuntimeError, RuntimeResult};
 use swe_observ_metrics::create_local_metrics_backend;
 
 const DEFAULT_APP_NAME: &str = "swe-edge";
@@ -57,7 +57,7 @@ impl RuntimeBuilder {
                 .as_ref()
                 .or_else(|| config.observability.as_ref().map(|o| &o.tracing));
             if let Some(cfg) = tracing_cfg {
-                crate::api::runtime::TracingInitializer::init(cfg);
+                swe_edge_bootstrap_runtime_port::TracingInitializer::init(cfg);
             }
         }
 
@@ -343,8 +343,8 @@ impl RuntimeBuilderServe {
 
 #[cfg(test)]
 mod tests {
-    use crate::api::runtime::Runtime;
-    use crate::api::runtime::RuntimeError;
+    use crate::core::Runtime;
+    use swe_edge_bootstrap_runtime_port::RuntimeError;
 
     /// @covers: serve
     #[test]

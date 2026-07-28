@@ -5,7 +5,7 @@ use std::sync::Arc;
 use swe_edge_egress_grpc::GrpcEgress;
 use swe_edge_egress_http::HttpEgress;
 
-use crate::api::egress::Egress;
+use swe_edge_bootstrap_egress_port::Egress;
 
 pub(crate) struct DefaultEgress {
     http: Arc<dyn HttpEgress>,

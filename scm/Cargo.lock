@@ -3646,6 +3646,17 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "swe-edge-bootstrap-composite-port",
+ "swe-edge-bootstrap-config-port",
+ "swe-edge-bootstrap-egress-port",
+ "swe-edge-bootstrap-health-port",
+ "swe-edge-bootstrap-ingress-port",
+ "swe-edge-bootstrap-json-port",
+ "swe-edge-bootstrap-metrics-port",
+ "swe-edge-bootstrap-monitor-port",
+ "swe-edge-bootstrap-runner-port",
+ "swe-edge-bootstrap-runtime-port",
+ "swe-edge-bootstrap-validator-port",
  "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.4.2)",
  "swe-edge-egress-grpc-transport",
  "swe-edge-ingress-grpc-reflection",
@@ -3663,6 +3674,109 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "swe-edge-bootstrap-composite-port"
+version = "0.1.0"
+dependencies = [
+ "swe-edge-ingress-grpc-transport",
+]
+
+[[package]]
+name = "swe-edge-bootstrap-config-port"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "edge-application 0.10.0 (git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.18.0)",
+ "edge-application-handler 0.2.0",
+ "edge-dispatcher 0.10.0",
+ "serde",
+ "swe-edge-bootstrap-runtime-port",
+ "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.4.2)",
+ "thiserror 2.0.19",
+]
+
+[[package]]
+name = "swe-edge-bootstrap-egress-port"
+version = "0.1.0"
+dependencies = [
+ "edge-transport-http-egress-transport",
+ "swe-edge-egress-grpc-transport",
+]
+
+[[package]]
+name = "swe-edge-bootstrap-health-port"
+version = "0.1.0"
+dependencies = [
+ "edge-transport-http-ingress-transport",
+]
+
+[[package]]
+name = "swe-edge-bootstrap-ingress-port"
+version = "0.1.0"
+dependencies = [
+ "edge-transport-http-ingress-transport",
+ "swe-edge-ingress-grpc-transport",
+]
+
+[[package]]
+name = "swe-edge-bootstrap-json-port"
+version = "0.1.0"
+dependencies = [
+ "edge-transport-http-ingress-transport",
+ "swe-edge-ingress-grpc-transport",
+]
+
+[[package]]
+name = "swe-edge-bootstrap-metrics-port"
+version = "0.1.0"
+dependencies = [
+ "edge-transport-http-ingress-transport",
+ "swe-edge-bootstrap-monitor-port",
+]
+
+[[package]]
+name = "swe-edge-bootstrap-monitor-port"
+version = "0.1.0"
+dependencies = [
+ "edge-proxy",
+ "edge-transport-http-ingress-transport",
+ "parking_lot",
+ "serde",
+ "swe-edge-ingress-grpc-transport",
+ "swe-observability-metrics 0.2.0 (git+ssh://git@github.com/sweengineeringlabs/justobserv.git?tag=v0.2.9)",
+]
+
+[[package]]
+name = "swe-edge-bootstrap-runner-port"
+version = "0.1.0"
+dependencies = [
+ "swe-edge-bootstrap-runtime-port",
+]
+
+[[package]]
+name = "swe-edge-bootstrap-runtime-port"
+version = "0.1.0"
+dependencies = [
+ "edge-security-runtime-tls",
+ "edge-transport-http-egress-transport",
+ "futures",
+ "serde",
+ "swe-edge-bootstrap-monitor-port",
+ "swe-edge-egress-grpc-transport",
+ "swe-edge-ingress-verifier",
+ "swe-edge-observ-config",
+ "swe-edge-runtime-message-broker",
+ "swe-edge-runtime-scheduler",
+ "thiserror 2.0.19",
+]
+
+[[package]]
+name = "swe-edge-bootstrap-validator-port"
+version = "0.1.0"
+dependencies = [
+ "swe-edge-bootstrap-runtime-port",
 ]
 
 [[package]]
