@@ -1,0 +1,11 @@
+target/
+*.swp
+*.swo
+.DS_Store
+*.orig
+
+# Auto-generated audit output from `swe-architect arch audit --rs` —
+# timestamped reports that regenerate on every pre-commit run.
+**/docs/7-operations/compliance/packages/
+**/docs/7-operations/compliance/structural_audit_aggregate_*.json
+**/docs/7-operations/compliance/structural_audit_report_*.json

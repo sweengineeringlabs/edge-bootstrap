@@ -1,23 +1,26 @@
 //! Coverage for Ingress trait impl via Runtime ingress factory methods.
 
-use futures::future::BoxFuture;
 use std::sync::Arc;
 use swe_edge_bootstrap::{Ingress, Runtime};
 use swe_edge_ingress_http::{
-    HttpHealthCheck, HttpIngress, HttpIngressResult, HttpRequest, HttpResponse, SecurityContext,
+    HealthCheckRequest, HealthCheckResponse, HttpFuture, HttpHealthCheck, HttpIngress,
+    HttpIngressError, HttpResponse, InboundRequest,
 };
 
 struct Stub;
 impl HttpIngress for Stub {
-    fn handle(
-        &self,
-        _: HttpRequest,
-        _ctx: SecurityContext,
-    ) -> BoxFuture<'_, HttpIngressResult<HttpResponse>> {
-        Box::pin(async { Ok(HttpResponse::new(200, vec![])) })
+    fn handle(&self, _: InboundRequest) -> HttpFuture<'_, Result<HttpResponse, HttpIngressError>> {
+        HttpFuture::new(async { Ok(HttpResponse::new(200, vec![])) })
     }
-    fn health_check(&self) -> BoxFuture<'_, HttpIngressResult<HttpHealthCheck>> {
-        Box::pin(async { Ok(HttpHealthCheck::healthy()) })
+    fn health_check(
+        &self,
+        _: HealthCheckRequest,
+    ) -> HttpFuture<'_, Result<HealthCheckResponse, HttpIngressError>> {
+        HttpFuture::new(async {
+            Ok(HealthCheckResponse {
+                health: HttpHealthCheck::healthy(),
+            })
+        })
     }
 }
 

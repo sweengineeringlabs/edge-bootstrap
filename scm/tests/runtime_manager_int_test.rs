@@ -9,52 +9,73 @@ use futures::FutureExt;
 use tokio::net::TcpListener;
 use tokio::sync::oneshot;
 
-use edge_proxy::{ComponentHealth, HealthReport, HealthStatus, LifecycleError, LifecycleMonitor};
+use edge_proxy::{
+    ComponentRequest, ComponentResponse, HealthRequest, HealthResponse, HealthStatus,
+    LifecycleError, LifecycleMonitor, ShutdownRequest, StartBackgroundTasksRequest, StatusRequest,
+    StatusResponse,
+};
 use swe_edge_bootstrap::{Runtime, RuntimeConfig, RuntimeManager, RuntimeStatus};
 use swe_edge_egress_http::{
-    HttpEgress, HttpEgressResult, HttpRequest as EgressReq, HttpResponse as EgressResp,
+    ConfigRequest, ConfigResponse, HealthCheckRequest as EgressHealthCheckRequest, HttpByteStream,
+    HttpConfig, HttpEgress, HttpEgressError, HttpRequest as EgressReq, HttpResponse as EgressResp,
     HttpStreamResponse,
 };
 use swe_edge_ingress_http::{
-    AxumHttpServer, HttpHealthCheck, HttpIngress, HttpIngressError, HttpIngressResult, HttpRequest,
-    HttpResponse, HttpServer, SecurityContext,
+    HealthCheckRequest, HealthCheckResponse, HttpFuture, HttpHealthCheck, HttpIngress,
+    HttpIngressError, HttpResponse, InboundRequest,
 };
+use swe_edge_runtime_http::{AxumHttpServer, HttpServer, ServeWithListenerRequest};
 
 struct StubLifecycle;
 impl LifecycleMonitor for StubLifecycle {
-    fn health(&self) -> BoxFuture<'_, HealthReport> {
-        async move { HealthReport::from_components(vec![]) }.boxed()
+    fn health(&self, _req: HealthRequest) -> BoxFuture<'_, Result<HealthResponse, LifecycleError>> {
+        async move { Ok(HealthResponse::from_components(vec![])) }.boxed()
     }
-    fn start_background_tasks(&self) -> BoxFuture<'_, ()> {
-        async move {}.boxed()
-    }
-    fn shutdown(&self) -> BoxFuture<'_, Result<(), LifecycleError>> {
+    fn start_background_tasks(
+        &self,
+        _req: StartBackgroundTasksRequest,
+    ) -> BoxFuture<'_, Result<(), LifecycleError>> {
         async move { Ok(()) }.boxed()
     }
-    fn status(&self) -> BoxFuture<'_, HealthStatus> {
-        async move { HealthStatus::Healthy }.boxed()
+    fn shutdown(&self, _req: ShutdownRequest) -> BoxFuture<'_, Result<(), LifecycleError>> {
+        async move { Ok(()) }.boxed()
     }
-    fn component(&self, _id: &str) -> BoxFuture<'_, Option<ComponentHealth>> {
-        async move { None }.boxed()
+    fn status(&self, _req: StatusRequest) -> BoxFuture<'_, Result<StatusResponse, LifecycleError>> {
+        async move {
+            Ok(StatusResponse {
+                status: HealthStatus::Healthy,
+            })
+        }
+        .boxed()
+    }
+    fn component<'a>(
+        &'a self,
+        _req: ComponentRequest<'_>,
+    ) -> BoxFuture<'a, Result<ComponentResponse, LifecycleError>> {
+        async move { Ok(ComponentResponse { health: None }) }.boxed()
     }
 }
 
 struct StubHttpEgress;
+#[async_trait::async_trait]
 impl HttpEgress for StubHttpEgress {
-    fn send(&self, _: EgressReq) -> BoxFuture<'_, HttpEgressResult<EgressResp>> {
-        Box::pin(async { Ok(EgressResp::new(200, vec![])) })
+    async fn send(&self, _: EgressReq) -> Result<EgressResp, HttpEgressError> {
+        Ok(EgressResp::new(200, vec![]))
     }
-    fn send_stream(&self, _: EgressReq) -> BoxFuture<'_, HttpEgressResult<HttpStreamResponse>> {
-        Box::pin(async {
-            Ok(HttpStreamResponse {
-                status: 200,
-                headers: Default::default(),
-                body: Box::pin(futures::stream::empty()),
-            })
+    async fn send_stream(&self, _: EgressReq) -> Result<HttpStreamResponse, HttpEgressError> {
+        Ok(HttpStreamResponse {
+            status: 200,
+            headers: Default::default(),
+            body: HttpByteStream::new(futures::stream::empty()),
         })
     }
-    fn health_check(&self) -> BoxFuture<'_, HttpEgressResult<()>> {
-        Box::pin(async { Ok(()) })
+    async fn health_check(&self, _: EgressHealthCheckRequest) -> Result<(), HttpEgressError> {
+        Ok(())
+    }
+    fn config(&self, _: ConfigRequest) -> Result<ConfigResponse, HttpEgressError> {
+        Ok(ConfigResponse {
+            config: HttpConfig::default(),
+        })
     }
 }
 
@@ -62,32 +83,42 @@ struct EchoHandler;
 impl HttpIngress for EchoHandler {
     fn handle(
         &self,
-        req: HttpRequest,
-        _ctx: SecurityContext,
-    ) -> BoxFuture<'_, HttpIngressResult<HttpResponse>> {
-        Box::pin(async move {
+        req: InboundRequest,
+    ) -> HttpFuture<'_, Result<HttpResponse, HttpIngressError>> {
+        HttpFuture::new(async move {
+            let req = req.request;
             Ok(HttpResponse::new(
                 200,
                 format!("{} {}", req.method, req.url).into_bytes(),
             ))
         })
     }
-    fn health_check(&self) -> BoxFuture<'_, HttpIngressResult<HttpHealthCheck>> {
-        Box::pin(async { Ok(HttpHealthCheck::healthy()) })
+    fn health_check(
+        &self,
+        _: HealthCheckRequest,
+    ) -> HttpFuture<'_, Result<HealthCheckResponse, HttpIngressError>> {
+        HttpFuture::new(async {
+            Ok(HealthCheckResponse {
+                health: HttpHealthCheck::healthy(),
+            })
+        })
     }
 }
 
 struct NotFoundHandler;
 impl HttpIngress for NotFoundHandler {
-    fn handle(
-        &self,
-        _: HttpRequest,
-        _ctx: SecurityContext,
-    ) -> BoxFuture<'_, HttpIngressResult<HttpResponse>> {
-        Box::pin(async { Err(HttpIngressError::NotFound("resource gone".into())) })
+    fn handle(&self, _: InboundRequest) -> HttpFuture<'_, Result<HttpResponse, HttpIngressError>> {
+        HttpFuture::new(async { Err(HttpIngressError::NotFound("resource gone".into())) })
     }
-    fn health_check(&self) -> BoxFuture<'_, HttpIngressResult<HttpHealthCheck>> {
-        Box::pin(async { Ok(HttpHealthCheck::healthy()) })
+    fn health_check(
+        &self,
+        _: HealthCheckRequest,
+    ) -> HttpFuture<'_, Result<HealthCheckResponse, HttpIngressError>> {
+        HttpFuture::new(async {
+            Ok(HealthCheckResponse {
+                health: HttpHealthCheck::healthy(),
+            })
+        })
     }
 }
 
@@ -108,7 +139,12 @@ async fn start_daemon_stack(
         let signal = async move {
             let _ = shutdown_rx.await;
         };
-        let _ = server.serve_with_listener(listener, Box::pin(signal)).await;
+        let _ = server
+            .serve_with_listener(ServeWithListenerRequest {
+                listener,
+                shutdown: Box::pin(signal),
+            })
+            .await;
     });
     (base_url, mgr, shutdown_tx)
 }

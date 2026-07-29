@@ -1,29 +1,33 @@
 //! Coverage for Egress trait impl via Runtime::http_egress factory.
 // @allow: no_mocks_in_integration — stub impls required to exercise the public API surface
 
-use futures::future::BoxFuture;
 use std::sync::Arc;
 use swe_edge_bootstrap::{Egress, Runtime};
 use swe_edge_egress_http::{
-    HttpEgress, HttpEgressResult, HttpRequest, HttpResponse, HttpStreamResponse,
+    ConfigRequest, ConfigResponse, HealthCheckRequest, HttpByteStream, HttpConfig, HttpEgress,
+    HttpEgressError, HttpRequest, HttpResponse, HttpStreamResponse,
 };
 
 struct StubHttp;
+#[async_trait::async_trait]
 impl HttpEgress for StubHttp {
-    fn send(&self, _: HttpRequest) -> BoxFuture<'_, HttpEgressResult<HttpResponse>> {
-        Box::pin(async { Ok(HttpResponse::new(200, vec![])) })
+    async fn send(&self, _: HttpRequest) -> Result<HttpResponse, HttpEgressError> {
+        Ok(HttpResponse::new(200, vec![]))
     }
-    fn send_stream(&self, _: HttpRequest) -> BoxFuture<'_, HttpEgressResult<HttpStreamResponse>> {
-        Box::pin(async {
-            Ok(HttpStreamResponse {
-                status: 200,
-                headers: Default::default(),
-                body: Box::pin(futures::stream::empty()),
-            })
+    async fn send_stream(&self, _: HttpRequest) -> Result<HttpStreamResponse, HttpEgressError> {
+        Ok(HttpStreamResponse {
+            status: 200,
+            headers: Default::default(),
+            body: HttpByteStream::new(futures::stream::empty()),
         })
     }
-    fn health_check(&self) -> BoxFuture<'_, HttpEgressResult<()>> {
-        Box::pin(async { Ok(()) })
+    async fn health_check(&self, _: HealthCheckRequest) -> Result<(), HttpEgressError> {
+        Ok(())
+    }
+    fn config(&self, _: ConfigRequest) -> Result<ConfigResponse, HttpEgressError> {
+        Ok(ConfigResponse {
+            config: HttpConfig::default(),
+        })
     }
 }
 
