@@ -108,10 +108,11 @@ mod tests {
         }
         let c = counters();
         let m = HttpLoadMonitor::new(Arc::new(HttpLoadMonitorOk), Arc::clone(&c));
-        m.handle(InboundRequest {
-            request: HttpRequest::get("/"),
-            ctx: RequestContext::new(edge_domain::SecurityContext::unauthenticated()),
-        })
+        m.handle(InboundRequest::new(
+            HttpRequest::get("/"),
+            RequestContext::new(edge_domain::SecurityContext::unauthenticated()),
+            std::net::SocketAddr::from(([127, 0, 0, 1], 0)),
+        ))
         .await
         .unwrap();
         assert_eq!(c.requests_in_flight.load(Ordering::Relaxed), 0);

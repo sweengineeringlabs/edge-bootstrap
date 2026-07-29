@@ -134,12 +134,13 @@ mod tests {
     }
 
     fn inbound(request: HttpRequest) -> InboundRequest {
-        InboundRequest {
+        InboundRequest::new(
             request,
-            ctx: swe_edge_ingress_http::RequestContext::new(
+            swe_edge_ingress_http::RequestContext::new(
                 edge_domain::SecurityContext::unauthenticated(),
             ),
-        }
+            std::net::SocketAddr::from(([127, 0, 0, 1], 0)),
+        )
     }
 
     #[tokio::test]
@@ -208,7 +209,13 @@ mod tests {
     #[tokio::test]
     async fn test_health_check_returns_healthy() {
         let h = handler_with_data();
-        let hc = h.health_check(HealthCheckRequest).await.unwrap();
+        let hc = h
+            .health_check(HealthCheckRequest::new(std::net::SocketAddr::from((
+                [127, 0, 0, 1],
+                0,
+            ))))
+            .await
+            .unwrap();
         assert!(hc.health.healthy);
     }
 

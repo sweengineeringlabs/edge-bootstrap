@@ -28,6 +28,8 @@ impl Runtime {
             stream_handler: None,
             #[cfg(feature = "message-broker")]
             message_broker: None,
+            #[cfg(feature = "intrusion")]
+            intrusion: None,
         }
     }
 }

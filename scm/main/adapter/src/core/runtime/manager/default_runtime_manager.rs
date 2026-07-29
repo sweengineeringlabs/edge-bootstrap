@@ -123,14 +123,17 @@ impl RuntimeManager for DefaultRuntimeManager {
                 .map_err(|e| RuntimeError::StartFailed(e.to_string()))?;
 
             // Probe each configured ingress transport to surface misconfigurations early.
+            // This is a self-probe (an internal trait call, not an accepted connection), so
+            // there's no real peer to report — loopback is the honest placeholder.
+            let self_probe_addr = std::net::SocketAddr::from(([127, 0, 0, 1], 0));
             if let Some(h) = self.ingress.http() {
                 let _ = h
-                    .health_check(swe_edge_ingress_http::HealthCheckRequest)
+                    .health_check(swe_edge_ingress_http::HealthCheckRequest::new(self_probe_addr))
                     .await;
             }
             if let Some(g) = self.ingress.grpc() {
                 let _ = g
-                    .health_check(swe_edge_ingress_grpc::HealthCheckRequest)
+                    .health_check(swe_edge_ingress_grpc::HealthCheckRequest::new(self_probe_addr))
                     .await;
             }
 
@@ -228,10 +231,12 @@ impl RuntimeManager for DefaultRuntimeManager {
                 })
                 .collect();
 
-            // Report health for each configured ingress transport.
+            // Report health for each configured ingress transport. Self-probe, same reasoning
+            // as the startup probe above — loopback stands in for "no real peer".
+            let self_probe_addr = std::net::SocketAddr::from(([127, 0, 0, 1], 0));
             if let Some(h) = self.ingress.http() {
                 match h
-                    .health_check(swe_edge_ingress_http::HealthCheckRequest)
+                    .health_check(swe_edge_ingress_http::HealthCheckRequest::new(self_probe_addr))
                     .await
                 {
                     Ok(_) => components.push(ComponentHealth::healthy("ingress.http")),
@@ -242,7 +247,7 @@ impl RuntimeManager for DefaultRuntimeManager {
             }
             if let Some(g) = self.ingress.grpc() {
                 match g
-                    .health_check(swe_edge_ingress_grpc::HealthCheckRequest)
+                    .health_check(swe_edge_ingress_grpc::HealthCheckRequest::new(self_probe_addr))
                     .await
                 {
                     Ok(_) => components.push(ComponentHealth::healthy("ingress.grpc")),

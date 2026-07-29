@@ -3,6 +3,8 @@ mod config;
 pub(crate) mod egress;
 pub(crate) mod health;
 pub(crate) mod ingress;
+#[cfg(feature = "intrusion")]
+pub(crate) mod intrusion;
 pub(crate) mod json;
 pub(crate) mod metrics;
 pub(crate) mod monitor;

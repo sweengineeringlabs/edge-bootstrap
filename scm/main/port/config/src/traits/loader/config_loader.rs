@@ -49,7 +49,10 @@ mod tests {
 
     #[test]
     fn test_config_loader_double_load_returns_default_config() {
-        assert_eq!(FixedConfigLoader.load().unwrap().service_name, "swe-edge");
+        match FixedConfigLoader.load() {
+            Ok(cfg) => assert_eq!(cfg.service_name, "swe-edge"),
+            Err(e) => panic!("FixedConfigLoader.load() must always succeed, got {e:?}"),
+        }
     }
 
     #[test]
@@ -62,7 +65,9 @@ mod tests {
 
     #[test]
     fn test_config_loader_double_load_section_returns_type_default() {
-        let v: bool = FixedConfigLoader.load_section("whatever").unwrap();
-        assert!(!v);
+        match FixedConfigLoader.load_section::<bool>("whatever") {
+            Ok(v) => assert!(!v),
+            Err(e) => panic!("FixedConfigLoader.load_section() must always succeed, got {e:?}"),
+        }
     }
 }

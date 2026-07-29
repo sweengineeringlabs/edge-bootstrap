@@ -22,6 +22,8 @@ use crate::core::config::loader::ApplicationConfigLoader;
 use crate::core::egress::DefaultEgress;
 use crate::core::ingress::DefaultIngress;
 use crate::core::metrics::handler::MetricsHandler;
+#[cfg(feature = "intrusion")]
+use crate::core::intrusion::{GrpcIntrusionGuard, HttpIntrusionGuard};
 use crate::core::monitor::{BackgroundSampler, GrpcLoadMonitor, HttpLoadMonitor};
 use crate::core::runner::DaemonRunner;
 use crate::core::runtime::manager::DefaultRuntimeManager;
@@ -156,6 +158,19 @@ impl RuntimeBuilder {
             c
         });
 
+        // ── Intrusion guard — builder explicit wins, else [intrusion] TOML config ─
+        #[cfg(feature = "intrusion")]
+        let intrusion_wired: Option<Arc<edge_intrusion::config::Wired>> = match self.intrusion {
+            Some(w) => Some(Arc::new(w)),
+            None => match config.intrusion.as_ref() {
+                Some(cfg) => Some(Arc::new(
+                    cfg.build()
+                        .map_err(|e| RuntimeError::StartFailed(e.to_string()))?,
+                )),
+                None => None,
+            },
+        };
+
         // ── Servers ───────────────────────────────────────────────────────────
         let timeout_secs = config.shutdown_timeout_secs;
         let http_bind = config.http_bind.clone();
@@ -177,6 +192,15 @@ impl RuntimeBuilder {
             } else {
                 handler
             };
+            // Wrap with intrusion guard if edge-intrusion is configured — runs
+            // before load-monitor recording, so rejected requests aren't counted.
+            #[cfg(feature = "intrusion")]
+            let handler: Arc<dyn swe_edge_ingress_http::HttpIngress> =
+                if let Some(ref w) = intrusion_wired {
+                    Arc::new(HttpIntrusionGuard::new(handler, Arc::clone(w)))
+                } else {
+                    handler
+                };
             let mut server = AxumHttpServer::new(http_bind, handler);
             if let Some(tls) = http_tls {
                 server = server.with_tls(tls);
@@ -220,6 +244,15 @@ impl RuntimeBuilder {
                             handler,
                             Arc::new(ReflectionService::new(registry)),
                         ))
+                    } else {
+                        handler
+                    };
+                // Wrap with intrusion guard if edge-intrusion is configured — applies
+                // to reflection calls too, since it wraps the outermost handler.
+                #[cfg(feature = "intrusion")]
+                let handler: Arc<dyn swe_edge_ingress_grpc::GrpcIngress> =
+                    if let Some(ref w) = intrusion_wired {
+                        Arc::new(GrpcIntrusionGuard::new(handler, Arc::clone(w)))
                     } else {
                         handler
                     };

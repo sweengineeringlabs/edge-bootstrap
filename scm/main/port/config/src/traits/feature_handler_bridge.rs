@@ -145,33 +145,47 @@ mod tests {
 
     #[test]
     fn test_build_handler_returns_enabled_when_section_present() {
-        let dir = tempfile::tempdir().expect("tempdir");
-        std::fs::write(
+        let dir = match tempfile::tempdir() {
+            Ok(dir) => dir,
+            Err(e) => panic!("failed to create tempdir for test fixture: {e}"),
+        };
+        if let Err(e) = std::fs::write(
             dir.path().join("application.toml"),
             "[guard]\ntoken = \"abc\"\n",
-        )
-        .expect("write toml");
+        ) {
+            panic!("failed to write test fixture application.toml: {e}");
+        }
         let loader = ConfigLoaderFactory::create_loader_for_dir(dir.path());
 
         let mut registry = FeatureRegistry::new();
-        let guard: OptionalHandler<GuardHandler> = registry
+        let guard: OptionalHandler<GuardHandler> = match registry
             .build_handler::<GuardConfig, GuardHandler>(&loader)
-            .expect("build_handler must succeed");
+        {
+            Ok(guard) => guard,
+            Err(e) => panic!("build_handler must succeed, got {e:?}"),
+        };
 
         assert!(guard.is_enabled());
     }
 
     #[test]
     fn test_build_handler_returns_disabled_when_section_absent() {
-        let dir = tempfile::tempdir().expect("tempdir");
-        std::fs::write(dir.path().join("application.toml"), "[other]\nx = 1\n")
-            .expect("write toml");
+        let dir = match tempfile::tempdir() {
+            Ok(dir) => dir,
+            Err(e) => panic!("failed to create tempdir for test fixture: {e}"),
+        };
+        if let Err(e) = std::fs::write(dir.path().join("application.toml"), "[other]\nx = 1\n") {
+            panic!("failed to write test fixture application.toml: {e}");
+        }
         let loader = ConfigLoaderFactory::create_loader_for_dir(dir.path());
 
         let mut registry = FeatureRegistry::new();
-        let guard: OptionalHandler<GuardHandler> = registry
+        let guard: OptionalHandler<GuardHandler> = match registry
             .build_handler::<GuardConfig, GuardHandler>(&loader)
-            .expect("build_handler must succeed");
+        {
+            Ok(guard) => guard,
+            Err(e) => panic!("build_handler must succeed, got {e:?}"),
+        };
 
         assert!(!guard.is_enabled());
     }

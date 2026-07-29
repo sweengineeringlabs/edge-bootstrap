@@ -9,6 +9,9 @@ use swe_edge_ingress_verifier::JwtConfig;
 pub use swe_edge_bootstrap_monitor::{AutoscalePolicy, MetricsConfig};
 pub use swe_edge_observ_config::ObservabilityConfig;
 
+#[cfg(feature = "intrusion")]
+pub use edge_intrusion::config::Config as IntrusionConfig;
+
 /// Configuration for the runtime manager.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -72,6 +75,13 @@ pub struct RuntimeConfig {
     /// Consumers set this to their own directory to supply environment-specific
     /// deployment configurations without modifying the upstream repo.
     pub deploy_dir: Option<String>,
+
+    // ── Intrusion detection / prevention ─────────────────────────────────────
+    /// `edge-intrusion` IDS/IPS rules (`[intrusion]` section).  Absent = no
+    /// intrusion guard wrapping the ingress handlers.  Overridden by
+    /// `RuntimeBuilder::with_intrusion` when both are set.
+    #[cfg(feature = "intrusion")]
+    pub intrusion: Option<IntrusionConfig>,
 }
 
 impl Default for RuntimeConfig {
@@ -94,6 +104,8 @@ impl Default for RuntimeConfig {
             autoscale: None,
             observability: None,
             deploy_dir: None,
+            #[cfg(feature = "intrusion")]
+            intrusion: None,
         }
     }
 }

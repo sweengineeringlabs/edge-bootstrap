@@ -11,10 +11,11 @@ use swe_edge_bootstrap::{
 };
 
 fn inbound(request: HttpRequest) -> InboundRequest {
-    InboundRequest {
+    InboundRequest::new(
         request,
-        ctx: RequestContext::new(SecurityContext::unauthenticated()),
-    }
+        RequestContext::new(SecurityContext::unauthenticated()),
+        std::net::SocketAddr::from(([127, 0, 0, 1], 0)),
+    )
 }
 
 // ── Test doubles ──────────────────────────────────────────────────────────────

@@ -129,10 +129,11 @@ mod tests {
             Arc::clone(&reflection) as Arc<dyn GrpcIngress>,
         );
         let _ = composite
-            .handle_unary(UnaryRequest {
-                request: req("/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo"),
-                ctx: SecurityContext::unauthenticated(),
-            })
+            .handle_unary(UnaryRequest::new(
+                req("/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo"),
+                SecurityContext::unauthenticated(),
+                std::net::SocketAddr::from(([127, 0, 0, 1], 0)),
+            ))
             .await;
         assert!(
             !primary.was_called(),
@@ -153,10 +154,11 @@ mod tests {
             Arc::clone(&reflection) as Arc<dyn GrpcIngress>,
         );
         let _ = composite
-            .handle_unary(UnaryRequest {
-                request: req("/my.Service/Method"),
-                ctx: SecurityContext::unauthenticated(),
-            })
+            .handle_unary(UnaryRequest::new(
+                req("/my.Service/Method"),
+                SecurityContext::unauthenticated(),
+                std::net::SocketAddr::from(([127, 0, 0, 1], 0)),
+            ))
             .await;
         assert!(
             primary.was_called(),

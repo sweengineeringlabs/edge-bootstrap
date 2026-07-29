@@ -23,8 +23,10 @@ default        = []
 observability  = ["swe-edge-observ-config/observability"]
 message-broker = ["dep:swe-edge-runtime-message-broker"]
 scheduler      = ["dep:swe-edge-runtime-scheduler"]
+intrusion      = ["dep:edge-intrusion"]
 
 [dependencies]
+edge-intrusion              = { git = "https://github.com/sweengineeringlabs/edge-intrusion.git", tag = "v0.1.1", optional = true }
 edge-security-runtime-tls  = { git = "https://github.com/sweengineeringlabs/edge-security.git", tag = "v0.3.7" }
 futures                     = "0.3"
 serde                       = { version = "1.0", features = ["derive"] }

@@ -1535,6 +1535,46 @@ version = "0.1.0"
 source = "git+https://github.com/sweengineeringlabs/edge-domain.git?tag=v0.8.30#25b8652a0630a1ed63c3f20d0b3c4997d1c4fc0d"
 
 [[package]]
+name = "edge-intrusion"
+version = "0.1.0"
+source = "git+https://github.com/sweengineeringlabs/edge-intrusion.git?tag=v0.1.1#a2a51312f9e87fb3356567837c1715ae5457c1d3"
+dependencies = [
+ "edge-intrusion-enforcer",
+ "edge-intrusion-rule",
+ "edge-intrusion-rules-engine",
+ "regex",
+ "serde",
+ "thiserror 2.0.19",
+ "toml",
+ "tracing",
+]
+
+[[package]]
+name = "edge-intrusion-enforcer"
+version = "0.1.0"
+source = "git+https://github.com/sweengineeringlabs/edge-intrusion.git?tag=v0.1.1#a2a51312f9e87fb3356567837c1715ae5457c1d3"
+dependencies = [
+ "edge-intrusion-rule",
+]
+
+[[package]]
+name = "edge-intrusion-rule"
+version = "0.1.0"
+source = "git+https://github.com/sweengineeringlabs/edge-intrusion.git?tag=v0.1.1#a2a51312f9e87fb3356567837c1715ae5457c1d3"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "edge-intrusion-rules-engine"
+version = "0.1.0"
+source = "git+https://github.com/sweengineeringlabs/edge-intrusion.git?tag=v0.1.1#a2a51312f9e87fb3356567837c1715ae5457c1d3"
+dependencies = [
+ "edge-intrusion-rule",
+ "thiserror 2.0.19",
+]
+
+[[package]]
 name = "edge-pipeline"
 version = "0.2.0"
 source = "git+https://github.com/sweengineeringlabs/edge-pipeline.git?tag=v0.2.0#5111e5d24d06f471f134a123a65eaa99ae6fef66"
@@ -1910,8 +1950,8 @@ dependencies = [
 
 [[package]]
 name = "edge-transport-http-ingress-transport"
-version = "0.5.3"
-source = "git+https://github.com/sweengineeringlabs/edge-ingress-http.git?tag=v0.5.3#d47c7677fa199a8a9ec49fc22e157dade0ad684c"
+version = "0.6.1"
+source = "git+https://github.com/sweengineeringlabs/edge-ingress-http.git?tag=v0.6.1#2166ce854b8ae1c472bd6f2a6151acf2a29848bb"
 dependencies = [
  "async-trait",
  "edge-application 0.10.0 (git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.18.0)",
@@ -1924,7 +1964,7 @@ dependencies = [
  "parking_lot",
  "serde",
  "serde_json",
- "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.3.0)",
+ "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.4.2)",
  "swe-edge-loadbalancer 0.2.0",
  "swe_justobserv_context",
  "swe_justobserv_metrics",
@@ -3634,6 +3674,9 @@ dependencies = [
  "edge-application-handler 0.2.0",
  "edge-application-observer 0.1.0 (git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.18.0)",
  "edge-dispatcher 0.10.0",
+ "edge-intrusion",
+ "edge-intrusion-enforcer",
+ "edge-intrusion-rule",
  "edge-proxy",
  "edge-security-runtime 0.3.7",
  "edge-security-runtime-authz",
@@ -3651,6 +3694,7 @@ dependencies = [
  "swe-edge-bootstrap-egress",
  "swe-edge-bootstrap-health",
  "swe-edge-bootstrap-ingress",
+ "swe-edge-bootstrap-intrusion",
  "swe-edge-bootstrap-json",
  "swe-edge-bootstrap-metrics",
  "swe-edge-bootstrap-monitor",
@@ -3731,6 +3775,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "swe-edge-bootstrap-intrusion"
+version = "0.1.0"
+dependencies = [
+ "edge-transport-http-ingress-transport",
+ "futures",
+ "swe-edge-ingress-grpc-transport",
+]
+
+[[package]]
 name = "swe-edge-bootstrap-json"
 version = "0.1.0"
 dependencies = [
@@ -3773,6 +3826,7 @@ dependencies = [
 name = "swe-edge-bootstrap-runtime"
 version = "0.1.0"
 dependencies = [
+ "edge-intrusion",
  "edge-security-runtime-tls",
  "edge-transport-http-egress-transport",
  "futures",
@@ -3878,15 +3932,15 @@ dependencies = [
 
 [[package]]
 name = "swe-edge-ingress-grpc-reflection"
-version = "0.6.3"
-source = "git+https://github.com/sweengineeringlabs/edge-ingress-grpc.git?tag=v0.6.3#b5c4d6a347aded0be653f3ecab9b10f28380a4e6"
+version = "0.7.1"
+source = "git+https://github.com/sweengineeringlabs/edge-ingress-grpc.git?tag=v0.7.1#ccf2d847ad240d07cbadf9f2d87d5e6fc7e88b3c"
 dependencies = [
  "edge-application 0.10.0 (git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.18.0)",
  "edge-application-handler 0.2.0",
  "futures",
  "parking_lot",
  "serde",
- "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.3.0)",
+ "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.4.2)",
  "swe-edge-ingress-grpc-transport",
  "thiserror 2.0.19",
  "tracing",
@@ -3894,8 +3948,8 @@ dependencies = [
 
 [[package]]
 name = "swe-edge-ingress-grpc-transport"
-version = "0.6.3"
-source = "git+https://github.com/sweengineeringlabs/edge-ingress-grpc.git?tag=v0.6.3#b5c4d6a347aded0be653f3ecab9b10f28380a4e6"
+version = "0.7.1"
+source = "git+https://github.com/sweengineeringlabs/edge-ingress-grpc.git?tag=v0.7.1#ccf2d847ad240d07cbadf9f2d87d5e6fc7e88b3c"
 dependencies = [
  "async-trait",
  "edge-application 0.10.0 (git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.18.0)",
@@ -3904,10 +3958,10 @@ dependencies = [
  "futures",
  "parking_lot",
  "serde",
- "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.3.0)",
+ "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.4.2)",
  "swe-edge-loadbalancer 0.2.0",
- "swe_justobserv_context",
- "swe_justobserv_metrics",
+ "swe-observability-context",
+ "swe-observability-metrics 0.2.0 (git+ssh://git@github.com/sweengineeringlabs/observability.git?tag=v0.2.9)",
  "thiserror 2.0.19",
  "tokio",
  "tokio-util",
@@ -3981,8 +4035,8 @@ dependencies = [
 
 [[package]]
 name = "swe-edge-runtime-grpc"
-version = "0.4.0"
-source = "git+https://github.com/sweengineeringlabs/edge-runtime.git?tag=v0.3.17#db543d133e7d3ece681aa30af52c06cd03387ab8"
+version = "0.6.0"
+source = "git+https://github.com/sweengineeringlabs/edge-runtime.git?tag=grpc%2Fv0.6.0#53b64b3c3c19978af0dc0ad32d706e9c9c26c8d7"
 dependencies = [
  "bytes",
  "edge-application 0.10.0 (git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.18.0)",
@@ -4009,8 +4063,8 @@ dependencies = [
 
 [[package]]
 name = "swe-edge-runtime-http"
-version = "0.4.0"
-source = "git+https://github.com/sweengineeringlabs/edge-runtime.git?tag=v0.3.17#db543d133e7d3ece681aa30af52c06cd03387ab8"
+version = "0.5.0"
+source = "git+https://github.com/sweengineeringlabs/edge-runtime.git?tag=http%2Fv0.5.0#d2c8dad9893def630d1df24d46e41e3891ddd24e"
 dependencies = [
  "axum 0.8.9",
  "bytes",
@@ -4056,6 +4110,28 @@ dependencies = [
  "swe-edge-configbuilder 0.1.0",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "swe-observability-context"
+version = "0.2.0"
+source = "git+ssh://git@github.com/sweengineeringlabs/observability.git?tag=v0.2.9#224a8584b70550f2e8dee7d296068219eee85af7"
+dependencies = [
+ "serde",
+ "serde_json",
+ "swe-observability-context-macros",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "swe-observability-context-macros"
+version = "0.2.0"
+source = "git+ssh://git@github.com/sweengineeringlabs/observability.git?tag=v0.2.9#224a8584b70550f2e8dee7d296068219eee85af7"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
 ]
 
 [[package]]

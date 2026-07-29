@@ -40,6 +40,8 @@ pub struct RuntimeBuilder {
     pub(crate) stream_handler: Option<Arc<dyn HttpStream>>,
     #[cfg(feature = "message-broker")]
     pub(crate) message_broker: Option<Arc<dyn swe_edge_runtime_message_broker::MessageBroker>>,
+    #[cfg(feature = "intrusion")]
+    pub(crate) intrusion: Option<edge_intrusion::config::Wired>,
 }
 
 impl RuntimeBuilder {
@@ -213,6 +215,17 @@ impl RuntimeBuilder {
         broker: impl swe_edge_runtime_message_broker::MessageBroker + 'static,
     ) -> Self {
         self.message_broker = Some(Arc::new(broker));
+        self
+    }
+
+    /// Attach a pre-built `edge-intrusion` IDS/IPS wiring, wrapping both the
+    /// HTTP and gRPC ingress handlers.
+    ///
+    /// Takes precedence over `[intrusion]` in TOML config. Construct `Wired`
+    /// via `edge_intrusion::config::Config::build()`.
+    #[cfg(feature = "intrusion")]
+    pub fn with_intrusion(mut self, wired: edge_intrusion::config::Wired) -> Self {
+        self.intrusion = Some(wired);
         self
     }
 

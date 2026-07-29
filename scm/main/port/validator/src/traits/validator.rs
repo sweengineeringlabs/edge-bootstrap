@@ -36,7 +36,9 @@ mod tests {
 
     #[test]
     fn test_validator_double_rejects_empty_value() {
-        let err = NonEmptyString.validate(&String::new()).unwrap_err();
-        assert_eq!(err, "must not be empty");
+        match NonEmptyString.validate(&String::new()) {
+            Err(err) => assert_eq!(err, "must not be empty"),
+            Ok(()) => panic!("expected validation of an empty string to be rejected"),
+        }
     }
 }
