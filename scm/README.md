@@ -22,6 +22,10 @@ observability, lifecycle) into a single deployable process via a fluent `Runtime
   before any server socket is bound
 - **`LifecycleMonitor`** — wires `GrpcLoadMonitor` + `HttpLoadMonitor` + `Sampler` into a single
   observer; drives autoscale decisions and exposes a `/health` surface
+- **`HttpIntrusionGuard`** / **`GrpcIntrusionGuard`** — optional (`intrusion` feature) decorator
+  wrapping `HttpIngress`/`GrpcIngress`; rejects requests flagged by
+  [`edge-intrusion`](https://github.com/sweengineeringlabs/edge-intrusion)'s configured rules
+  engine before delegating to the wrapped handler
 
 ## Layout
 
@@ -52,10 +56,29 @@ graph between ports obvious from the code itself.
 | `health`       | `HealthHandler`                     | `fn health(&self) -> BoxFuture<'_, runtime::RuntimeHealth>`                | done |
 | `metrics`      | `MetricsHandler`                    | `: HttpIngress + MetricsExporter` supertrait (intra-crate)                 | done |
 | `monitor`      | `Sampler`                           | `fn counters(&self) -> &monitor::SharedCounters`                           | done |
+| `intrusion`    | `HttpIntrusionGuard`                | `: HttpIngress` supertrait (decorator, same shape as `monitor::HttpLoadMonitor`) | done — behind `intrusion` feature ([#8](https://github.com/sweengineeringlabs/edge-bootstrap/issues/8)) |
+| `intrusion`    | `GrpcIntrusionGuard`                | `: GrpcIngress` supertrait (decorator, same shape as `monitor::GrpcLoadMonitor`) | done — behind `intrusion` feature ([#8](https://github.com/sweengineeringlabs/edge-bootstrap/issues/8)) |
+| `runtime`      | `RuntimeConfig`                     | `intrusion: Option<IntrusionConfig>` — re-export of `edge_intrusion::config::Config` (`intrusion` feature only) | done |
 
 `composite::CompositeIngress` and `runner::Runner` additionally have no concrete
 implementation yet in `main/adapter/src/core/` — tracked in
 [#2](https://github.com/sweengineeringlabs/edge-bootstrap/issues/2).
+
+### Wiring `edge-intrusion`: wire it in, don't reimplement it
+
+`edge-intrusion` provides application-layer intrusion detection (IDS) and inline prevention
+(IPS) — see that repo's own ADR-001/ADR-002 for why both are in scope there. This repo consumes
+it as an ordinary optional dependency (the `intrusion` feature) rather than reimplementing any
+of its rule/engine/enforcer logic in `main/adapter/src/core/intrusion/`: those adapters only
+build a `RequestEvent` from the request already in hand (`peer_addr`, method, path, query,
+headers) and act on the `Decision` `edge-intrusion`'s real `Enforcer` returns.
+
+This mirrors the same reasoning behind keeping `HttpLoadMonitor`/`GrpcLoadMonitor` as thin
+decorators rather than folding metrics recording into `DefaultIngress` itself — cross-cutting
+concerns with their own lifecycle (independently versioned, independently auditable, in
+`edge-intrusion`'s case security-sensitive enough to want its own release cadence and audit
+trail) stay in their own crate and get wrapped in, not merged in. Tracked in
+[#8](https://github.com/sweengineeringlabs/edge-bootstrap/issues/8).
 
 ## Building
 
