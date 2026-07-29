@@ -1,0 +1,62 @@
+name: No AI Attribution
+
+# Blocks any PR whose description or commit messages credit an AI assistant
+# (Co-Authored-By trailers, "Generated with ...", the 🤖 footer, anthropic/openai
+# noreply addresses, claude.com/claude-code links).
+#
+# Server-side counterpart to the local scripts/hooks/commit-msg guard — this one
+# cannot be skipped with `git commit --no-verify`, and it also covers the PR
+# description, which git hooks never see.
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+    branches: [dev, test, int, uat, main]
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: Scan PR body and commits
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan for AI attribution
+        env:
+          # Passed via env (not inlined into the script) to avoid shell injection
+          # from a hostile PR body.
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          pattern='(co-authored-by:.*(claude|anthropic|openai|chatgpt|gpt-[0-9]|copilot|cursor|codeium|gemini|bard))|🤖|(generated with[[:space:]]*\[?(claude|github copilot))|claude code|noreply@(anthropic|openai)\.|claude\.com/claude-code'
+          fail=0
+
+          echo "── PR description ──"
+          if printf '%s' "$PR_BODY" | grep -qiE "$pattern"; then
+            echo "::error::AI attribution detected in the PR description."
+            printf '%s\n' "$PR_BODY" | grep -inE "$pattern" | sed 's/^/  /'
+            fail=1
+          else
+            echo "clean"
+          fi
+
+          echo "── Commit messages (${BASE_SHA}..${HEAD_SHA}) ──"
+          if git log --format='%B' "${BASE_SHA}..${HEAD_SHA}" | grep -qiE "$pattern"; then
+            echo "::error::AI attribution detected in a commit message in this PR."
+            git log --format='commit %h%n%B' "${BASE_SHA}..${HEAD_SHA}" | grep -inE "$pattern|^commit " | sed 's/^/  /'
+            fail=1
+          else
+            echo "clean"
+          fi
+
+          if [ "$fail" -ne 0 ]; then
+            echo "::error::Remove Co-Authored-By / 'Generated with' / 🤖 attribution lines from the PR description and commits, then update."
+            exit 1
+          fi
+          echo "No AI attribution found."

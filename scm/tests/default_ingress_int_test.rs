@@ -4,8 +4,8 @@ use futures::future::BoxFuture;
 use std::sync::Arc;
 use swe_edge_bootstrap::{Ingress, Runtime};
 use swe_edge_ingress_grpc::{
-    GrpcHealthCheck, GrpcIngressError, GrpcIngressResult, GrpcMessageStream, GrpcMetadata,
-    GrpcRequest, GrpcResponse,
+    GrpcHealthCheck, GrpcIngressError, GrpcIngressResult, GrpcResponse, HealthCheckRequest,
+    HealthCheckResponse, StreamRequest, StreamResponse, UnaryRequest,
 };
 
 /// @covers: Runtime::empty_ingress
@@ -32,27 +32,26 @@ fn test_empty_ingress_grpc_returns_none() {
 /// @covers: Runtime::grpc_ingress
 #[test]
 fn test_grpc_ingress_has_any_returns_true() {
-    use swe_edge_ingress_http::SecurityContext;
     struct Stub;
     impl swe_edge_bootstrap::GrpcIngress for Stub {
-        fn handle_unary(
-            &self,
-            _: GrpcRequest,
-            _: SecurityContext,
-        ) -> BoxFuture<'_, GrpcIngressResult<GrpcResponse>> {
+        fn handle_unary(&self, _: UnaryRequest) -> BoxFuture<'_, GrpcIngressResult<GrpcResponse>> {
             Box::pin(async { Err(GrpcIngressError::Unimplemented("stub".into())) })
         }
         fn handle_stream(
             &self,
-            _: String,
-            _: GrpcMetadata,
-            _: GrpcMessageStream,
-            _: SecurityContext,
-        ) -> BoxFuture<'_, GrpcIngressResult<(GrpcMessageStream, GrpcMetadata)>> {
+            _: StreamRequest,
+        ) -> BoxFuture<'_, GrpcIngressResult<StreamResponse>> {
             Box::pin(async { Err(GrpcIngressError::Unimplemented("stub".into())) })
         }
-        fn health_check(&self) -> BoxFuture<'_, GrpcIngressResult<GrpcHealthCheck>> {
-            Box::pin(async { Ok(GrpcHealthCheck::healthy()) })
+        fn health_check(
+            &self,
+            _: HealthCheckRequest,
+        ) -> BoxFuture<'_, GrpcIngressResult<HealthCheckResponse>> {
+            Box::pin(async {
+                Ok(HealthCheckResponse {
+                    check: Box::new(GrpcHealthCheck::healthy()),
+                })
+            })
         }
     }
     let i = Runtime::grpc_ingress(Arc::new(Stub));

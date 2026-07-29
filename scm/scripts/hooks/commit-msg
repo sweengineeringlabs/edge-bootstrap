@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# commit-msg hook — reject AI/assistant attribution in commit messages.
+#
+# Enforces the project rule: commits must not carry Co-Authored-By trailers or
+# "Generated with" footers that credit an AI assistant. git passes the path to
+# the prepared commit message as $1.
+set -euo pipefail
+
+msg_file="$1"
+
+# Ignore git's comment lines (help text, scissors) before scanning.
+scan="$(grep -v '^#' "$msg_file" || true)"
+
+# Case-insensitive signatures of AI/assistant attribution.
+pattern='(co-authored-by:.*(claude|anthropic|openai|chatgpt|gpt-[0-9]|copilot|cursor|codeium|gemini|bard))|🤖|(generated with[[:space:]]*\[?(claude|github copilot))|claude code|noreply@(anthropic|openai)\.|claude\.com/claude-code'
+
+if printf '%s\n' "$scan" | grep -qiE "$pattern"; then
+  echo "commit-msg: ✖ AI attribution detected — commit rejected." >&2
+  echo "  Policy: no Co-Authored-By / 'Generated with' lines crediting an AI assistant." >&2
+  echo "  Offending line(s):" >&2
+  printf '%s\n' "$scan" | grep -inE "$pattern" | sed 's/^/    /' >&2
+  exit 1
+fi
+
+exit 0
