@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Ensure ~/.cargo/bin is on PATH (git-bash on Windows omits it by default).
+export PATH="$HOME/.cargo/bin:$PATH"
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+SCM_DIR="$REPO_ROOT/scm"
+echo "pre-commit ── $(basename $REPO_ROOT) ──"
+cd "$SCM_DIR"
+echo "  1/4 fmt..."
+cargo fmt --all -- --check
+echo "  2/4 clippy..."
+cargo clippy --workspace --all-targets -- -D warnings
+echo "  3/4 arch audit..."
+arch audit --rs
+echo "  4/4 cargo audit..."
+cargo audit --deny unsound --deny yanked
+echo "pre-commit: all checks passed."

@@ -5,9 +5,18 @@ use std::sync::Arc;
 
 use futures::future::BoxFuture;
 use swe_edge_bootstrap::{
-    ComponentHealth, HealthHandler, HttpIngress, HttpIngressError, HttpRequest, RuntimeHealth,
-    RuntimeManager, RuntimeResult, RuntimeStatus, SecurityContext, ServerMonitor,
+    ComponentHealth, HealthHandler, HttpIngress, HttpIngressError, HttpRequest, InboundRequest,
+    RequestContext, RuntimeHealth, RuntimeManager, RuntimeResult, RuntimeStatus, SecurityContext,
+    ServerMonitor,
 };
+
+fn inbound(request: HttpRequest) -> InboundRequest {
+    InboundRequest::new(
+        request,
+        RequestContext::new(SecurityContext::unauthenticated()),
+        std::net::SocketAddr::from(([127, 0, 0, 1], 0)),
+    )
+}
 
 // ── Test doubles ──────────────────────────────────────────────────────────────
 
@@ -56,10 +65,7 @@ impl RuntimeManager for DegradedRuntime {
 async fn test_health_handler_get_returns_200_when_runtime_healthy() {
     let h = ServerMonitor::health_handler(Arc::new(HealthyRuntime));
     let resp = h
-        .handle(
-            HttpRequest::get("/health"),
-            SecurityContext::unauthenticated(),
-        )
+        .handle(inbound(HttpRequest::get("/health")))
         .await
         .unwrap();
     assert_eq!(resp.status, 200);
@@ -70,10 +76,7 @@ async fn test_health_handler_get_returns_200_when_runtime_healthy() {
 async fn test_health_handler_get_returns_503_when_runtime_degraded() {
     let h = ServerMonitor::health_handler(Arc::new(DegradedRuntime));
     let resp = h
-        .handle(
-            HttpRequest::get("/health"),
-            SecurityContext::unauthenticated(),
-        )
+        .handle(inbound(HttpRequest::get("/health")))
         .await
         .unwrap();
     assert_eq!(resp.status, 503);
@@ -84,10 +87,7 @@ async fn test_health_handler_get_returns_503_when_runtime_degraded() {
 async fn test_health_handler_body_contains_status_and_uptime() {
     let h = ServerMonitor::health_handler(Arc::new(HealthyRuntime));
     let resp = h
-        .handle(
-            HttpRequest::get("/health"),
-            SecurityContext::unauthenticated(),
-        )
+        .handle(inbound(HttpRequest::get("/health")))
         .await
         .unwrap();
     let body: serde_json::Value = serde_json::from_slice(&resp.body).unwrap();
@@ -100,10 +100,7 @@ async fn test_health_handler_body_contains_status_and_uptime() {
 async fn test_health_handler_content_type_is_json() {
     let h = ServerMonitor::health_handler(Arc::new(HealthyRuntime));
     let resp = h
-        .handle(
-            HttpRequest::get("/health"),
-            SecurityContext::unauthenticated(),
-        )
+        .handle(inbound(HttpRequest::get("/health")))
         .await
         .unwrap();
     assert_eq!(resp.header("content-type"), Some("application/json"));
@@ -114,10 +111,7 @@ async fn test_health_handler_content_type_is_json() {
 async fn test_health_handler_non_get_returns_invalid_input_error() {
     let h = ServerMonitor::health_handler(Arc::new(HealthyRuntime));
     let err = h
-        .handle(
-            HttpRequest::post("/health"),
-            SecurityContext::unauthenticated(),
-        )
+        .handle(inbound(HttpRequest::post("/health")))
         .await
         .unwrap_err();
     assert!(
@@ -131,10 +125,7 @@ async fn test_health_handler_non_get_returns_invalid_input_error() {
 async fn test_health_handler_wrong_path_returns_not_found_error() {
     let h = ServerMonitor::health_handler(Arc::new(HealthyRuntime));
     let err = h
-        .handle(
-            HttpRequest::get("/metrics"),
-            SecurityContext::unauthenticated(),
-        )
+        .handle(inbound(HttpRequest::get("/metrics")))
         .await
         .unwrap_err();
     assert!(

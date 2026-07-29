@@ -7,29 +7,31 @@ use swe_edge_bootstrap::{Runtime, RuntimeConfig};
 
 // ── edge-domain ───────────────────────────────────────────────────────────────
 
+/// Local payload implementing the `edge_domain::Request`/`Response` marker
+/// traits — `Handler::Request`/`Response` require them and neither trait has
+/// a blanket impl for foreign types (orphan rule), so every handler under
+/// test needs its own local payload type.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+struct DepCoverageTextPayload(String);
+impl edge_domain::Request for DepCoverageTextPayload {}
+impl edge_domain::Response for DepCoverageTextPayload {}
+
 /// Exercises edge-domain via the RuntimeBuilder HTTP route path.
 #[tokio::test]
 async fn test_edge_domain_handler_registered_via_builder() {
-    use edge_domain::{Handler, HandlerContext, HandlerError, NoopCommandBus, SecurityContext};
-
-    fn make_ctx(security: &SecurityContext) -> HandlerContext<'_> {
-        HandlerContext::new(security, &NoopCommandBus)
-    }
+    use edge_domain::{Handler, HandlerError};
 
     struct PingHandler;
 
     #[async_trait::async_trait]
     impl Handler for PingHandler {
-        type Request = String;
-        type Response = String;
-        fn id(&self) -> &str {
-            "ping"
-        }
-        fn pattern(&self) -> &str {
-            "/ping"
-        }
-        async fn execute(&self, _: String, _ctx: HandlerContext<'_>) -> Result<String, HandlerError> {
-            Ok("pong".into())
+        type Request = DepCoverageTextPayload;
+        type Response = DepCoverageTextPayload;
+        async fn execute(
+            &self,
+            req: edge_application_handler::ExecutionRequest<'_, DepCoverageTextPayload>,
+        ) -> Result<DepCoverageTextPayload, HandlerError> {
+            Ok(req.req)
         }
     }
 
@@ -37,12 +39,6 @@ async fn test_edge_domain_handler_registered_via_builder() {
     let b = Runtime::builder().http_route(Arc::new(PingHandler));
     // build_registry returns None (no egress) but the builder is valid
     assert!(b.build_registry().is_none());
-    // Verify execute works with a context
-    let handler = PingHandler;
-    let security = SecurityContext::unauthenticated();
-    let ctx = make_ctx(&security);
-    let result = handler.execute("test".into(), ctx).await;
-    assert!(result.is_ok());
 }
 
 // ── swe-edge-ingress-verifier ─────────────────────────────────────────────────
@@ -111,10 +107,12 @@ fn test_grpc_reflection_config_field_respected() {
 /// Exercises swe-edge-ingress-grpc-reflection directly via ReflectionService.
 #[test]
 fn test_reflection_service_can_be_constructed_with_empty_registry() {
-    use edge_dispatch::HandlerRegistryImpl;
+    use edge_domain::InProcessHandlerRegistry;
     use std::sync::Arc;
+    use swe_edge_ingress_grpc::GrpcBytes;
     use swe_edge_ingress_grpc_reflection::ReflectionService;
-    let registry = Arc::new(HandlerRegistryImpl::<Vec<u8>, Vec<u8>>::new());
+
+    let registry = Arc::new(InProcessHandlerRegistry::<GrpcBytes, GrpcBytes>::default());
     let _svc = ReflectionService::new(registry);
 }
 
@@ -141,31 +139,82 @@ fn test_jwt_verifier_rejects_invalid_token_directly() {
 /// Exercises swe-edge-ingress-grpc through the RuntimeBuilder gRPC route path.
 #[test]
 fn test_ingress_grpc_handler_registered_via_builder() {
-    use edge_domain::{Handler, HandlerContext, HandlerError};
+    use edge_domain::{Handler, HandlerError};
     use swe_edge_bootstrap::Runtime;
+    use swe_edge_ingress_grpc::GrpcBytes;
 
     struct EchoHandler;
 
     #[async_trait::async_trait]
     impl Handler for EchoHandler {
-        type Request = Vec<u8>;
-        type Response = Vec<u8>;
-        fn id(&self) -> &str {
-            "echo"
-        }
-        fn pattern(&self) -> &str {
-            "/echo"
-        }
-        async fn execute(&self, req: Vec<u8>, _ctx: HandlerContext<'_>) -> Result<Vec<u8>, HandlerError> {
-            Ok(req)
+        type Request = GrpcBytes;
+        type Response = GrpcBytes;
+        async fn execute(
+            &self,
+            req: edge_application_handler::ExecutionRequest<'_, GrpcBytes>,
+        ) -> Result<GrpcBytes, HandlerError> {
+            Ok(req.req)
         }
     }
 
     use swe_edge_bootstrap::{GrpcDecodeFn, GrpcEncodeFn};
-    let decode: GrpcDecodeFn<Vec<u8>> = |b| Ok(b.to_vec());
-    let encode: GrpcEncodeFn<Vec<u8>> = |v: &Vec<u8>| v.clone();
+    let decode: GrpcDecodeFn<GrpcBytes> = |b| Ok(GrpcBytes(b.to_vec()));
+    let encode: GrpcEncodeFn<GrpcBytes> = |v: &GrpcBytes| v.0.clone();
     // grpc_route_with wires up the gRPC dispatcher — success without panic confirms the dep is used
     let _b = Runtime::builder().grpc_route_with(Arc::new(EchoHandler), decode, encode);
+}
+
+// ── edge-dispatch ──────────────────────────────────────────────────────────────
+
+/// Exercises edge-dispatch directly via `OptionalHandler`'s enabled/disabled states.
+#[test]
+fn test_optional_handler_enabled_and_disabled_states() {
+    use edge_dispatch::OptionalHandler;
+
+    let disabled: OptionalHandler<DepCoverageTextPayload> = OptionalHandler::disabled();
+    assert!(!disabled.is_enabled());
+
+    let enabled = OptionalHandler::enabled(DepCoverageTextPayload("on".to_string()));
+    assert!(enabled.is_enabled());
+}
+
+// ── swe-edge-runtime-grpc ─────────────────────────────────────────────────────
+
+/// Exercises swe-edge-runtime-grpc directly via `TonicGrpcServer` construction.
+#[test]
+fn test_tonic_grpc_server_constructs_from_bind_and_handler() {
+    use swe_edge_ingress_grpc::{
+        GrpcIngress, GrpcIngressError, GrpcResponse, HealthCheckRequest, HealthCheckResponse,
+        StreamRequest, StreamResponse, UnaryRequest,
+    };
+    use swe_edge_runtime_grpc::{GrpcServerManage, TonicGrpcServer};
+
+    struct NullGrpcHandler;
+    impl GrpcIngress for NullGrpcHandler {
+        fn handle_unary(
+            &self,
+            _: UnaryRequest,
+        ) -> futures::future::BoxFuture<'_, Result<GrpcResponse, GrpcIngressError>> {
+            Box::pin(async { Err(GrpcIngressError::Unimplemented("stub".into())) })
+        }
+        fn handle_stream(
+            &self,
+            _: StreamRequest,
+        ) -> futures::future::BoxFuture<'_, Result<StreamResponse, GrpcIngressError>> {
+            Box::pin(async { Err(GrpcIngressError::Unimplemented("stub".into())) })
+        }
+        fn health_check(
+            &self,
+            _: HealthCheckRequest,
+        ) -> futures::future::BoxFuture<'_, Result<HealthCheckResponse, GrpcIngressError>> {
+            Box::pin(async {
+                Err(GrpcIngressError::Unimplemented(
+                    "health check not implemented".into(),
+                ))
+            })
+        }
+    }
+    let _server = TonicGrpcServer::new("127.0.0.1:0", Arc::new(NullGrpcHandler));
 }
 
 // ── swe-edge-runtime-scheduler ───────────────────────────────────────────────

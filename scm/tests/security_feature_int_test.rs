@@ -1,8 +1,9 @@
 //! Integration tests — `security` feature flag: SAF re-exports + SecurityContext behaviour.
 
+#![cfg(feature = "security")]
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use swe_edge_bootstrap::{Principal, SecurityContext, TenantId};
+use swe_edge_bootstrap::{Principal, PrincipalRequest, SecurityContext, TenantId};
 
 #[test]
 fn test_security_context_unauthenticated_sets_authenticated_false() {
@@ -31,13 +32,13 @@ fn test_security_context_authenticated_with_tenant_has_principal() {
 #[test]
 fn test_tenant_id_principal_id_returns_value() {
     let t = TenantId::new("org-42");
-    assert_eq!(t.id(), "org-42");
+    assert_eq!(t.id(PrincipalRequest).unwrap().value, "org-42");
 }
 
 #[test]
 fn test_tenant_id_principal_kind_returns_tenant() {
     let t = TenantId::new("org-42");
-    assert_eq!(t.kind(), "tenant");
+    assert_eq!(t.kind(PrincipalRequest).unwrap().value, "tenant");
 }
 
 #[test]
@@ -80,4 +81,57 @@ async fn test_security_context_arc_crosses_tokio_spawn_boundary() {
     })
     .await
     .unwrap();
+}
+
+// ── edge-security-runtime ─────────────────────────────────────────────────────
+
+/// Exercises edge-security-runtime directly via `SecurityContextBuilder`.
+#[test]
+fn test_security_context_builder_sets_principal_and_authenticated() {
+    use edge_security_runtime::SecurityContextBuilder;
+
+    let ctx = SecurityContextBuilder::new()
+        .principal(Box::new(TenantId::new("builder-tenant")))
+        .tenant_id("builder-tenant")
+        .build();
+    assert!(ctx.authenticated);
+    assert_eq!(ctx.tenant_id.as_deref(), Some("builder-tenant"));
+}
+
+// ── edge-security-runtime-authz ───────────────────────────────────────────────
+
+/// Exercises edge-security-runtime-authz directly via `NoopAuthzPolicy`.
+#[test]
+fn test_noop_authz_policy_always_allows() {
+    use edge_security_runtime_authz::{AuthzPolicy, AuthzPolicyCheckRequest, NoopAuthzPolicy};
+
+    let ctx = SecurityContext::unauthenticated();
+    let result = NoopAuthzPolicy.check(AuthzPolicyCheckRequest {
+        context: &ctx,
+        resource: Some("/any/resource"),
+    });
+    assert!(result.is_ok());
+}
+
+// ── edge-security-runtime-credential ──────────────────────────────────────────
+
+/// Exercises edge-security-runtime-credential directly via `SecretString`'s redaction.
+#[test]
+fn test_secret_string_exposes_original_value_but_redacts_debug() {
+    use edge_security_runtime_credential::SecretString;
+
+    let secret = SecretString::new("super-secret-token");
+    assert_eq!(secret.expose(), "super-secret-token");
+    assert!(!format!("{secret:?}").contains("super-secret-token"));
+}
+
+// ── edge-security-runtime-tls ─────────────────────────────────────────────────
+
+/// Exercises edge-security-runtime-tls directly via `PemTlsConfig`'s mTLS detection.
+#[test]
+fn test_pem_tls_config_mtls_sets_ca_path() {
+    use edge_security_runtime_tls::PemTlsConfig;
+
+    let cfg = PemTlsConfig::mtls("cert.pem", "key.pem", "ca.pem");
+    assert!(cfg.is_mtls());
 }
