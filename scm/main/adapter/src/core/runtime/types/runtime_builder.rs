@@ -12,9 +12,10 @@ use swe_edge_ingress_grpc::{
     GrpcIngress, GrpcIngressInterceptor, GrpcIngressInterceptorChain,
 };
 use swe_edge_ingress_http::{
-    HttpDecodeFn, HttpEncodeFn, HttpHandlerAdapter, HttpHandlerRegistryDispatcher, HttpIngress,
-    HttpRequest, HttpResponse, HttpStream,
+    HttpDecodeFn, HttpEncodeFn, HttpHandlerAdapter, HttpIngress, HttpRequest, HttpResponse,
+    HttpStream,
 };
+use swe_edge_ingress_http_adapter::HttpHandlerRegistryDispatcher;
 use swe_edge_ingress_verifier::TokenVerifier;
 
 use swe_edge_bootstrap_runtime::RuntimeConfig;

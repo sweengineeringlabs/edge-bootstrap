@@ -24,7 +24,8 @@ use swe_edge_ingress_http::{
     HealthCheckRequest, HealthCheckResponse, HttpFuture, HttpHealthCheck, HttpIngress,
     HttpIngressError, HttpResponse, InboundRequest,
 };
-use swe_edge_runtime_http::{AxumHttpServer, HttpServer, ServeWithListenerRequest};
+use swe_edge_runtime_http::{HttpServer, ServeWithListenerRequest};
+use swe_edge_runtime_http_adapter::AxumHttpServer;
 
 struct StubLifecycle;
 impl LifecycleMonitor for StubLifecycle {

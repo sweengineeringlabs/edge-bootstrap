@@ -15,7 +15,8 @@ use swe_edge_runtime_grpc::{
     AllowUnauthenticatedFlagRequest, GrpcServerManage, TonicGrpcServer, WithInterceptorsRequest,
     WithTlsRequest,
 };
-use swe_edge_runtime_http::{AxumHttpServer, HttpServer, ServeWithShutdownRequest};
+use swe_edge_runtime_http::{HttpServer, ServeWithShutdownRequest};
+use swe_edge_runtime_http_adapter::AxumHttpServer;
 use tokio::sync::oneshot;
 
 use crate::core::config::loader::ApplicationConfigLoader;

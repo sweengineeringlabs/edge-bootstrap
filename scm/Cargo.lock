@@ -1949,28 +1949,42 @@ dependencies = [
 ]
 
 [[package]]
-name = "edge-transport-http-ingress-transport"
-version = "0.6.1"
-source = "git+https://github.com/sweengineeringlabs/edge-ingress-http.git?tag=v0.6.1#2166ce854b8ae1c472bd6f2a6151acf2a29848bb"
+name = "edge-transport-http-ingress-adapter"
+version = "0.8.0"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-http-ingress.git?tag=v0.8.0#8bfb27b326cef5ff330fd0a51304f67170cc5654"
 dependencies = [
  "async-trait",
  "edge-application 0.10.0 (git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.18.0)",
  "edge-application-command 0.1.0 (git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.18.0)",
  "edge-application-handler 0.2.0",
  "edge-application-observer 0.1.0 (git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.18.0)",
+ "edge-transport-http-ingress-port",
  "futures",
  "http 1.4.2",
  "matchit 0.8.4",
  "parking_lot",
- "serde",
- "serde_json",
  "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.4.2)",
  "swe-edge-loadbalancer 0.2.0",
  "swe_justobserv_context",
  "swe_justobserv_metrics",
+ "tokio",
+]
+
+[[package]]
+name = "edge-transport-http-ingress-port"
+version = "0.8.0"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-http-ingress.git?tag=v0.8.0#8bfb27b326cef5ff330fd0a51304f67170cc5654"
+dependencies = [
+ "async-trait",
+ "edge-application 0.10.0 (git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.18.0)",
+ "edge-application-handler 0.2.0",
+ "futures",
+ "serde",
+ "serde_json",
+ "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.4.2)",
+ "swe-edge-loadbalancer 0.2.0",
  "thiserror 2.0.19",
  "tokio",
- "tracing",
 ]
 
 [[package]]
@@ -3683,7 +3697,8 @@ dependencies = [
  "edge-security-runtime-credential 0.3.7",
  "edge-security-runtime-tls",
  "edge-transport-http-egress-transport",
- "edge-transport-http-ingress-transport",
+ "edge-transport-http-ingress-adapter",
+ "edge-transport-http-ingress-port",
  "futures",
  "parking_lot",
  "reqwest",
@@ -3709,6 +3724,7 @@ dependencies = [
  "swe-edge-observ-config",
  "swe-edge-runtime-grpc",
  "swe-edge-runtime-http",
+ "swe-edge-runtime-http-adapter",
  "swe-edge-runtime-message-broker",
  "swe-edge-runtime-scheduler",
  "swe-observability-metrics 0.2.0 (git+ssh://git@github.com/sweengineeringlabs/justobserv.git?tag=v0.2.9)",
@@ -3724,7 +3740,7 @@ dependencies = [
 name = "swe-edge-bootstrap-composite"
 version = "0.1.0"
 dependencies = [
- "edge-transport-http-ingress-transport",
+ "edge-transport-http-ingress-port",
  "futures",
  "swe-edge-bootstrap-ingress",
  "swe-edge-ingress-grpc-transport",
@@ -3759,7 +3775,7 @@ dependencies = [
 name = "swe-edge-bootstrap-health"
 version = "0.1.0"
 dependencies = [
- "edge-transport-http-ingress-transport",
+ "edge-transport-http-ingress-port",
  "futures",
  "swe-edge-bootstrap-runtime",
  "tokio",
@@ -3769,7 +3785,7 @@ dependencies = [
 name = "swe-edge-bootstrap-ingress"
 version = "0.1.0"
 dependencies = [
- "edge-transport-http-ingress-transport",
+ "edge-transport-http-ingress-port",
  "futures",
  "swe-edge-ingress-grpc-transport",
 ]
@@ -3778,7 +3794,7 @@ dependencies = [
 name = "swe-edge-bootstrap-intrusion"
 version = "0.1.0"
 dependencies = [
- "edge-transport-http-ingress-transport",
+ "edge-transport-http-ingress-port",
  "futures",
  "swe-edge-ingress-grpc-transport",
 ]
@@ -3787,7 +3803,7 @@ dependencies = [
 name = "swe-edge-bootstrap-json"
 version = "0.1.0"
 dependencies = [
- "edge-transport-http-ingress-transport",
+ "edge-transport-http-ingress-port",
  "swe-edge-ingress-grpc-transport",
 ]
 
@@ -3795,7 +3811,7 @@ dependencies = [
 name = "swe-edge-bootstrap-metrics"
 version = "0.1.0"
 dependencies = [
- "edge-transport-http-ingress-transport",
+ "edge-transport-http-ingress-port",
  "swe-edge-bootstrap-monitor",
  "swe-observability-metrics 0.2.0 (git+ssh://git@github.com/sweengineeringlabs/justobserv.git?tag=v0.2.9)",
 ]
@@ -3805,7 +3821,7 @@ name = "swe-edge-bootstrap-monitor"
 version = "0.1.0"
 dependencies = [
  "edge-proxy",
- "edge-transport-http-ingress-transport",
+ "edge-transport-http-ingress-port",
  "futures",
  "parking_lot",
  "serde",
@@ -4063,22 +4079,33 @@ dependencies = [
 
 [[package]]
 name = "swe-edge-runtime-http"
-version = "0.5.0"
-source = "git+https://github.com/sweengineeringlabs/edge-runtime.git?tag=http%2Fv0.5.0#d2c8dad9893def630d1df24d46e41e3891ddd24e"
+version = "0.6.0"
+source = "git+https://github.com/sweengineeringlabs/edge-runtime.git?rev=65ec90369a1bcc20695e10610e1ae0657d7e029c#65ec90369a1bcc20695e10610e1ae0657d7e029c"
+dependencies = [
+ "edge-transport-http-ingress-port",
+ "futures",
+ "thiserror 2.0.19",
+ "tokio",
+]
+
+[[package]]
+name = "swe-edge-runtime-http-adapter"
+version = "0.1.0"
+source = "git+https://github.com/sweengineeringlabs/edge-runtime.git?rev=65ec90369a1bcc20695e10610e1ae0657d7e029c#65ec90369a1bcc20695e10610e1ae0657d7e029c"
 dependencies = [
  "axum 0.8.9",
  "bytes",
  "edge-application 0.10.0 (git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.18.0)",
  "edge-security-runtime 0.3.7",
  "edge-security-runtime-tls",
- "edge-transport-http-ingress-transport",
+ "edge-transport-http-ingress-port",
  "futures",
  "http 1.4.2",
  "hyper",
  "hyper-util",
  "serde_json",
  "swe-edge-ingress-verifier",
- "thiserror 2.0.19",
+ "swe-edge-runtime-http",
  "tokio",
  "tower 0.5.3",
  "tower-http",

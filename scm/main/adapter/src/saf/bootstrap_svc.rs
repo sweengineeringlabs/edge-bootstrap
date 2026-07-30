@@ -206,7 +206,8 @@ impl Runtime {
         use swe_edge_runtime_grpc::{
             AllowUnauthenticatedFlagRequest, GrpcServerManage, TonicGrpcServer, WithTlsRequest,
         };
-        use swe_edge_runtime_http::{AxumHttpServer, HttpServer, ServeWithShutdownRequest};
+        use swe_edge_runtime_http::{HttpServer, ServeWithShutdownRequest};
+        use swe_edge_runtime_http_adapter::AxumHttpServer;
         use tokio::sync::oneshot;
 
         let timeout_secs = config.shutdown_timeout_secs;
