@@ -2,14 +2,20 @@
 //! owns is "what does the shared HTTP+gRPC handler look like."
 //!
 //! Hand-written rather than `Domain::echo_handler` (a canned library
-//! utility) specifically so it can carry its own `#[tracing::instrument]` —
-//! proving a *consumer's own* handler is traceable, not just the
-//! infra-level nodes edge-bootstrap itself wraps requests in.
+//! utility) specifically so `execute()` can open its own span through
+//! `HandlerContext.observer` — proving a *consumer's own* handler reaches
+//! the same real invocation tracker edge-bootstrap's own infra uses
+//! (`RuntimeBuilder` wires a real `ObserverContext` in place of the
+//! framework's noop default; see `docs/3-design/adr/`), with no import
+//! beyond the `Handler` contract every consumer already needs.
 
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use edge_application_handler::{ExecutionRequest, IdRequest, IdResponse, PatternRequest, PatternResponse};
+use edge_application_handler::{
+    ExecutionRequest, IdRequest, IdResponse, PatternRequest, PatternResponse,
+    SpanAnnotationRequest, SpanFinishRequest, SpanStartRequest, TracerRequest,
+};
 use edge_domain::{Handler, HandlerError};
 
 /// Payload shared by both the HTTP and gRPC routes.
@@ -37,14 +43,31 @@ impl Handler for EchoHandler {
         })
     }
 
-    #[tracing::instrument(name = "echo_handler", skip(self, req), fields(node = "echo_handler"))]
     async fn execute(
         &self,
         req: ExecutionRequest<'_, EchoPayload>,
     ) -> Result<EchoPayload, HandlerError> {
-        tracing::info!(payload = %req.req.0, "handler executing");
+        // Opens a real span through the same seam edge-bootstrap's own
+        // infra uses (HandlerContext.observer) — not a framework-specific
+        // import, just the Handler contract every consumer already has.
+        let span = req.ctx.observer.tracer(TracerRequest).ok().and_then(|t| {
+            t.tracer
+                .start_span(SpanStartRequest {
+                    handler_id: "echo".to_string(),
+                    operation: "execute".to_string(),
+                })
+                .ok()
+        });
+        if let Some(ref s) = span {
+            let _ = s.span.record(SpanAnnotationRequest {
+                key: "payload".to_string(),
+                value: req.req.0.clone(),
+            });
+        }
         let response = req.req;
-        tracing::debug!(payload = %response.0, "handler returning");
+        if let Some(s) = span {
+            let _ = s.span.finish(SpanFinishRequest);
+        }
         Ok(response)
     }
 }

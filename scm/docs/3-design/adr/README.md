@@ -19,3 +19,4 @@ Records the reasoning behind design choices so future contributors understand wh
 | ADR | Decision | Status |
 |-----|----------|--------|
 | [001](001-ingress-response-caching-per-route-opt-in.md) | Ingress response caching — per-route opt-in via `CacheAsideHandler`, not a whole-service decorator | Accepted |
+| [002](002-real-observercontext-invocation-tracking.md) | Real `ObserverContext` for invocation tracking — bridge to `swe-observability-tracing`, wired at the `RuntimeBuilder` composition root | Accepted |

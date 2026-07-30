@@ -22,9 +22,9 @@ use tokio::sync::oneshot;
 use crate::core::config::loader::ApplicationConfigLoader;
 use crate::core::egress::DefaultEgress;
 use crate::core::ingress::DefaultIngress;
-use crate::core::metrics::handler::MetricsHandler;
 #[cfg(feature = "intrusion")]
 use crate::core::intrusion::{GrpcIntrusionGuard, HttpIntrusionGuard};
+use crate::core::metrics::handler::MetricsHandler;
 use crate::core::monitor::{BackgroundSampler, GrpcLoadMonitor, HttpLoadMonitor};
 use crate::core::runner::DaemonRunner;
 use crate::core::runtime::manager::DefaultRuntimeManager;
@@ -95,6 +95,12 @@ impl RuntimeBuilder {
 
         let mut input = DefaultIngress::empty();
         if let Some(d) = self.http_dispatcher {
+            // Wire a real ObserverContext so every Handler::execute() call —
+            // infra's own and any consumer's — opens real, exportable spans
+            // via HandlerContext.observer instead of the framework's noop
+            // default. See docs/3-design/adr/ for the decision record.
+            #[cfg(feature = "observability")]
+            let d = d.with_observer_context(crate::core::observability::default_observer_context());
             input = input.with_http(Arc::new(d));
         } else if let Some(h) = self.http_handler {
             input = input.with_http(h);

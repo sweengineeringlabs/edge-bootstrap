@@ -27,10 +27,16 @@
 //!      — a request matching a baseline signature rule is rejected before
 //!      it reaches this handler at all.
 //!   6. Tracing ([`tracing_setup`]): every node in the pipeline that touches
-//!      a request — `http_load_monitor`, `http_intrusion_guard`, and our
-//!      own `echo_handler` — announces itself via `tracing::debug!`/`info!`,
-//!      so a request's path through the system is actually observable, not
-//!      just inferable from side effects afterward.
+//!      a request — `http_load_monitor`, `http_intrusion_guard` — announces
+//!      itself via `tracing::debug!`/`info!`, so a request's path through
+//!      the system is actually observable, not just inferable from side
+//!      effects afterward. On top of that, `RuntimeBuilder` wires a real
+//!      `ObserverContext` (backed by `swe-observability-tracing`) into
+//!      every `Handler::execute()` call in place of the framework's noop
+//!      default — [`handler`]'s `echo_handler` opens its own span through
+//!      `HandlerContext.observer`, proving a *consumer's* handler reaches
+//!      the same real invocation tracker infra uses, with no
+//!      framework-internal import. See `docs/3-design/adr/`.
 //!
 //! Split by responsibility rather than one `main()` doing everything:
 //! [`handler`] owns the domain payload/`Handler`, [`intrusion`] owns the
