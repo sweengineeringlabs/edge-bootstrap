@@ -85,6 +85,24 @@ impl RuntimeBuilder {
         let grpc_allow_unauthenticated =
             self.grpc_allow_unauthenticated || config.grpc_allow_unauthenticated;
 
+        // ── Load monitor — shared counters + background sampler ───────────────
+        // Backend: builder explicit > [metrics_backend] TOML config > in-memory default.
+        // Resolved before Ingress so the same provider instance can also back
+        // ObserverContext.metrics() below — one metrics stream, not two.
+        let metrics_provider: Option<Arc<dyn MetricsProvider>> = match config.metrics.as_ref() {
+            Some(_) => Some(match self.metrics_provider {
+                Some(p) => p,
+                None => Self::build_metrics_provider(config.metrics_backend.as_ref())?,
+            }),
+            None => None,
+        };
+        let counters: Option<SharedCounters> = metrics_provider.as_ref().map(|provider| {
+            let c = Arc::new(TrafficCounters::new(Arc::clone(provider)));
+            let sampler = BackgroundSampler::new(Arc::clone(&c), config.autoscale.clone());
+            tokio::spawn(async move { sampler.run().await });
+            c
+        });
+
         // ── Ingress ───────────────────────────────────────────────────────────
         // Capture gRPC registry before the dispatcher is consumed into input.
         let reflection_registry = if config.grpc_reflection {
@@ -102,7 +120,9 @@ impl RuntimeBuilder {
             // via HandlerContext.observer instead of the framework's noop
             // default. See docs/3-design/adr/ for the decision record.
             #[cfg(feature = "observability")]
-            let d = d.with_observer_context(crate::core::observability::default_observer_context());
+            let d = d.with_observer_context(crate::core::observability::observer_context(
+                metrics_provider.clone(),
+            ));
             input = input.with_http(Arc::new(d));
         } else if let Some(h) = self.http_handler {
             input = input.with_http(h);
@@ -156,22 +176,6 @@ impl RuntimeBuilder {
         let lifecycle = self
             .lifecycle
             .unwrap_or_else(|| ProxySvc::new_null_lifecycle_monitor());
-
-        // ── Load monitor — shared counters + background sampler ───────────────
-        // Backend: builder explicit > [metrics_backend] TOML config > in-memory default.
-        let counters: Option<SharedCounters> = match config.metrics.as_ref() {
-            Some(_) => {
-                let provider = match self.metrics_provider {
-                    Some(p) => p,
-                    None => Self::build_metrics_provider(config.metrics_backend.as_ref())?,
-                };
-                let c = Arc::new(TrafficCounters::new(provider));
-                let sampler = BackgroundSampler::new(Arc::clone(&c), config.autoscale.clone());
-                tokio::spawn(async move { sampler.run().await });
-                Some(c)
-            }
-            None => None,
-        };
 
         // ── Intrusion guard — builder explicit wins, else [intrusion] TOML config ─
         #[cfg(feature = "intrusion")]

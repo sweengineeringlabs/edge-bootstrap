@@ -2450,7 +2450,7 @@ dependencies = [
  "libc",
  "percent-encoding",
  "pin-project-lite",
- "socket2 0.6.5",
+ "socket2 0.5.10",
  "tokio",
  "tower-service",
  "tracing",
@@ -3041,7 +3041,7 @@ dependencies = [
  "quinn-udp",
  "rustc-hash",
  "rustls",
- "socket2 0.6.5",
+ "socket2 0.5.10",
  "thiserror 2.0.19",
  "tokio",
  "tracing",
@@ -3079,7 +3079,7 @@ dependencies = [
  "cfg_aliases",
  "libc",
  "once_cell",
- "socket2 0.6.5",
+ "socket2 0.5.10",
  "tracing",
  "windows-sys 0.61.2",
 ]
@@ -3733,6 +3733,7 @@ dependencies = [
  "swe-edge-runtime-http-adapter",
  "swe-edge-runtime-message-broker",
  "swe-edge-runtime-scheduler",
+ "swe-observability-logging",
  "swe-observability-metrics 0.2.0 (git+ssh://git@github.com/sweengineeringlabs/justobserv.git?tag=v0.2.9)",
  "swe-observability-tracing",
  "tempfile",
@@ -4246,6 +4247,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "swe-observability-logging"
+version = "0.2.0"
+source = "git+ssh://git@github.com/sweengineeringlabs/justobserv.git?tag=v0.2.9#224a8584b70550f2e8dee7d296068219eee85af7"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "edge-dispatcher 0.9.0",
+ "edge-domain 0.10.0",
+ "edge-domain-handler 0.1.1 (git+https://github.com/sweengineeringlabs/edge-domain.git?tag=v0.10.0)",
+ "futures",
+ "glob",
+ "parking_lot",
+ "regex",
+ "serde",
+ "serde_json",
+ "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.3.0)",
+ "thiserror 2.0.19",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "swe-observability-metrics"
 version = "0.2.0"
 source = "git+ssh://git@github.com/sweengineeringlabs/justobserv.git?tag=v0.2.9#224a8584b70550f2e8dee7d296068219eee85af7"
@@ -4376,7 +4399,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.4.3",
+ "getrandom 0.3.4",
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",
