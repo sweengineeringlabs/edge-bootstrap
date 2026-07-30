@@ -2,7 +2,7 @@
 //! egress, and IDS/IPS all wired through the real `RuntimeBuilder` surface.
 //!
 //! Run:
-//!     cargo run -p swe-edge-bootstrap --features "intrusion" --example full_landscape
+//!     cargo run -p swe-edge-bootstrap --features "intrusion" --example bootstrap-e2e
 //!
 //! Unlike `hello_edge` (which hand-implements `HttpIngress` and dispatches
 //! against a `HandlerRegistry` directly, bypassing most of `RuntimeBuilder`),
