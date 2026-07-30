@@ -73,13 +73,25 @@ impl HttpIngress for HttpIntrusionGuard {
     ) -> HttpFuture<'_, Result<HttpResponse, HttpIngressError>> {
         let event = self.build_event(&req);
         match self.wired.enforcer.guard(&event) {
-            Decision::Reject(verdict) => HttpFuture::new(async move {
-                Err(HttpIngressError::PermissionDenied(format!(
-                    "blocked by edge-intrusion rule '{}': {}",
-                    verdict.rule_id, verdict.reason
-                )))
-            }),
-            Decision::Allow => self.inner.handle(req),
+            Decision::Reject(verdict) => {
+                tracing::info!(
+                    node = "http_intrusion_guard",
+                    decision = "reject",
+                    rule_id = %verdict.rule_id,
+                    reason = %verdict.reason,
+                    "request rejected before reaching the handler"
+                );
+                HttpFuture::new(async move {
+                    Err(HttpIngressError::PermissionDenied(format!(
+                        "blocked by edge-intrusion rule '{}': {}",
+                        verdict.rule_id, verdict.reason
+                    )))
+                })
+            }
+            Decision::Allow => {
+                tracing::debug!(node = "http_intrusion_guard", decision = "allow", "request allowed through");
+                self.inner.handle(req)
+            }
         }
     }
 

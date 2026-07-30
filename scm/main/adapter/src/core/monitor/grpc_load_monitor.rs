@@ -28,13 +28,23 @@ impl GrpcIngress for GrpcLoadMonitor {
         &self,
         req: UnaryRequest,
     ) -> BoxFuture<'_, Result<GrpcResponse, GrpcIngressError>> {
+        let method = req.request.method.clone();
+        tracing::debug!(node = "grpc_load_monitor", %method, "recording load metrics");
         self.counters.on_start();
         let counters = Arc::clone(&self.counters);
         let fut = self.inner.handle_unary(req);
         Box::pin(async move {
             let start = Instant::now();
             let result = fut.await;
-            counters.on_end(start.elapsed().as_micros() as u64, result.is_err());
+            let elapsed_us = start.elapsed().as_micros() as u64;
+            counters.on_end(elapsed_us, result.is_err());
+            tracing::debug!(
+                node = "grpc_load_monitor",
+                %method,
+                elapsed_us,
+                is_err = result.is_err(),
+                "load metrics recorded"
+            );
             result
         })
     }

@@ -27,13 +27,25 @@ impl HttpIngress for HttpLoadMonitor {
         &self,
         req: InboundRequest,
     ) -> HttpFuture<'_, Result<HttpResponse, HttpIngressError>> {
+        let method = req.request.method.to_string();
+        let url = req.request.url.clone();
+        tracing::debug!(node = "http_load_monitor", %method, %url, "recording load metrics");
         self.counters.on_start();
         let counters = Arc::clone(&self.counters);
         let fut = self.inner.handle(req);
         HttpFuture::new(async move {
             let start = Instant::now();
             let result = fut.await;
-            counters.on_end(start.elapsed().as_micros() as u64, result.is_err());
+            let elapsed_us = start.elapsed().as_micros() as u64;
+            counters.on_end(elapsed_us, result.is_err());
+            tracing::debug!(
+                node = "http_load_monitor",
+                %method,
+                %url,
+                elapsed_us,
+                is_err = result.is_err(),
+                "load metrics recorded"
+            );
             result
         })
     }
