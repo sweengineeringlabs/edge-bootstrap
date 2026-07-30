@@ -44,6 +44,9 @@ pub struct RuntimeBuilder {
     pub(crate) tracer_provider: Option<Arc<dyn swe_observ_tracing::TracerProvider>>,
     #[cfg(feature = "observability")]
     pub(crate) log_drain_backend: Option<Arc<dyn swe_observ_logging::LoggerProvider>>,
+    #[cfg(feature = "observability")]
+    pub(crate) observer_context_override:
+        Option<Arc<dyn edge_application_observer::ObserverContext>>,
     #[cfg(feature = "message-broker")]
     pub(crate) message_broker: Option<Arc<dyn swe_edge_runtime_message_broker::MessageBroker>>,
     #[cfg(feature = "intrusion")]
@@ -275,6 +278,25 @@ impl RuntimeBuilder {
         backend: Arc<dyn swe_observ_logging::LoggerProvider>,
     ) -> Self {
         self.log_drain_backend = Some(backend);
+        self
+    }
+
+    /// Supply a complete `ObserverContext` implementation, replacing the
+    /// internally-composed one outright.
+    ///
+    /// This is a full override, not a per-primitive merge: when set, none of
+    /// `with_tracer_provider`/`with_log_drain_backend`/`with_metrics_provider`
+    /// (or their TOML-config equivalents) have any effect on
+    /// `HandlerContext.observer` — the supplied `ObserverContext` is used
+    /// as-is. Use those other methods instead if you only want to swap one
+    /// primitive's backend while keeping the other two as this crate
+    /// composes them.
+    #[cfg(feature = "observability")]
+    pub fn with_observer_context(
+        mut self,
+        observer: Arc<dyn edge_application_observer::ObserverContext>,
+    ) -> Self {
+        self.observer_context_override = Some(observer);
         self
     }
 

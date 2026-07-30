@@ -123,6 +123,13 @@ impl RuntimeBuilder {
             Some(b) => b,
             None => Self::build_log_backend(config.log_backend.as_ref())?,
         };
+        #[cfg(feature = "observability")]
+        let observer_ctx = Self::resolve_observer_context(
+            self.observer_context_override,
+            &tracer_provider,
+            &log_drain_backend,
+            &metrics_provider,
+        );
 
         // ── Ingress ───────────────────────────────────────────────────────────
         // Capture gRPC registry before the dispatcher is consumed into input.
@@ -141,11 +148,7 @@ impl RuntimeBuilder {
             // via HandlerContext.observer instead of the framework's noop
             // default. See docs/3-design/adr/ for the decision record.
             #[cfg(feature = "observability")]
-            let d = d.with_observer_context(crate::core::observability::observer_context(
-                Arc::clone(&tracer_provider),
-                Arc::clone(&log_drain_backend),
-                metrics_provider.clone(),
-            ));
+            let d = d.with_observer_context(Arc::clone(&observer_ctx));
             input = input.with_http(Arc::new(d));
         } else if let Some(h) = self.http_handler {
             input = input.with_http(h);
@@ -577,6 +580,26 @@ impl RuntimeBuilder {
             )),
         }
     }
+
+    /// Resolve the `ObserverContext` a dispatcher's `Handler::execute()`
+    /// calls receive. A builder-supplied override wins outright — not a
+    /// per-primitive merge — over the composed tracer/log/metrics bridge.
+    #[cfg(feature = "observability")]
+    fn resolve_observer_context(
+        override_ctx: Option<Arc<dyn edge_application_observer::ObserverContext>>,
+        tracer_provider: &Arc<dyn TracerProvider>,
+        log_drain_backend: &Arc<dyn LoggerProvider>,
+        metrics_provider: &Option<Arc<dyn MetricsProvider>>,
+    ) -> Arc<dyn edge_application_observer::ObserverContext> {
+        match override_ctx {
+            Some(o) => o,
+            None => crate::core::observability::observer_context(
+                Arc::clone(tracer_provider),
+                Arc::clone(log_drain_backend),
+                metrics_provider.clone(),
+            ),
+        }
+    }
 }
 
 impl RuntimeBuilderServe {
@@ -796,6 +819,64 @@ mod tests {
         assert!(
             matches!(result, Err(RuntimeError::StartFailed(_))),
             "expected StartFailed for the not-yet-supported sqlite backend, got: {result:?}"
+        );
+    }
+
+    /// @covers: resolve_observer_context
+    #[cfg(feature = "observability")]
+    #[test]
+    fn test_resolve_observer_context_returns_the_exact_override_instance_happy() {
+        let override_ctx: Arc<dyn edge_application_observer::ObserverContext> =
+            edge_application_observer::StdObserveFactory::noop_arc_observe_context();
+        let tracer_provider: Arc<dyn TracerProvider> =
+            swe_observ_tracing::create_default_tracer_arc();
+        let log_backend: Arc<dyn LoggerProvider> =
+            Arc::new(swe_observ_logging::create_local_logging_backend());
+        let resolved = RuntimeBuilder::resolve_observer_context(
+            Some(Arc::clone(&override_ctx)),
+            &tracer_provider,
+            &log_backend,
+            &None,
+        );
+        assert!(
+            Arc::ptr_eq(&override_ctx, &resolved),
+            "expected resolve_observer_context to return the exact override instance, not a \
+             freshly-composed one"
+        );
+    }
+
+    /// @covers: resolve_observer_context
+    #[cfg(feature = "observability")]
+    #[test]
+    fn test_resolve_observer_context_uses_the_composed_bridge_when_no_override_supplied_edge() {
+        let tracer_provider: Arc<dyn TracerProvider> =
+            swe_observ_tracing::create_default_tracer_arc();
+        let log_backend: Arc<dyn LoggerProvider> =
+            Arc::new(swe_observ_logging::create_local_logging_backend());
+        let resolved =
+            RuntimeBuilder::resolve_observer_context(None, &tracer_provider, &log_backend, &None);
+
+        // Prove it's genuinely wired to the *given* tracer_provider, not a
+        // detached noop — open a span through the resolved context and
+        // confirm it lands in the exact backend instance passed in.
+        resolved
+            .tracer(edge_application_observer::TracerRequest)
+            .unwrap()
+            .tracer
+            .start_span(edge_application_observer::SpanStartRequest {
+                handler_id: "test".to_string(),
+                operation: "resolve_no_override".to_string(),
+            })
+            .unwrap()
+            .span
+            .finish(edge_application_observer::SpanFinishRequest)
+            .unwrap();
+        let recent = tracer_provider.recent_spans(10);
+        assert!(
+            recent
+                .iter()
+                .any(|s| s["operation"] == "resolve_no_override"),
+            "expected the composed bridge to be wired to the given tracer_provider, got: {recent:?}"
         );
     }
 
