@@ -3736,7 +3736,7 @@ dependencies = [
  "swe-edge-runtime-message-broker",
  "swe-edge-runtime-scheduler",
  "swe-observability-logging",
- "swe-observability-metrics 0.2.0 (git+ssh://git@github.com/sweengineeringlabs/justobserv.git?tag=v0.2.9)",
+ "swe-observability-metrics 0.2.0 (git+ssh://git@github.com/sweengineeringlabs/observability.git?tag=v0.2.9)",
  "swe-observability-tracing",
  "tempfile",
  "thiserror 2.0.19",
@@ -3823,7 +3823,7 @@ version = "0.1.0"
 dependencies = [
  "edge-transport-http-ingress-port",
  "swe-edge-bootstrap-monitor",
- "swe-observability-metrics 0.2.0 (git+ssh://git@github.com/sweengineeringlabs/justobserv.git?tag=v0.2.9)",
+ "swe-observability-metrics 0.2.0 (git+ssh://git@github.com/sweengineeringlabs/observability.git?tag=v0.2.9)",
 ]
 
 [[package]]
@@ -3836,7 +3836,7 @@ dependencies = [
  "parking_lot",
  "serde",
  "swe-edge-ingress-grpc-transport",
- "swe-observability-metrics 0.2.0 (git+ssh://git@github.com/sweengineeringlabs/justobserv.git?tag=v0.2.9)",
+ "swe-observability-metrics 0.2.0 (git+ssh://git@github.com/sweengineeringlabs/observability.git?tag=v0.2.9)",
  "tokio",
 ]
 
@@ -3864,7 +3864,7 @@ dependencies = [
  "swe-edge-runtime-message-broker",
  "swe-edge-runtime-scheduler",
  "swe-observability-logging",
- "swe-observability-metrics 0.2.0 (git+ssh://git@github.com/sweengineeringlabs/justobserv.git?tag=v0.2.9)",
+ "swe-observability-metrics 0.2.0 (git+ssh://git@github.com/sweengineeringlabs/observability.git?tag=v0.2.9)",
  "swe-observability-tracing",
  "thiserror 2.0.19",
 ]
@@ -4340,7 +4340,7 @@ dependencies = [
 [[package]]
 name = "swe-observability-logging"
 version = "0.2.0"
-source = "git+ssh://git@github.com/sweengineeringlabs/justobserv.git?tag=v0.2.9#224a8584b70550f2e8dee7d296068219eee85af7"
+source = "git+ssh://git@github.com/sweengineeringlabs/observability.git?tag=v0.2.9#224a8584b70550f2e8dee7d296068219eee85af7"
 dependencies = [
  "async-trait",
  "chrono",
@@ -4375,9 +4375,7 @@ dependencies = [
  "serde",
  "serde_json",
  "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.3.0)",
- "swe-edge-egress-http-transport",
  "thiserror 2.0.19",
- "tokio",
  "tracing",
 ]
 
@@ -4397,14 +4395,16 @@ dependencies = [
  "serde",
  "serde_json",
  "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.3.0)",
+ "swe-edge-egress-http-transport",
  "thiserror 2.0.19",
+ "tokio",
  "tracing",
 ]
 
 [[package]]
 name = "swe-observability-tracing"
 version = "0.2.0"
-source = "git+ssh://git@github.com/sweengineeringlabs/justobserv.git?tag=v0.2.9#224a8584b70550f2e8dee7d296068219eee85af7"
+source = "git+ssh://git@github.com/sweengineeringlabs/observability.git?tag=v0.2.9#224a8584b70550f2e8dee7d296068219eee85af7"
 dependencies = [
  "async-trait",
  "edge-dispatcher 0.9.0",

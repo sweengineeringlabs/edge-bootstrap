@@ -23,7 +23,7 @@ swe-edge-bootstrap-monitor = { path = "../monitor" }
 swe-edge-ingress-http = { package = "edge-transport-http-ingress-port", git = "https://github.com/sweengineeringlabs/edge-transport-http-ingress.git", rev = "f5bf97ca01a4528cfed02ad26dc8bb8914bcfd8d" }
 
 [dev-dependencies]
-swe-observ-metrics = { package = "swe-observability-metrics", git = "ssh://git@github.com/sweengineeringlabs/justobserv.git", tag = "v0.2.9" }
+swe-observ-metrics = { package = "swe-observability-metrics", git = "ssh://git@github.com/sweengineeringlabs/observability.git", tag = "v0.2.9" }
 
 [lints.rust]
 unsafe_code  = "deny"

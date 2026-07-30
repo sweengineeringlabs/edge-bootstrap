@@ -109,9 +109,9 @@ swe-edge-ingress-grpc-reflection-adapter = { git = "https://github.com/sweengine
 edge-application                 = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.18.0", features = ["full"] }
 edge-application-observer        = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.18.0", optional = true }
 edge-dispatch                    = { package = "edge-dispatcher", git = "https://github.com/sweengineeringlabs/edge-dispatcher.git", tag = "v0.11.2" }
-swe-observ-metrics               = { package = "swe-observability-metrics", git = "ssh://git@github.com/sweengineeringlabs/justobserv.git", tag = "v0.2.9" }
-swe-observ-tracing                = { package = "swe-observability-tracing", git = "ssh://git@github.com/sweengineeringlabs/justobserv.git", tag = "v0.2.9", optional = true }
-swe-observ-logging                = { package = "swe-observability-logging", git = "ssh://git@github.com/sweengineeringlabs/justobserv.git", tag = "v0.2.9", optional = true }
+swe-observ-metrics               = { package = "swe-observability-metrics", git = "ssh://git@github.com/sweengineeringlabs/observability.git", tag = "v0.2.9" }
+swe-observ-tracing                = { package = "swe-observability-tracing", git = "ssh://git@github.com/sweengineeringlabs/observability.git", tag = "v0.2.9", optional = true }
+swe-observ-logging                = { package = "swe-observability-logging", git = "ssh://git@github.com/sweengineeringlabs/observability.git", tag = "v0.2.9", optional = true }
 
 [[example]]
 name = "hello_edge"
