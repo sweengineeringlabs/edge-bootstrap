@@ -33,9 +33,14 @@ use swe_edge_bootstrap_config::ConfigLoader;
 use swe_edge_bootstrap_ingress::Ingress;
 use swe_edge_bootstrap_monitor::{SharedCounters, TrafficCounters};
 use swe_edge_bootstrap_runtime::{
-    MetricsBackendConfig, MetricsBackendKind, RuntimeError, RuntimeResult,
+    LogBackendConfig, LogBackendKind, MetricsBackendConfig, MetricsBackendKind, RuntimeError,
+    RuntimeResult, TracerBackendConfig, TracerBackendKind,
 };
+#[cfg(feature = "observability")]
+use swe_observ_logging::LoggerProvider;
 use swe_observ_metrics::{create_local_metrics_backend, MetricsProvider};
+#[cfg(feature = "observability")]
+use swe_observ_tracing::TracerProvider;
 
 const DEFAULT_APP_NAME: &str = "swe-edge";
 
@@ -103,6 +108,22 @@ impl RuntimeBuilder {
             c
         });
 
+        // ── ObserverContext tracer/log backends ─────────────────────────────────
+        // Backend: builder explicit > [tracer_backend]/[log_backend] TOML config >
+        // in-memory default. Always resolved (unlike metrics, which only builds a
+        // backend when the scrape endpoint is configured) — tracer/log drain are
+        // always active for the ObserverContext bridge.
+        #[cfg(feature = "observability")]
+        let tracer_provider: Arc<dyn TracerProvider> = match self.tracer_provider {
+            Some(p) => p,
+            None => Self::build_tracer_provider(config.tracer_backend.as_ref())?,
+        };
+        #[cfg(feature = "observability")]
+        let log_drain_backend: Arc<dyn LoggerProvider> = match self.log_drain_backend {
+            Some(b) => b,
+            None => Self::build_log_backend(config.log_backend.as_ref())?,
+        };
+
         // ── Ingress ───────────────────────────────────────────────────────────
         // Capture gRPC registry before the dispatcher is consumed into input.
         let reflection_registry = if config.grpc_reflection {
@@ -121,6 +142,8 @@ impl RuntimeBuilder {
             // default. See docs/3-design/adr/ for the decision record.
             #[cfg(feature = "observability")]
             let d = d.with_observer_context(crate::core::observability::observer_context(
+                Arc::clone(&tracer_provider),
+                Arc::clone(&log_drain_backend),
                 metrics_provider.clone(),
             ));
             input = input.with_http(Arc::new(d));
@@ -446,6 +469,114 @@ impl RuntimeBuilder {
             )),
         }
     }
+
+    /// Resolve the `TracerProvider` backend from `[tracer_backend]` TOML
+    /// config. Falls back to the in-memory default when `cfg` is absent or
+    /// its `active` kind is `Memory`.
+    #[cfg(feature = "observability")]
+    fn build_tracer_provider(
+        cfg: Option<&TracerBackendConfig>,
+    ) -> RuntimeResult<Arc<dyn TracerProvider>> {
+        let Some(cfg) = cfg else {
+            return Ok(swe_observ_tracing::create_default_tracer_arc());
+        };
+        match cfg.active {
+            TracerBackendKind::Memory => Ok(swe_observ_tracing::create_default_tracer_arc()),
+            TracerBackendKind::File => {
+                let settings = cfg.file.as_ref().ok_or_else(|| {
+                    RuntimeError::StartFailed(
+                        "[tracer_backend.file] path is required when active = \"file\"".into(),
+                    )
+                })?;
+                Ok(Arc::new(swe_observ_tracing::create_file_tracer(
+                    settings.path.clone(),
+                )))
+            }
+            TracerBackendKind::Jaeger => {
+                let settings = cfg.jaeger.as_ref().ok_or_else(|| {
+                    RuntimeError::StartFailed(
+                        "[tracer_backend.jaeger] endpoint is required when active = \"jaeger\""
+                            .into(),
+                    )
+                })?;
+                Ok(Arc::new(swe_observ_tracing::create_jaeger_tracer(
+                    &settings.service_name,
+                    &settings.endpoint,
+                )))
+            }
+            TracerBackendKind::Otel => {
+                let settings = cfg.otel.as_ref().ok_or_else(|| {
+                    RuntimeError::StartFailed(
+                        "[tracer_backend.otel] service_name is required when active = \"otel\""
+                            .into(),
+                    )
+                })?;
+                Ok(Arc::new(swe_observ_tracing::create_otel_tracer(
+                    &settings.service_name,
+                )))
+            }
+            TracerBackendKind::Sqlite => Err(RuntimeError::StartFailed(
+                "tracer_backend = \"sqlite\" is not supported yet — requires async pool \
+                 initialisation this composition root doesn't perform. Use \
+                 RuntimeBuilder::with_tracer_provider() to supply a pre-initialised \
+                 backend instead."
+                    .into(),
+            )),
+        }
+    }
+
+    /// Resolve the `LoggerProvider` backend from `[log_backend]` TOML
+    /// config. Falls back to the in-memory default when `cfg` is absent or
+    /// its `active` kind is `Memory`.
+    #[cfg(feature = "observability")]
+    fn build_log_backend(cfg: Option<&LogBackendConfig>) -> RuntimeResult<Arc<dyn LoggerProvider>> {
+        let Some(cfg) = cfg else {
+            return Ok(Arc::new(swe_observ_logging::create_local_logging_backend()));
+        };
+        match cfg.active {
+            LogBackendKind::Memory => {
+                Ok(Arc::new(swe_observ_logging::create_local_logging_backend()))
+            }
+            LogBackendKind::File => {
+                let settings = cfg.file.as_ref().ok_or_else(|| {
+                    RuntimeError::StartFailed(
+                        "[log_backend.file] path is required when active = \"file\"".into(),
+                    )
+                })?;
+                Ok(Arc::new(swe_observ_logging::create_file_logger(
+                    settings.path.clone(),
+                    settings.max_size_mb,
+                )))
+            }
+            LogBackendKind::Elk => {
+                let settings = cfg.elk.as_ref().ok_or_else(|| {
+                    RuntimeError::StartFailed(
+                        "[log_backend.elk] endpoint/index is required when active = \"elk\"".into(),
+                    )
+                })?;
+                Ok(Arc::new(swe_observ_logging::create_elk_logger(
+                    &settings.index,
+                )))
+            }
+            LogBackendKind::Otel => {
+                let settings = cfg.otel.as_ref().ok_or_else(|| {
+                    RuntimeError::StartFailed(
+                        "[log_backend.otel] service_name is required when active = \"otel\"".into(),
+                    )
+                })?;
+                Ok(Arc::new(swe_observ_logging::create_otel_logger(
+                    &settings.service_name,
+                )))
+            }
+            LogBackendKind::Sqlite => Err(RuntimeError::StartFailed(
+                "log_backend = \"sqlite\" is not supported yet — requires async pool \
+                 initialisation this composition root doesn't perform. Use \
+                 RuntimeBuilder::with_log_drain_backend() to supply a pre-initialised \
+                 backend instead."
+                    .into(),
+            )),
+        }
+    }
 }
 
 impl RuntimeBuilderServe {
@@ -527,6 +658,144 @@ mod tests {
         assert!(
             contents.contains("selected_file_backend") && contents.contains("42"),
             "expected real recorded data in the file, got: {contents}"
+        );
+    }
+
+    /// @covers: build_tracer_provider
+    #[cfg(feature = "observability")]
+    #[test]
+    fn test_build_tracer_provider_defaults_to_memory_when_config_absent_happy() {
+        let provider = RuntimeBuilder::build_tracer_provider(None).unwrap();
+        provider.export_span(&serde_json::json!({"handler_id": "test_span"}));
+        assert_eq!(provider.recent_spans(10).len(), 1);
+    }
+
+    /// @covers: build_tracer_provider
+    ///
+    /// `swe-observability-tracing` doesn't publicly re-export its settings
+    /// types (unlike metrics/logging), so the config has to be built via
+    /// TOML deserialization here rather than a Rust struct literal — see the
+    /// doc comment on `RuntimeConfig.tracer_backend`.
+    #[cfg(feature = "observability")]
+    #[test]
+    fn test_build_tracer_provider_file_backend_writes_real_data_to_disk_happy() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("spans.jsonl");
+        let toml_str = format!(
+            "active = \"file\"\n[file]\npath = {:?}\n",
+            path.to_string_lossy()
+        );
+        let cfg: TracerBackendConfig = toml::from_str(&toml_str).unwrap();
+        let provider = RuntimeBuilder::build_tracer_provider(Some(&cfg)).unwrap();
+        provider.export_span(&serde_json::json!({"handler_id": "selected_file_tracer_backend"}));
+        provider.flush();
+
+        let contents = std::fs::read_to_string(&path).unwrap_or_else(|e| {
+            panic!("expected the File backend to actually write {path:?}: {e}")
+        });
+        assert!(
+            contents.contains("selected_file_tracer_backend"),
+            "expected real recorded data in the file, got: {contents}"
+        );
+    }
+
+    /// @covers: build_tracer_provider
+    #[cfg(feature = "observability")]
+    #[test]
+    fn test_build_tracer_provider_jaeger_missing_settings_returns_error_edge() {
+        let cfg: TracerBackendConfig = toml::from_str("active = \"jaeger\"\n").unwrap();
+        let result = RuntimeBuilder::build_tracer_provider(Some(&cfg));
+        assert!(
+            matches!(result, Err(RuntimeError::StartFailed(_))),
+            "expected StartFailed when [tracer_backend.jaeger] is missing, got: {result:?}"
+        );
+    }
+
+    /// @covers: build_tracer_provider
+    #[cfg(feature = "observability")]
+    #[test]
+    fn test_build_tracer_provider_sqlite_returns_not_supported_error_edge() {
+        let cfg: TracerBackendConfig = toml::from_str("active = \"sqlite\"\n").unwrap();
+        let result = RuntimeBuilder::build_tracer_provider(Some(&cfg));
+        assert!(
+            matches!(result, Err(RuntimeError::StartFailed(_))),
+            "expected StartFailed for the not-yet-supported sqlite backend, got: {result:?}"
+        );
+    }
+
+    /// @covers: build_log_backend
+    #[cfg(feature = "observability")]
+    #[test]
+    fn test_build_log_backend_defaults_to_memory_when_config_absent_happy() {
+        let backend = RuntimeBuilder::build_log_backend(None).unwrap();
+        backend.emit(&swe_observ_logging::LogEntry::new(
+            swe_observ_logging::LogLevel::Info,
+            "test",
+            "hello",
+        ));
+        assert_eq!(backend.recent_entries(10).len(), 1);
+    }
+
+    /// @covers: build_log_backend
+    #[cfg(feature = "observability")]
+    #[test]
+    fn test_build_log_backend_file_backend_writes_real_data_to_disk_happy() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("logs.jsonl");
+        let cfg = LogBackendConfig {
+            active: LogBackendKind::File,
+            file: Some(swe_edge_bootstrap_runtime::LogFileSettings {
+                path: path.to_string_lossy().to_string(),
+                max_size_mb: 10,
+                rotation: Default::default(),
+            }),
+            ..Default::default()
+        };
+        let backend = RuntimeBuilder::build_log_backend(Some(&cfg)).unwrap();
+        backend.emit(&swe_observ_logging::LogEntry::new(
+            swe_observ_logging::LogLevel::Error,
+            "test",
+            "selected_file_log_backend",
+        ));
+        backend.flush();
+
+        let contents = std::fs::read_to_string(&path).unwrap_or_else(|e| {
+            panic!("expected the File backend to actually write {path:?}: {e}")
+        });
+        assert!(
+            contents.contains("selected_file_log_backend"),
+            "expected real recorded data in the file, got: {contents}"
+        );
+    }
+
+    /// @covers: build_log_backend
+    #[cfg(feature = "observability")]
+    #[test]
+    fn test_build_log_backend_elk_missing_settings_returns_error_edge() {
+        let cfg = LogBackendConfig {
+            active: LogBackendKind::Elk,
+            elk: None,
+            ..Default::default()
+        };
+        let result = RuntimeBuilder::build_log_backend(Some(&cfg));
+        assert!(
+            matches!(result, Err(RuntimeError::StartFailed(_))),
+            "expected StartFailed when [log_backend.elk] is missing, got: {result:?}"
+        );
+    }
+
+    /// @covers: build_log_backend
+    #[cfg(feature = "observability")]
+    #[test]
+    fn test_build_log_backend_sqlite_returns_not_supported_error_edge() {
+        let cfg = LogBackendConfig {
+            active: LogBackendKind::Sqlite,
+            ..Default::default()
+        };
+        let result = RuntimeBuilder::build_log_backend(Some(&cfg));
+        assert!(
+            matches!(result, Err(RuntimeError::StartFailed(_))),
+            "expected StartFailed for the not-yet-supported sqlite backend, got: {result:?}"
         );
     }
 

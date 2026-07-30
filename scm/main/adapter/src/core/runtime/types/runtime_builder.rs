@@ -40,6 +40,10 @@ pub struct RuntimeBuilder {
     pub(crate) tracing_config: Option<swe_edge_observ_config::TracingConfig>,
     pub(crate) stream_handler: Option<Arc<dyn HttpStream>>,
     pub(crate) metrics_provider: Option<Arc<dyn swe_observ_metrics::MetricsProvider>>,
+    #[cfg(feature = "observability")]
+    pub(crate) tracer_provider: Option<Arc<dyn swe_observ_tracing::TracerProvider>>,
+    #[cfg(feature = "observability")]
+    pub(crate) log_drain_backend: Option<Arc<dyn swe_observ_logging::LoggerProvider>>,
     #[cfg(feature = "message-broker")]
     pub(crate) message_broker: Option<Arc<dyn swe_edge_runtime_message_broker::MessageBroker>>,
     #[cfg(feature = "intrusion")]
@@ -243,6 +247,34 @@ impl RuntimeBuilder {
         provider: Arc<dyn swe_observ_metrics::MetricsProvider>,
     ) -> Self {
         self.metrics_provider = Some(provider);
+        self
+    }
+
+    /// Attach a `TracerProvider` backend for the real `ObserverContext`
+    /// bridge's spans.
+    ///
+    /// Takes precedence over `[tracer_backend]` in TOML config. Absent
+    /// (here and in config) means the in-memory default backend.
+    #[cfg(feature = "observability")]
+    pub fn with_tracer_provider(
+        mut self,
+        provider: Arc<dyn swe_observ_tracing::TracerProvider>,
+    ) -> Self {
+        self.tracer_provider = Some(provider);
+        self
+    }
+
+    /// Attach a `LoggerProvider` backend for the real `ObserverContext`
+    /// bridge's structured log entries.
+    ///
+    /// Takes precedence over `[log_backend]` in TOML config. Absent (here
+    /// and in config) means the in-memory default backend.
+    #[cfg(feature = "observability")]
+    pub fn with_log_drain_backend(
+        mut self,
+        backend: Arc<dyn swe_observ_logging::LoggerProvider>,
+    ) -> Self {
+        self.log_drain_backend = Some(backend);
         self
     }
 

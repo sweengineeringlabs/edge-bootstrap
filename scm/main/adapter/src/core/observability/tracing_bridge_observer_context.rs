@@ -33,7 +33,7 @@ pub(crate) struct TracingBridgeObserverContext {
 impl TracingBridgeObserverContext {
     pub(crate) fn new(
         tracer_backend: Arc<dyn TracerProvider>,
-        log_backend: Box<dyn LoggerProvider>,
+        log_backend: Arc<dyn LoggerProvider>,
         metrics_provider: Option<Arc<dyn MetricsBackend>>,
     ) -> Self {
         let metric_registry: Box<dyn MetricRegistry> = match metrics_provider {
@@ -89,8 +89,8 @@ mod tests {
         }
     }
 
-    fn log_backend() -> Box<dyn LoggerProvider> {
-        Box::new(swe_observ_logging::create_local_logging_backend())
+    fn log_backend() -> Arc<dyn LoggerProvider> {
+        Arc::new(swe_observ_logging::create_local_logging_backend())
     }
 
     #[test]

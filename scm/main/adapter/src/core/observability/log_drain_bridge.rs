@@ -1,15 +1,17 @@
 //! [`LogDrainBridge`] — real `LogDrain` backed by
 //! `swe-observability-logging`'s `LoggerProvider`.
 
+use std::sync::Arc;
+
 use edge_application_observer::{LogDrain, LogEmitRequest, LogEmitResponse, ObserveError};
 use swe_observ_logging::{LogEntry, LogLevel, LoggerProvider};
 
 pub(crate) struct LogDrainBridge {
-    backend: Box<dyn LoggerProvider>,
+    backend: Arc<dyn LoggerProvider>,
 }
 
 impl LogDrainBridge {
-    pub(crate) fn new(backend: Box<dyn LoggerProvider>) -> Self {
+    pub(crate) fn new(backend: Arc<dyn LoggerProvider>) -> Self {
         Self { backend }
     }
 }
@@ -50,7 +52,7 @@ mod tests {
     #[test]
     fn test_emit_reaches_the_real_backend_happy() {
         let backend = swe_observ_logging::create_local_logging_backend();
-        let drain = LogDrainBridge::new(Box::new(backend));
+        let drain = LogDrainBridge::new(Arc::new(backend));
         drain
             .emit(LogEmitRequest {
                 level: "error".to_string(),

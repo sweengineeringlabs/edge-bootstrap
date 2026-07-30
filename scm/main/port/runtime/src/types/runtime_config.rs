@@ -8,6 +8,14 @@ use swe_edge_ingress_verifier::JwtConfig;
 
 pub use swe_edge_bootstrap_monitor::{AutoscalePolicy, MetricsConfig};
 pub use swe_edge_observ_config::ObservabilityConfig;
+/// Which `LoggerProvider` backend the real `ObserverContext` bridge ships
+/// structured log entries to.
+pub use swe_observ_logging::LoggingConfig as LogBackendConfig;
+pub use swe_observ_logging::LoggingProvider as LogBackendKind;
+pub use swe_observ_logging::{
+    ElkSettings as LogElkSettings, FileSettings as LogFileSettings,
+    OtelSettings as LogOtelSettings, SqliteSettings as LogSqliteSettings,
+};
 /// Which `MetricsProvider` backend stores load-monitor/autoscale counters —
 /// distinct from [`MetricsConfig`], which is the Prometheus *scrape endpoint*
 /// bind address/path, not the backend that actually stores the data.
@@ -16,6 +24,12 @@ pub use swe_observ_metrics::{
     FileSettings as MetricsFileSettings, MetricsBackendKind, OtelSettings as MetricsOtelSettings,
     PrometheusSettings as MetricsPrometheusSettings, SqliteSettings as MetricsSqliteSettings,
 };
+pub use swe_observ_tracing::TracingBackendKind as TracerBackendKind;
+/// Which `TracerProvider` backend the real `ObserverContext` bridge exports
+/// spans to. Named distinctly from `swe_edge_observ_config::TracingConfig`
+/// (the bare-`tracing`-crate console subscriber's own settings, a different
+/// concern entirely — see `RuntimeBuilder::with_tracing`).
+pub use swe_observ_tracing::TracingConfig as TracerBackendConfig;
 
 #[cfg(feature = "intrusion")]
 pub use edge_intrusion::config::Config as IntrusionConfig;
@@ -74,6 +88,20 @@ pub struct RuntimeConfig {
     /// Has no effect if `metrics` is absent — no backend is constructed at
     /// all unless the scrape endpoint itself is configured.
     pub metrics_backend: Option<MetricsBackendConfig>,
+    /// Which `TracerProvider` backend the real `ObserverContext` bridge
+    /// exports spans to (`[tracer_backend]` section). Absent = the in-memory
+    /// default. Overridden by `RuntimeBuilder::with_tracer_provider` when
+    /// both are set. Note: `swe-observability-tracing` does not publicly
+    /// re-export its `JaegerSettings`/`FileSettings`/`OtelSettings`/
+    /// `SqliteSettings` types (unlike metrics/logging), so this section can
+    /// only be populated via TOML/JSON deserialization — not constructed
+    /// programmatically in Rust with a settings literal.
+    pub tracer_backend: Option<TracerBackendConfig>,
+    /// Which `LoggerProvider` backend the real `ObserverContext` bridge
+    /// ships structured log entries to (`[log_backend]` section). Absent =
+    /// the in-memory default. Overridden by
+    /// `RuntimeBuilder::with_log_drain_backend` when both are set.
+    pub log_backend: Option<LogBackendConfig>,
     /// Auto-scale threshold policy.  Checked every second by the sampler.
     /// Has no effect if `metrics` is absent.
     pub autoscale: Option<AutoscalePolicy>,
@@ -116,6 +144,8 @@ impl Default for RuntimeConfig {
             grpc_reflection: false,
             metrics: None,
             metrics_backend: None,
+            tracer_backend: None,
+            log_backend: None,
             autoscale: None,
             observability: None,
             deploy_dir: None,

@@ -21,7 +21,8 @@ pub use error::{RuntimeError, RuntimeResult};
 pub use traits::RuntimeManager;
 pub use types::health::{ComponentHealth, RuntimeHealth};
 pub use types::{
-    MetricsBackendConfig, MetricsBackendKind, MetricsFileSettings, MetricsOtelSettings,
-    MetricsPrometheusSettings, MetricsSqliteSettings, RuntimeConfig, RuntimeStatus,
-    ServiceRegistry, TracingInitializer,
+    LogBackendConfig, LogBackendKind, LogElkSettings, LogFileSettings, LogOtelSettings,
+    LogSqliteSettings, MetricsBackendConfig, MetricsBackendKind, MetricsFileSettings,
+    MetricsOtelSettings, MetricsPrometheusSettings, MetricsSqliteSettings, RuntimeConfig,
+    RuntimeStatus, ServiceRegistry, TracerBackendConfig, TracerBackendKind, TracingInitializer,
 };

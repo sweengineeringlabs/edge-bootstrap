@@ -12,6 +12,7 @@ use crate::core::runner::DaemonRunner;
 use crate::core::validator::ConfigValidator;
 use crate::core::ApplicationConfigLoader;
 use crate::core::{Runtime, ServerConfigLoader, ServerMonitor};
+use edge_proxy::LifecycleMonitor;
 use swe_edge_bootstrap_config::ConfigError;
 use swe_edge_bootstrap_config::ConfigLoader;
 use swe_edge_bootstrap_egress::Egress;
@@ -21,7 +22,6 @@ use swe_edge_bootstrap_runtime::RuntimeConfig;
 use swe_edge_bootstrap_runtime::RuntimeManager;
 use swe_edge_bootstrap_runtime::{RuntimeError, RuntimeResult};
 use swe_edge_bootstrap_validator::Validator;
-use edge_proxy::LifecycleMonitor;
 use swe_observ_metrics::MetricsProvider;
 
 // ── ServerConfigLoader methods ─────────────────────────────────────────────────
@@ -321,9 +321,7 @@ impl Runtime {
     }
 
     /// Construct an egress adapter holding an HTTP-only outbound client.
-    pub fn http_egress(
-        http: Arc<dyn swe_edge_egress_http::HttpEgress>,
-    ) -> impl Egress {
+    pub fn http_egress(http: Arc<dyn swe_edge_egress_http::HttpEgress>) -> impl Egress {
         let egress = DefaultEgress::new_http(http);
         egress
     }

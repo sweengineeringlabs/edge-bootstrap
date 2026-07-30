@@ -38,6 +38,8 @@ swe-edge-observ-config      = { git = "https://github.com/sweengineeringlabs/edg
 swe-edge-runtime-message-broker = { git = "https://github.com/sweengineeringlabs/edge-runtime.git", tag = "v0.3.16", features = ["tokio-rt"], optional = true }
 swe-edge-runtime-scheduler  = { git = "https://github.com/sweengineeringlabs/edge-scheduler.git", tag = "v0.3.6", optional = true }
 swe-observ-metrics          = { package = "swe-observability-metrics", git = "ssh://git@github.com/sweengineeringlabs/justobserv.git", tag = "v0.2.9" }
+swe-observ-tracing          = { package = "swe-observability-tracing", git = "ssh://git@github.com/sweengineeringlabs/justobserv.git", tag = "v0.2.9" }
+swe-observ-logging          = { package = "swe-observability-logging", git = "ssh://git@github.com/sweengineeringlabs/justobserv.git", tag = "v0.2.9" }
 thiserror                   = "2"
 
 [lints.rust]

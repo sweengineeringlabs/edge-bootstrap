@@ -8,8 +8,10 @@ pub mod tracing_initializer;
 
 pub use health::{ComponentHealth, RuntimeHealth};
 pub use runtime_config::{
-    MetricsBackendConfig, MetricsBackendKind, MetricsFileSettings, MetricsOtelSettings,
-    MetricsPrometheusSettings, MetricsSqliteSettings, RuntimeConfig,
+    LogBackendConfig, LogBackendKind, LogElkSettings, LogFileSettings, LogOtelSettings,
+    LogSqliteSettings, MetricsBackendConfig, MetricsBackendKind, MetricsFileSettings,
+    MetricsOtelSettings, MetricsPrometheusSettings, MetricsSqliteSettings, RuntimeConfig,
+    TracerBackendConfig, TracerBackendKind,
 };
 pub use runtime_status::RuntimeStatus;
 pub use service_registry::ServiceRegistry;
