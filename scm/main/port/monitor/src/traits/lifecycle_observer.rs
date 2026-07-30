@@ -1,3 +1,5 @@
+//! `LifecycleObserver` — marker trait for observability-emitting lifecycle-monitor wrappers.
+
 /// Marker trait for [`LifecycleMonitor`](edge_proxy::LifecycleMonitor) wrappers
 /// that emit observability signals (metrics, traces) on health transitions.
 pub trait LifecycleObserver: edge_proxy::LifecycleMonitor {}
@@ -33,7 +35,10 @@ mod tests {
         fn shutdown(&self, req: ShutdownRequest) -> BoxFuture<'_, Result<(), LifecycleError>> {
             self.inner.shutdown(req)
         }
-        fn status(&self, req: StatusRequest) -> BoxFuture<'_, Result<StatusResponse, LifecycleError>> {
+        fn status(
+            &self,
+            req: StatusRequest,
+        ) -> BoxFuture<'_, Result<StatusResponse, LifecycleError>> {
             self.inner.status(req)
         }
         fn component<'a>(

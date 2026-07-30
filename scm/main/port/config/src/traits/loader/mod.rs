@@ -1,3 +1,5 @@
+//! Config loader trait contracts.
+
 pub mod application_config_loader;
 #[allow(clippy::module_inception)]
 pub mod config_loader;

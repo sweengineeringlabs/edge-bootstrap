@@ -20,7 +20,7 @@ path = "src/lib.rs"
 
 [dependencies]
 edge-dispatch = { package = "edge-dispatcher", git = "https://github.com/sweengineeringlabs/edge-dispatcher.git", tag = "v0.11.2" }
-edge-domain   = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.18.0", package = "edge-application", features = ["full"] }
+edge-application = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.18.0", features = ["full"] }
 serde         = { version = "1.0", features = ["derive"] }
 swe-edge-bootstrap-runtime = { path = "../runtime" }
 swe-edge-configbuilder = { git = "https://github.com/sweengineeringlabs/edge-configbuilder.git", tag = "v0.4.2" }

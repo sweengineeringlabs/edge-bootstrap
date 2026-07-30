@@ -9,7 +9,7 @@
 //! against a `HandlerRegistry` directly, bypassing most of `RuntimeBuilder`),
 //! this example uses the layer `RuntimeBuilder` is actually built to cover:
 //!
-//!   1. A real, hand-written `edge_domain::Handler` ([`handler`]),
+//!   1. A real, hand-written `edge_application::Handler` ([`handler`]),
 //!      registered once and served over both `.http_route()` and
 //!      `.grpc_route()` — the same handler, two protocols, no duplicated
 //!      logic.

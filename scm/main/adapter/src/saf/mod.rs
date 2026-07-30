@@ -32,7 +32,7 @@ pub use swe_edge_bootstrap_config::{FeatureHandlerBridge, HandlerFactory};
 pub use swe_edge_configbuilder::{FeatureRegistry, FeatureState, OptionalSection};
 
 // ── Ingress surface (handlers + request/response types) ───────────────────────
-pub use edge_domain::{Handler, HandlerError};
+pub use edge_application::{Handler, HandlerError};
 pub use swe_edge_ingress_grpc::{
     GrpcDecodeFn, GrpcEncodeFn, GrpcHealthCheck, GrpcIngress, GrpcIngressError, GrpcIngressResult,
     GrpcMessageStream, GrpcMetadata, GrpcRequest, GrpcResponse, GrpcStatusCode,

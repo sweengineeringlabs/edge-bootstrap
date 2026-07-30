@@ -13,7 +13,7 @@ pub trait HandlerFactory: Sized {
     /// The config type this factory is constructed from.
     type Config;
     /// Construct `Self` from a loaded `Config`.
-    fn build(cfg: Self::Config) -> Result<Self, edge_domain::HandlerError>;
+    fn build(cfg: Self::Config) -> Result<Self, edge_application::HandlerError>;
 }
 
 /// Extends [`FeatureRegistry`] with a one-call bridge to [`OptionalHandler`].
@@ -36,8 +36,8 @@ pub trait HandlerFactory: Sized {
 ///
 /// #[derive(Clone)]
 /// struct GuardPayload(String);
-/// impl edge_domain::Request for GuardPayload {}
-/// impl edge_domain::Response for GuardPayload {}
+/// impl edge_application::Request for GuardPayload {}
+/// impl edge_application::Response for GuardPayload {}
 ///
 /// struct GuardHandler { token: String }
 ///
@@ -119,8 +119,8 @@ mod tests {
 
     #[derive(Clone)]
     struct GuardPayload(#[allow(dead_code)] String);
-    impl edge_domain::Request for GuardPayload {}
-    impl edge_domain::Response for GuardPayload {}
+    impl edge_application::Request for GuardPayload {}
+    impl edge_application::Response for GuardPayload {}
 
     struct GuardHandler;
 
@@ -158,12 +158,11 @@ mod tests {
         let loader = ConfigLoaderFactory::create_loader_for_dir(dir.path());
 
         let mut registry = FeatureRegistry::new();
-        let guard: OptionalHandler<GuardHandler> = match registry
-            .build_handler::<GuardConfig, GuardHandler>(&loader)
-        {
-            Ok(guard) => guard,
-            Err(e) => panic!("build_handler must succeed, got {e:?}"),
-        };
+        let guard: OptionalHandler<GuardHandler> =
+            match registry.build_handler::<GuardConfig, GuardHandler>(&loader) {
+                Ok(guard) => guard,
+                Err(e) => panic!("build_handler must succeed, got {e:?}"),
+            };
 
         assert!(guard.is_enabled());
     }
@@ -180,12 +179,11 @@ mod tests {
         let loader = ConfigLoaderFactory::create_loader_for_dir(dir.path());
 
         let mut registry = FeatureRegistry::new();
-        let guard: OptionalHandler<GuardHandler> = match registry
-            .build_handler::<GuardConfig, GuardHandler>(&loader)
-        {
-            Ok(guard) => guard,
-            Err(e) => panic!("build_handler must succeed, got {e:?}"),
-        };
+        let guard: OptionalHandler<GuardHandler> =
+            match registry.build_handler::<GuardConfig, GuardHandler>(&loader) {
+                Ok(guard) => guard,
+                Err(e) => panic!("build_handler must succeed, got {e:?}"),
+            };
 
         assert!(!guard.is_enabled());
     }

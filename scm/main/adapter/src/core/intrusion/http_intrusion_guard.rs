@@ -89,7 +89,11 @@ impl HttpIngress for HttpIntrusionGuard {
                 })
             }
             Decision::Allow => {
-                tracing::debug!(node = "http_intrusion_guard", decision = "allow", "request allowed through");
+                tracing::debug!(
+                    node = "http_intrusion_guard",
+                    decision = "allow",
+                    "request allowed through"
+                );
                 self.inner.handle(req)
             }
         }
@@ -123,7 +127,7 @@ mod tests {
     fn inbound(url: &str, peer_ip: [u8; 4]) -> InboundRequest {
         InboundRequest::new(
             HttpRequest::get(url),
-            RequestContext::new(edge_domain::SecurityContext::unauthenticated()),
+            RequestContext::new(edge_application::SecurityContext::unauthenticated()),
             std::net::SocketAddr::from((peer_ip, 0)),
         )
     }

@@ -22,13 +22,13 @@
 
 use std::sync::Arc;
 
+use edge_application::{
+    DirectCommandBus, Domain, HandlerContext, HandlerRegistry as HandlerRegistryTrait,
+};
 use edge_application_handler::{
     HandlerLookupRequest, ObserverContextAdapter, RegisterHandlerRequest,
 };
 use edge_application_observer::StdObserveFactory;
-use edge_domain::{
-    DirectCommandBus, Domain, HandlerContext, HandlerRegistry as HandlerRegistryTrait,
-};
 use edge_proxy::ProxySvc;
 use swe_edge_bootstrap::{
     HealthCheckRequest, HealthCheckResponse, HttpBody, HttpFuture, HttpHealthCheck, HttpIngress,
@@ -49,8 +49,8 @@ const HANDLER_ID: &str = "echo";
 /// `Request`/`Response` marker traits (orphan rule).
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 struct EchoPayload(String);
-impl edge_domain::Request for EchoPayload {}
-impl edge_domain::Response for EchoPayload {}
+impl edge_application::Request for EchoPayload {}
+impl edge_application::Response for EchoPayload {}
 
 // ── HttpIngress ───────────────────────────────────────────────────────────────
 

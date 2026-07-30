@@ -9,7 +9,7 @@ use std::time::Duration;
 use edge_proxy::ProxySvc;
 use swe_edge_egress_grpc::TransportSvc as GrpcTransportSvc;
 use swe_edge_egress_http::HttpTransportSvc;
-use swe_edge_ingress_grpc_reflection::ReflectionService;
+use swe_edge_ingress_grpc_reflection_adapter::ReflectionService;
 use swe_edge_ingress_verifier::{JwtVerifier, TokenVerifier};
 use swe_edge_runtime_grpc::{
     AllowUnauthenticatedFlagRequest, GrpcServerManage, TonicGrpcServer, WithInterceptorsRequest,
@@ -155,6 +155,10 @@ impl RuntimeBuilder {
         }
 
         if let Some(d) = self.grpc_dispatcher {
+            // Same real ObserverContext as the HTTP path — Handler::execute()
+            // behaves identically regardless of which protocol dispatched it.
+            #[cfg(feature = "observability")]
+            let d = d.with_observer_context(Arc::clone(&observer_ctx));
             input = input.with_grpc(Arc::new(d));
         } else if let Some(h) = self.grpc_handler {
             input = input.with_grpc(h);

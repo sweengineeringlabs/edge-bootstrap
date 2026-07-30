@@ -12,18 +12,18 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use edge_application::{Handler, HandlerError};
 use edge_application_handler::{
     CounterLookupRequest, DrainRequest, ExecutionRequest, IdRequest, IdResponse, IncrementRequest,
     LogEmitRequest, MetricsRequest, PatternRequest, PatternResponse, SpanAnnotationRequest,
     SpanFinishRequest, SpanStartRequest, TracerRequest,
 };
-use edge_domain::{Handler, HandlerError};
 
 /// Payload shared by both the HTTP and gRPC routes.
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub(crate) struct EchoPayload(pub(crate) String);
-impl edge_domain::Request for EchoPayload {}
-impl edge_domain::Response for EchoPayload {}
+impl edge_application::Request for EchoPayload {}
+impl edge_application::Response for EchoPayload {}
 
 struct EchoHandler;
 

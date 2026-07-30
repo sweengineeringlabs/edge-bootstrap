@@ -128,12 +128,16 @@ impl RuntimeManager for DefaultRuntimeManager {
             let self_probe_addr = std::net::SocketAddr::from(([127, 0, 0, 1], 0));
             if let Some(h) = self.ingress.http() {
                 let _ = h
-                    .health_check(swe_edge_ingress_http::HealthCheckRequest::new(self_probe_addr))
+                    .health_check(swe_edge_ingress_http::HealthCheckRequest::new(
+                        self_probe_addr,
+                    ))
                     .await;
             }
             if let Some(g) = self.ingress.grpc() {
                 let _ = g
-                    .health_check(swe_edge_ingress_grpc::HealthCheckRequest::new(self_probe_addr))
+                    .health_check(swe_edge_ingress_grpc::HealthCheckRequest::new(
+                        self_probe_addr,
+                    ))
                     .await;
             }
 
@@ -236,7 +240,9 @@ impl RuntimeManager for DefaultRuntimeManager {
             let self_probe_addr = std::net::SocketAddr::from(([127, 0, 0, 1], 0));
             if let Some(h) = self.ingress.http() {
                 match h
-                    .health_check(swe_edge_ingress_http::HealthCheckRequest::new(self_probe_addr))
+                    .health_check(swe_edge_ingress_http::HealthCheckRequest::new(
+                        self_probe_addr,
+                    ))
                     .await
                 {
                     Ok(_) => components.push(ComponentHealth::healthy("ingress.http")),
@@ -247,7 +253,9 @@ impl RuntimeManager for DefaultRuntimeManager {
             }
             if let Some(g) = self.ingress.grpc() {
                 match g
-                    .health_check(swe_edge_ingress_grpc::HealthCheckRequest::new(self_probe_addr))
+                    .health_check(swe_edge_ingress_grpc::HealthCheckRequest::new(
+                        self_probe_addr,
+                    ))
                     .await
                 {
                     Ok(_) => components.push(ComponentHealth::healthy("ingress.grpc")),

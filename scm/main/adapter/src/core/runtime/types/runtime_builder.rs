@@ -2,15 +2,16 @@
 
 use std::sync::Arc;
 
-use edge_domain::{Handler, InProcessHandlerRegistry};
+use edge_application::{Handler, InProcessHandlerRegistry};
 use edge_proxy::LifecycleMonitor;
 use edge_security_runtime_tls::PemTlsConfig;
 use swe_edge_egress_grpc::GrpcEgress;
 use swe_edge_egress_http::HttpEgress;
 use swe_edge_ingress_grpc::{
-    GrpcBytes, GrpcDecodeFn, GrpcEncodeFn, GrpcHandlerAdapter, GrpcHandlerRegistryDispatcher,
-    GrpcIngress, GrpcIngressInterceptor, GrpcIngressInterceptorChain,
+    GrpcBytes, GrpcDecodeFn, GrpcEncodeFn, GrpcHandlerAdapter, GrpcIngress, GrpcIngressInterceptor,
+    GrpcIngressInterceptorChain,
 };
+use swe_edge_ingress_grpc_adapter::GrpcHandlerRegistryDispatcher;
 use swe_edge_ingress_http::{
     HttpDecodeFn, HttpEncodeFn, HttpHandlerAdapter, HttpIngress, HttpRequest, HttpResponse,
     HttpStream,
@@ -71,8 +72,8 @@ impl RuntimeBuilder {
         handler: Arc<dyn Handler<Request = Req, Response = Resp>>,
     ) -> Self
     where
-        Req: serde::de::DeserializeOwned + Send + 'static + edge_domain::Request,
-        Resp: serde::Serialize + Send + 'static + edge_domain::Response,
+        Req: serde::de::DeserializeOwned + Send + 'static + edge_application::Request,
+        Resp: serde::Serialize + Send + 'static + edge_application::Response,
     {
         self.http_route_with(
             handler,
@@ -89,8 +90,8 @@ impl RuntimeBuilder {
         encode: HttpEncodeFn<Resp>,
     ) -> Self
     where
-        Req: Send + 'static + edge_domain::Request,
-        Resp: Send + 'static + edge_domain::Response,
+        Req: Send + 'static + edge_application::Request,
+        Resp: Send + 'static + edge_application::Response,
     {
         let d = self.http_dispatcher.get_or_insert_with(|| {
             HttpHandlerRegistryDispatcher::new(Arc::new(InProcessHandlerRegistry::<
@@ -109,8 +110,8 @@ impl RuntimeBuilder {
         handler: Arc<dyn Handler<Request = Req, Response = Resp>>,
     ) -> Self
     where
-        Req: serde::de::DeserializeOwned + Send + 'static + edge_domain::Request,
-        Resp: serde::Serialize + Send + 'static + edge_domain::Response,
+        Req: serde::de::DeserializeOwned + Send + 'static + edge_application::Request,
+        Resp: serde::Serialize + Send + 'static + edge_application::Response,
     {
         self.grpc_route_with(
             handler,
@@ -127,8 +128,8 @@ impl RuntimeBuilder {
         encode: GrpcEncodeFn<Resp>,
     ) -> Self
     where
-        Req: Send + 'static + edge_domain::Request,
-        Resp: Send + 'static + edge_domain::Response,
+        Req: Send + 'static + edge_application::Request,
+        Resp: Send + 'static + edge_application::Response,
     {
         let d = self.grpc_dispatcher.get_or_insert_with(|| {
             GrpcHandlerRegistryDispatcher::new(Arc::new(InProcessHandlerRegistry::<

@@ -7,6 +7,7 @@ pub struct RingBuffer {
 }
 
 impl RingBuffer {
+    /// Construct an empty ring buffer holding up to `capacity` samples.
     pub fn new(capacity: usize) -> Self {
         Self {
             buf: vec![0; capacity],
@@ -14,6 +15,7 @@ impl RingBuffer {
         }
     }
 
+    /// Record a new latency sample, overwriting the oldest entry once full.
     pub fn push(&mut self, val_us: u64) {
         let cap = self.buf.len();
         self.buf[self.head % cap] = val_us;

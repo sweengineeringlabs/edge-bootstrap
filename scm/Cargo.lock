@@ -2357,9 +2357,9 @@ checksum = "df3b46402a9d5adb4c86a0cf463f42e19994e3ee891101b1841f30a545cb49a9"
 
 [[package]]
 name = "hybrid-array"
-version = "0.4.13"
+version = "0.4.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "818356c5132c1fede50f837ca96afbe78ff42413047f4abb886217845e1b6c8c"
+checksum = "707114b52a152fa7bdb290cd7cd5912d9467273b6d74e21b8d81aca1f8533f6b"
 dependencies = [
  "typenum",
 ]
@@ -2450,7 +2450,7 @@ dependencies = [
  "libc",
  "percent-encoding",
  "pin-project-lite",
- "socket2 0.5.10",
+ "socket2 0.6.5",
  "tokio",
  "tower-service",
  "tracing",
@@ -3041,7 +3041,7 @@ dependencies = [
  "quinn-udp",
  "rustc-hash",
  "rustls",
- "socket2 0.5.10",
+ "socket2 0.6.5",
  "thiserror 2.0.19",
  "tokio",
  "tracing",
@@ -3079,7 +3079,7 @@ dependencies = [
  "cfg_aliases",
  "libc",
  "once_cell",
- "socket2 0.5.10",
+ "socket2 0.6.5",
  "tracing",
  "windows-sys 0.61.2",
 ]
@@ -3725,7 +3725,9 @@ dependencies = [
  "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.4.2)",
  "swe-edge-egress-grpc-transport",
  "swe-edge-ingress-grpc-reflection",
+ "swe-edge-ingress-grpc-reflection-adapter",
  "swe-edge-ingress-grpc-transport",
+ "swe-edge-ingress-grpc-transport-adapter",
  "swe-edge-ingress-verifier",
  "swe-edge-observ-config",
  "swe-edge-runtime-grpc",
@@ -4013,39 +4015,58 @@ dependencies = [
 
 [[package]]
 name = "swe-edge-ingress-grpc-reflection"
-version = "0.7.1"
-source = "git+https://github.com/sweengineeringlabs/edge-ingress-grpc.git?tag=v0.7.1#ccf2d847ad240d07cbadf9f2d87d5e6fc7e88b3c"
+version = "0.8.0"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git?tag=v0.8.1#aad6e23ee0131860089268a219978eb6bf9f46dd"
+dependencies = [
+ "futures",
+ "serde",
+ "thiserror 2.0.19",
+]
+
+[[package]]
+name = "swe-edge-ingress-grpc-reflection-adapter"
+version = "0.8.0"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git?tag=v0.8.1#aad6e23ee0131860089268a219978eb6bf9f46dd"
 dependencies = [
  "edge-application 0.10.0 (git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.18.0)",
  "edge-application-handler 0.2.0",
  "futures",
  "parking_lot",
- "serde",
  "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.4.2)",
+ "swe-edge-ingress-grpc-reflection",
  "swe-edge-ingress-grpc-transport",
- "thiserror 2.0.19",
- "tracing",
 ]
 
 [[package]]
 name = "swe-edge-ingress-grpc-transport"
-version = "0.7.1"
-source = "git+https://github.com/sweengineeringlabs/edge-ingress-grpc.git?tag=v0.7.1#ccf2d847ad240d07cbadf9f2d87d5e6fc7e88b3c"
+version = "0.8.0"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git?tag=v0.8.1#aad6e23ee0131860089268a219978eb6bf9f46dd"
 dependencies = [
  "async-trait",
+ "edge-application 0.10.0 (git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.18.0)",
+ "edge-application-handler 0.2.0",
+ "futures",
+ "serde",
+ "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.4.2)",
+ "thiserror 2.0.19",
+ "tokio-util",
+]
+
+[[package]]
+name = "swe-edge-ingress-grpc-transport-adapter"
+version = "0.8.1"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git?tag=v0.8.1#aad6e23ee0131860089268a219978eb6bf9f46dd"
+dependencies = [
  "edge-application 0.10.0 (git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.18.0)",
  "edge-application-handler 0.2.0",
  "edge-application-observer 0.1.0 (git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.18.0)",
  "futures",
  "parking_lot",
- "serde",
- "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.4.2)",
+ "swe-edge-ingress-grpc-transport",
  "swe-edge-loadbalancer 0.2.0",
  "swe-observability-context 0.2.0 (git+ssh://git@github.com/sweengineeringlabs/observability.git?tag=v0.2.9)",
  "swe-observability-metrics 0.2.0 (git+ssh://git@github.com/sweengineeringlabs/observability.git?tag=v0.2.9)",
- "thiserror 2.0.19",
  "tokio",
- "tokio-util",
  "tracing",
 ]
 
@@ -4091,6 +4112,72 @@ dependencies = [
 ]
 
 [[package]]
+name = "swe-edge-loadbalancer"
+version = "0.4.0"
+source = "git+https://github.com/sweengineeringlabs/edge-loadbalancer.git?tag=v0.4.0#3c6b2c1f5df4304316df6873a673116fb5563932"
+dependencies = [
+ "swe-edge-loadbalancer-autoscale",
+ "swe-edge-loadbalancer-egress",
+ "swe-edge-loadbalancer-ingress",
+ "swe-edge-loadbalancer-registry",
+ "swe-edge-loadbalancer-tenant",
+ "thiserror 2.0.19",
+]
+
+[[package]]
+name = "swe-edge-loadbalancer-autoscale"
+version = "0.4.0"
+source = "git+https://github.com/sweengineeringlabs/edge-loadbalancer.git?tag=v0.4.0#3c6b2c1f5df4304316df6873a673116fb5563932"
+dependencies = [
+ "serde",
+ "swe-edge-loadbalancer-tenant",
+ "thiserror 2.0.19",
+]
+
+[[package]]
+name = "swe-edge-loadbalancer-egress"
+version = "0.4.0"
+source = "git+https://github.com/sweengineeringlabs/edge-loadbalancer.git?tag=v0.4.0#3c6b2c1f5df4304316df6873a673116fb5563932"
+dependencies = [
+ "parking_lot",
+ "serde",
+ "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.3.0)",
+ "thiserror 2.0.19",
+ "toml",
+]
+
+[[package]]
+name = "swe-edge-loadbalancer-ingress"
+version = "0.4.0"
+source = "git+https://github.com/sweengineeringlabs/edge-loadbalancer.git?tag=v0.4.0#3c6b2c1f5df4304316df6873a673116fb5563932"
+dependencies = [
+ "serde",
+ "swe-edge-loadbalancer-tenant",
+ "thiserror 2.0.19",
+]
+
+[[package]]
+name = "swe-edge-loadbalancer-registry"
+version = "0.4.0"
+source = "git+https://github.com/sweengineeringlabs/edge-loadbalancer.git?tag=v0.4.0#3c6b2c1f5df4304316df6873a673116fb5563932"
+dependencies = [
+ "parking_lot",
+ "serde",
+ "swe-edge-loadbalancer-autoscale",
+ "swe-edge-loadbalancer-tenant",
+ "thiserror 2.0.19",
+ "toml",
+]
+
+[[package]]
+name = "swe-edge-loadbalancer-tenant"
+version = "0.4.0"
+source = "git+https://github.com/sweengineeringlabs/edge-loadbalancer.git?tag=v0.4.0#3c6b2c1f5df4304316df6873a673116fb5563932"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "swe-edge-message-broker"
 version = "0.3.0"
 source = "git+https://github.com/sweengineeringlabs/edge-message-broker.git?tag=v0.3.2#9e29afeee8ecc0ef097b667d4b072f08f6d71de3"
@@ -4116,8 +4203,8 @@ dependencies = [
 
 [[package]]
 name = "swe-edge-runtime-grpc"
-version = "0.6.0"
-source = "git+https://github.com/sweengineeringlabs/edge-runtime.git?tag=grpc%2Fv0.6.0#53b64b3c3c19978af0dc0ad32d706e9c9c26c8d7"
+version = "0.6.1"
+source = "git+https://github.com/sweengineeringlabs/edge-runtime.git?tag=grpc%2Fv0.6.1#48a27dbb0393e8c6e8dc4c27e5777f7764012951"
 dependencies = [
  "bytes",
  "edge-application 0.10.0 (git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.18.0)",
@@ -4133,6 +4220,8 @@ dependencies = [
  "sha2 0.10.9",
  "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.3.0)",
  "swe-edge-ingress-grpc-transport",
+ "swe-edge-ingress-grpc-transport-adapter",
+ "swe-edge-loadbalancer 0.4.0",
  "thiserror 2.0.19",
  "tokio",
  "tokio-util",
@@ -4402,7 +4491,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.3.4",
+ "getrandom 0.4.3",
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",
