@@ -26,6 +26,7 @@ impl Runtime {
             lifecycle: None,
             tracing_config: None,
             stream_handler: None,
+            metrics_provider: None,
             #[cfg(feature = "message-broker")]
             message_broker: None,
             #[cfg(feature = "intrusion")]

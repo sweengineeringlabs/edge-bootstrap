@@ -20,4 +20,8 @@ pub mod types;
 pub use error::{RuntimeError, RuntimeResult};
 pub use traits::RuntimeManager;
 pub use types::health::{ComponentHealth, RuntimeHealth};
-pub use types::{RuntimeConfig, RuntimeStatus, ServiceRegistry, TracingInitializer};
+pub use types::{
+    MetricsBackendConfig, MetricsBackendKind, MetricsFileSettings, MetricsOtelSettings,
+    MetricsPrometheusSettings, MetricsSqliteSettings, RuntimeConfig, RuntimeStatus,
+    ServiceRegistry, TracingInitializer,
+};

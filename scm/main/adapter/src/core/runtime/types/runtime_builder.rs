@@ -39,6 +39,7 @@ pub struct RuntimeBuilder {
     pub(crate) lifecycle: Option<Arc<dyn LifecycleMonitor>>,
     pub(crate) tracing_config: Option<swe_edge_observ_config::TracingConfig>,
     pub(crate) stream_handler: Option<Arc<dyn HttpStream>>,
+    pub(crate) metrics_provider: Option<Arc<dyn swe_observ_metrics::MetricsProvider>>,
     #[cfg(feature = "message-broker")]
     pub(crate) message_broker: Option<Arc<dyn swe_edge_runtime_message_broker::MessageBroker>>,
     #[cfg(feature = "intrusion")]
@@ -227,6 +228,21 @@ impl RuntimeBuilder {
     #[cfg(feature = "intrusion")]
     pub fn with_intrusion(mut self, wired: edge_intrusion::config::Wired) -> Self {
         self.intrusion = Some(wired);
+        self
+    }
+
+    /// Attach a `MetricsProvider` backend for load-monitor/autoscale counters.
+    ///
+    /// Takes precedence over `[metrics_backend]` in TOML config. Absent
+    /// (here and in config) means the in-memory default backend, as before —
+    /// this replaces `create_local_metrics_backend()`'s hardcoded, unconfigurable
+    /// choice with a real seam a consumer can plug Prometheus/OTel/file/SQLite
+    /// (or their own implementation) into.
+    pub fn with_metrics_provider(
+        mut self,
+        provider: Arc<dyn swe_observ_metrics::MetricsProvider>,
+    ) -> Self {
+        self.metrics_provider = Some(provider);
         self
     }
 

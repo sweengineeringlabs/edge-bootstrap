@@ -1727,7 +1727,7 @@ dependencies = [
  "edge-security-runtime-credential 0.3.8",
  "http 1.5.0",
  "reqwest",
- "reqwest-middleware",
+ "reqwest-middleware 0.4.2",
  "secrecy",
  "thiserror 2.0.19",
 ]
@@ -1741,7 +1741,7 @@ dependencies = [
  "async-trait",
  "http 1.5.0",
  "reqwest",
- "reqwest-middleware",
+ "reqwest-middleware 0.4.2",
  "serde",
  "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.17)",
  "thiserror 2.0.19",
@@ -1813,7 +1813,7 @@ dependencies = [
  "http 1.5.0",
  "moka",
  "reqwest",
- "reqwest-middleware",
+ "reqwest-middleware 0.4.2",
  "serde",
  "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.3.0)",
  "thiserror 2.0.19",
@@ -1831,7 +1831,7 @@ dependencies = [
  "http 1.5.0",
  "moka",
  "reqwest",
- "reqwest-middleware",
+ "reqwest-middleware 0.4.2",
  "serde",
  "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.3.0)",
  "thiserror 2.0.19",
@@ -1850,7 +1850,7 @@ dependencies = [
  "hex",
  "http 1.5.0",
  "reqwest",
- "reqwest-middleware",
+ "reqwest-middleware 0.4.2",
  "serde",
  "serde-saphyr",
  "serde_json",
@@ -1870,7 +1870,7 @@ dependencies = [
  "async-trait",
  "http 1.5.0",
  "reqwest",
- "reqwest-middleware",
+ "reqwest-middleware 0.4.2",
  "serde",
  "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.3.0)",
  "swe-edge-loadbalancer 0.1.0",
@@ -1886,7 +1886,7 @@ dependencies = [
  "http 1.5.0",
  "moka",
  "reqwest",
- "reqwest-middleware",
+ "reqwest-middleware 0.4.2",
  "serde",
  "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.3.0)",
  "thiserror 2.0.19",
@@ -1902,7 +1902,7 @@ dependencies = [
  "async-trait",
  "http 1.5.0",
  "reqwest",
- "reqwest-middleware",
+ "reqwest-middleware 0.4.2",
  "serde",
  "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.3.0)",
  "thiserror 2.0.19",
@@ -1930,7 +1930,7 @@ dependencies = [
  "futures",
  "http 1.5.0",
  "reqwest",
- "reqwest-middleware",
+ "reqwest-middleware 0.4.2",
  "serde",
  "serde_json",
  "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.3.0)",
@@ -3297,6 +3297,21 @@ dependencies = [
 
 [[package]]
 name = "reqwest-middleware"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "562ceb5a604d3f7c885a792d42c199fd8af239d0a51b2fa6a78aafa092452b04"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "http 1.5.0",
+ "reqwest",
+ "serde",
+ "thiserror 1.0.69",
+ "tower-service",
+]
+
+[[package]]
+name = "reqwest-middleware"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "57f17d28a6e6acfe1733fe24bcd30774d13bffa4b8a22535b4c8c98423088d4e"
@@ -3845,6 +3860,7 @@ dependencies = [
  "swe-edge-observ-config",
  "swe-edge-runtime-message-broker",
  "swe-edge-runtime-scheduler",
+ "swe-observability-metrics 0.2.0 (git+ssh://git@github.com/sweengineeringlabs/justobserv.git?tag=v0.2.9)",
  "thiserror 2.0.19",
 ]
 
@@ -3915,6 +3931,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "swe-edge-egress-breaker"
+version = "0.3.0"
+source = "git+https://github.com/sweengineeringlabs/edge-egress-http.git?tag=v0.3.0#b938de48eaa24fa2d1e7378865aef72afb9df60d"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "http 1.5.0",
+ "moka",
+ "reqwest",
+ "reqwest-middleware 0.3.3",
+ "serde",
+ "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.3.0)",
+ "thiserror 2.0.19",
+ "tokio",
+ "toml",
+]
+
+[[package]]
 name = "swe-edge-egress-grpc-transport"
 version = "0.5.0"
 source = "git+https://github.com/sweengineeringlabs/edge-egress-grpc.git?tag=v0.5.0#4afc4d014ff0245168e3ed440a14649dd40777f4"
@@ -3936,6 +3970,42 @@ dependencies = [
  "tonic",
  "tower 0.4.13",
  "tracing",
+]
+
+[[package]]
+name = "swe-edge-egress-http-transport"
+version = "0.3.0"
+source = "git+https://github.com/sweengineeringlabs/edge-egress-http.git?tag=v0.3.0#b938de48eaa24fa2d1e7378865aef72afb9df60d"
+dependencies = [
+ "bytes",
+ "futures",
+ "http 1.5.0",
+ "reqwest",
+ "reqwest-middleware 0.3.3",
+ "serde",
+ "serde_json",
+ "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.3.0)",
+ "swe-edge-egress-breaker",
+ "swe-edge-egress-retry",
+ "swe_justobserv_metrics",
+ "thiserror 2.0.19",
+ "tokio",
+]
+
+[[package]]
+name = "swe-edge-egress-retry"
+version = "0.3.0"
+source = "git+https://github.com/sweengineeringlabs/edge-egress-http.git?tag=v0.3.0#b938de48eaa24fa2d1e7378865aef72afb9df60d"
+dependencies = [
+ "async-trait",
+ "http 1.5.0",
+ "reqwest",
+ "reqwest-middleware 0.3.3",
+ "serde",
+ "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.3.0)",
+ "thiserror 2.0.19",
+ "tokio",
+ "toml",
 ]
 
 [[package]]
@@ -4191,7 +4261,9 @@ dependencies = [
  "serde",
  "serde_json",
  "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.3.0)",
+ "swe-edge-egress-http-transport",
  "thiserror 2.0.19",
+ "tokio",
  "tracing",
 ]
 
@@ -4232,6 +4304,21 @@ dependencies = [
  "thiserror 2.0.19",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "swe_justobserv_metrics"
+version = "0.2.0"
+source = "git+ssh://git@github.com/sweengineeringlabs/justobserv.git?tag=v0.2.1#28df52dbd71a14d3f613978454e420bf1976874f"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "glob",
+ "parking_lot",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.19",
+ "toml",
 ]
 
 [[package]]

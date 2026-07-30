@@ -53,6 +53,10 @@ pub use edge_proxy::{HealthResponse, LifecycleMonitor, ProxySvc};
 // ── Load monitoring / auto-scaling ────────────────────────────────────────────
 pub use swe_edge_bootstrap_monitor::RingBuffer;
 pub use swe_edge_bootstrap_monitor::{AutoscalePolicy, MetricsConfig, SharedCounters, TrafficCounters};
+pub use swe_edge_bootstrap_runtime::{
+    MetricsBackendConfig, MetricsBackendKind, MetricsFileSettings, MetricsOtelSettings,
+    MetricsPrometheusSettings, MetricsSqliteSettings,
+};
 pub use swe_observ_metrics::{MetricSnapshot, MetricType, MetricsProvider};
 
 // ── Observability ─────────────────────────────────────────────────────────────

@@ -8,6 +8,14 @@ use swe_edge_ingress_verifier::JwtConfig;
 
 pub use swe_edge_bootstrap_monitor::{AutoscalePolicy, MetricsConfig};
 pub use swe_edge_observ_config::ObservabilityConfig;
+/// Which `MetricsProvider` backend stores load-monitor/autoscale counters —
+/// distinct from [`MetricsConfig`], which is the Prometheus *scrape endpoint*
+/// bind address/path, not the backend that actually stores the data.
+pub use swe_observ_metrics::MetricsConfig as MetricsBackendConfig;
+pub use swe_observ_metrics::{
+    FileSettings as MetricsFileSettings, MetricsBackendKind, OtelSettings as MetricsOtelSettings,
+    PrometheusSettings as MetricsPrometheusSettings, SqliteSettings as MetricsSqliteSettings,
+};
 
 #[cfg(feature = "intrusion")]
 pub use edge_intrusion::config::Config as IntrusionConfig;
@@ -60,6 +68,12 @@ pub struct RuntimeConfig {
     // ── Observability / auto-scaling ──────────────────────────────────────────
     /// Prometheus metrics endpoint.  Absent = metrics server not started.
     pub metrics: Option<MetricsConfig>,
+    /// Which `MetricsProvider` backend stores load-monitor/autoscale counters
+    /// (`[metrics_backend]` section).  Absent = the in-memory default.
+    /// Overridden by `RuntimeBuilder::with_metrics_provider` when both are set.
+    /// Has no effect if `metrics` is absent — no backend is constructed at
+    /// all unless the scrape endpoint itself is configured.
+    pub metrics_backend: Option<MetricsBackendConfig>,
     /// Auto-scale threshold policy.  Checked every second by the sampler.
     /// Has no effect if `metrics` is absent.
     pub autoscale: Option<AutoscalePolicy>,
@@ -101,6 +115,7 @@ impl Default for RuntimeConfig {
             egress_grpc: None,
             grpc_reflection: false,
             metrics: None,
+            metrics_backend: None,
             autoscale: None,
             observability: None,
             deploy_dir: None,

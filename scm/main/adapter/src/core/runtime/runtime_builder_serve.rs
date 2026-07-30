@@ -32,8 +32,10 @@ use crate::core::RuntimeBuilder;
 use swe_edge_bootstrap_config::ConfigLoader;
 use swe_edge_bootstrap_ingress::Ingress;
 use swe_edge_bootstrap_monitor::{SharedCounters, TrafficCounters};
-use swe_edge_bootstrap_runtime::{RuntimeError, RuntimeResult};
-use swe_observ_metrics::create_local_metrics_backend;
+use swe_edge_bootstrap_runtime::{
+    MetricsBackendConfig, MetricsBackendKind, RuntimeError, RuntimeResult,
+};
+use swe_observ_metrics::{create_local_metrics_backend, MetricsProvider};
 
 const DEFAULT_APP_NAME: &str = "swe-edge";
 
@@ -156,14 +158,20 @@ impl RuntimeBuilder {
             .unwrap_or_else(|| ProxySvc::new_null_lifecycle_monitor());
 
         // ── Load monitor — shared counters + background sampler ───────────────
-        let counters: Option<SharedCounters> = config.metrics.as_ref().map(|_| {
-            let c = Arc::new(TrafficCounters::new(Arc::new(
-                create_local_metrics_backend(),
-            )));
-            let sampler = BackgroundSampler::new(Arc::clone(&c), config.autoscale.clone());
-            tokio::spawn(async move { sampler.run().await });
-            c
-        });
+        // Backend: builder explicit > [metrics_backend] TOML config > in-memory default.
+        let counters: Option<SharedCounters> = match config.metrics.as_ref() {
+            Some(_) => {
+                let provider = match self.metrics_provider {
+                    Some(p) => p,
+                    None => Self::build_metrics_provider(config.metrics_backend.as_ref())?,
+                };
+                let c = Arc::new(TrafficCounters::new(provider));
+                let sampler = BackgroundSampler::new(Arc::clone(&c), config.autoscale.clone());
+                tokio::spawn(async move { sampler.run().await });
+                Some(c)
+            }
+            None => None,
+        };
 
         // ── Intrusion guard — builder explicit wins, else [intrusion] TOML config ─
         #[cfg(feature = "intrusion")]
@@ -353,6 +361,87 @@ impl RuntimeBuilder {
 
         result
     }
+
+    /// Resolve the `MetricsProvider` backend from `[metrics_backend]` TOML
+    /// config. Falls back to the in-memory default when `cfg` is absent or
+    /// its `active` kind is `Memory`.
+    fn build_metrics_provider(
+        cfg: Option<&MetricsBackendConfig>,
+    ) -> RuntimeResult<Arc<dyn MetricsProvider>> {
+        let Some(cfg) = cfg else {
+            return Ok(Arc::new(create_local_metrics_backend()));
+        };
+        match cfg.active {
+            MetricsBackendKind::Memory => Ok(Arc::new(create_local_metrics_backend())),
+            MetricsBackendKind::File => {
+                #[cfg(feature = "observability")]
+                {
+                    let settings = cfg.file.as_ref().ok_or_else(|| {
+                        RuntimeError::StartFailed(
+                            "[metrics_backend.file] path is required when active = \"file\"".into(),
+                        )
+                    })?;
+                    Ok(Arc::new(swe_observ_metrics::create_file_metrics_backend(
+                        settings.path.clone(),
+                    )))
+                }
+                #[cfg(not(feature = "observability"))]
+                {
+                    Err(RuntimeError::StartFailed(
+                        "metrics_backend = \"file\" requires the \"observability\" feature".into(),
+                    ))
+                }
+            }
+            MetricsBackendKind::Prometheus => {
+                #[cfg(feature = "observability")]
+                {
+                    if cfg.prometheus.is_none() {
+                        return Err(RuntimeError::StartFailed(
+                            "[metrics_backend.prometheus] is required when active = \"prometheus\""
+                                .into(),
+                        ));
+                    }
+                    Ok(Arc::new(
+                        swe_observ_metrics::create_prometheus_metrics_backend(),
+                    ))
+                }
+                #[cfg(not(feature = "observability"))]
+                {
+                    Err(RuntimeError::StartFailed(
+                        "metrics_backend = \"prometheus\" requires the \"observability\" feature"
+                            .into(),
+                    ))
+                }
+            }
+            MetricsBackendKind::Otel => {
+                #[cfg(feature = "observability")]
+                {
+                    let settings = cfg.otel.as_ref().ok_or_else(|| {
+                        RuntimeError::StartFailed(
+                            "[metrics_backend.otel] service_name is required when active = \"otel\""
+                                .into(),
+                        )
+                    })?;
+                    Ok(Arc::new(swe_observ_metrics::create_otel_metrics_backend(
+                        &settings.service_name,
+                    )))
+                }
+                #[cfg(not(feature = "observability"))]
+                {
+                    Err(RuntimeError::StartFailed(
+                        "metrics_backend = \"otel\" requires the \"observability\" feature".into(),
+                    ))
+                }
+            }
+            MetricsBackendKind::Sqlite => Err(RuntimeError::StartFailed(
+                "metrics_backend = \"sqlite\" is not supported yet — requires async pool \
+                 initialisation this composition root doesn't perform. Use \
+                 RuntimeBuilder::with_metrics_provider() to supply a pre-initialised \
+                 backend instead."
+                    .into(),
+            )),
+        }
+    }
 }
 
 impl RuntimeBuilderServe {
@@ -383,6 +472,7 @@ impl RuntimeBuilderServe {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::core::Runtime;
     use swe_edge_bootstrap_runtime::RuntimeError;
 
@@ -394,6 +484,91 @@ mod tests {
         assert!(
             matches!(result, Err(RuntimeError::StartFailed(_))),
             "expected StartFailed, got: {result:?}",
+        );
+    }
+
+    /// @covers: build_metrics_provider
+    #[test]
+    fn test_build_metrics_provider_defaults_to_memory_when_config_absent_happy() {
+        let provider = RuntimeBuilder::build_metrics_provider(None).unwrap();
+        provider.record_counter("test_counter", 3.0, &[]);
+        let snap = provider.export();
+        assert!(
+            snap.iter()
+                .any(|s| s.name == "test_counter" && s.value == 3.0),
+            "expected the default in-memory backend to record real data, got: {snap:?}"
+        );
+    }
+
+    /// @covers: build_metrics_provider
+    #[cfg(feature = "observability")]
+    #[test]
+    fn test_build_metrics_provider_file_backend_writes_real_data_to_disk_happy() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("metrics.json");
+        let cfg = MetricsBackendConfig {
+            active: MetricsBackendKind::File,
+            file: Some(swe_edge_bootstrap_runtime::MetricsFileSettings {
+                path: path.to_string_lossy().to_string(),
+            }),
+            ..Default::default()
+        };
+        let provider = RuntimeBuilder::build_metrics_provider(Some(&cfg)).unwrap();
+        provider.record_counter("selected_file_backend", 42.0, &[]);
+        provider.flush();
+
+        let contents = std::fs::read_to_string(&path).unwrap_or_else(|e| {
+            panic!("expected the File backend to actually write {path:?}: {e}")
+        });
+        assert!(
+            contents.contains("selected_file_backend") && contents.contains("42"),
+            "expected real recorded data in the file, got: {contents}"
+        );
+    }
+
+    /// @covers: build_metrics_provider
+    #[cfg(feature = "observability")]
+    #[test]
+    fn test_build_metrics_provider_file_backend_missing_settings_returns_error_edge() {
+        let cfg = MetricsBackendConfig {
+            active: MetricsBackendKind::File,
+            file: None,
+            ..Default::default()
+        };
+        let result = RuntimeBuilder::build_metrics_provider(Some(&cfg));
+        assert!(
+            matches!(result, Err(RuntimeError::StartFailed(_))),
+            "expected StartFailed when [metrics_backend.file] is missing, got: {result:?}"
+        );
+    }
+
+    /// @covers: build_metrics_provider
+    #[cfg(feature = "observability")]
+    #[test]
+    fn test_build_metrics_provider_prometheus_missing_settings_returns_error_edge() {
+        let cfg = MetricsBackendConfig {
+            active: MetricsBackendKind::Prometheus,
+            prometheus: None,
+            ..Default::default()
+        };
+        let result = RuntimeBuilder::build_metrics_provider(Some(&cfg));
+        assert!(
+            matches!(result, Err(RuntimeError::StartFailed(_))),
+            "expected StartFailed when [metrics_backend.prometheus] is missing, got: {result:?}"
+        );
+    }
+
+    /// @covers: build_metrics_provider
+    #[test]
+    fn test_build_metrics_provider_sqlite_returns_not_supported_error_edge() {
+        let cfg = MetricsBackendConfig {
+            active: MetricsBackendKind::Sqlite,
+            ..Default::default()
+        };
+        let result = RuntimeBuilder::build_metrics_provider(Some(&cfg));
+        assert!(
+            matches!(result, Err(RuntimeError::StartFailed(_))),
+            "expected StartFailed for the not-yet-supported sqlite backend, got: {result:?}"
         );
     }
 }

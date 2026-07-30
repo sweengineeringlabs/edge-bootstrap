@@ -49,7 +49,7 @@ path = "main/adapter/src/lib.rs"
 
 [features]
 default        = []
-observability  = ["dep:tracing-subscriber", "dep:swe-observ-tracing", "dep:edge-application-observer", "swe-edge-observ-config/observability", "swe-edge-bootstrap-runtime/observability"]
+observability  = ["dep:tracing-subscriber", "dep:swe-observ-tracing", "dep:edge-application-observer", "swe-edge-observ-config/observability", "swe-edge-bootstrap-runtime/observability", "swe-observ-metrics/file", "swe-observ-metrics/prometheus", "swe-observ-metrics/otel"]
 message-broker = ["dep:swe-edge-runtime-message-broker", "swe-edge-bootstrap-runtime/message-broker"]
 scheduler      = ["dep:swe-edge-runtime-scheduler", "swe-edge-bootstrap-runtime/scheduler"]
 security       = ["dep:edge-security-runtime", "dep:edge-security-runtime-credential", "dep:edge-security-runtime-authz", "dep:edge-security-runtime-tls"]
