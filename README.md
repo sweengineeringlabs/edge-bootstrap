@@ -23,6 +23,13 @@ observability, lifecycle) into a single deployable process via a fluent `Runtime
 - **`LifecycleMonitor`** — wires `GrpcLoadMonitor` + `HttpLoadMonitor` + `Sampler` into a single
   observer; drives autoscale decisions and exposes a `/health` surface
 
+## Architecture
+
+Request flow through this repo's composition follows upstream `edge` ADR-021 ("System Request
+Flow") — see [`scm/docs/3-design/adr/003-adopt-adr-021-system-request-flow.md`](scm/docs/3-design/adr/003-adopt-adr-021-system-request-flow.md)
+for the adoption decision and the current, recorded state of every crate this repo composes
+relative to it.
+
 ## Building
 
 ```bash
