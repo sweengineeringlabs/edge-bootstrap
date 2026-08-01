@@ -34,6 +34,22 @@ pub use swe_observ_tracing::TracingConfig as TracerBackendConfig;
 #[cfg(feature = "intrusion")]
 pub use edge_intrusion::config::Config as IntrusionConfig;
 
+/// Egress configuration for one named target service.
+///
+/// Currently just a backend pool for HTTP load balancing, but kept as its
+/// own struct (rather than aliasing `LoadbalancerConfig` directly) so
+/// per-service settings unrelated to load balancing (e.g. a dedicated
+/// `HttpConfig` override) can be added here later without changing the
+/// `[services.<name>]` TOML shape.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ServiceEgressConfig {
+    /// Backend pool for this service — strategy and weighted backend URLs
+    /// (`[services.<name>.loadbalancer]`). Absent or empty backends means
+    /// this service resolves to no client — see `RuntimeBuilder::build_registry`.
+    pub loadbalancer: swe_edge_loadbalancer::LoadbalancerConfig,
+}
+
 /// Configuration for the runtime manager.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -72,6 +88,15 @@ pub struct RuntimeConfig {
     /// gRPC egress channel config.  When set, `serve()` auto-dials the
     /// channel.  When absent, no gRPC egress client is wired.
     pub egress_grpc: Option<GrpcChannelConfig>,
+    /// Named target-service egress configs (`[services.<name>]`), each with
+    /// its own independently load-balanced backend pool — e.g.
+    /// `[services.user-service.loadbalancer]`. Absent or a name with no
+    /// entry here means that service has no registered
+    /// [`ServiceRegistry`](crate::ServiceRegistry) client; see
+    /// `RuntimeBuilder::build_registry`. Backend-pool ownership moved here
+    /// from `edge-transport-http-egress`'s `transport` crate — see ADR-004.
+    #[serde(default)]
+    pub services: std::collections::BTreeMap<String, ServiceEgressConfig>,
 
     // ── gRPC extras ───────────────────────────────────────────────────────────
     /// Auto-register the gRPC reflection service (`grpc.reflection.v1alpha`).
@@ -141,6 +166,7 @@ impl Default for RuntimeConfig {
             grpc_allow_unauthenticated: false,
             egress_http: None,
             egress_grpc: None,
+            services: std::collections::BTreeMap::new(),
             grpc_reflection: false,
             metrics: None,
             metrics_backend: None,

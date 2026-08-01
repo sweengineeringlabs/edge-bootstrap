@@ -22,6 +22,8 @@ use swe_edge_ingress_verifier::TokenVerifier;
 use swe_edge_bootstrap_runtime::RuntimeConfig;
 use swe_edge_bootstrap_runtime::ServiceRegistry;
 
+use crate::core::egress::LoadBalancedHttpEgress;
+
 /// Builder for assembling and starting an edge runtime.
 pub struct RuntimeBuilder {
     pub(crate) config: Option<RuntimeConfig>,
@@ -302,12 +304,50 @@ impl RuntimeBuilder {
     }
 
     /// Build a [`ServiceRegistry`] from the configured egress clients, if any.
+    ///
+    /// Returns `None` unless [`RuntimeBuilder::egress_http`] was called —
+    /// `ServiceRegistry` always needs a default HTTP client, and this method
+    /// does no config-driven or XDG fallback construction of its own (that
+    /// resolution happens in `serve()`, which this method runs independent
+    /// of — call it before `.serve()` if you need the registry for handler
+    /// construction).
+    ///
+    /// When [`RuntimeBuilder::config`] was also called and its
+    /// [`RuntimeConfig::services`] map has entries, each named service with
+    /// a non-empty `[services.<name>.loadbalancer]` backend list is
+    /// registered as its own [`LoadBalancedHttpEgress`], wrapping the same
+    /// default HTTP client resolved above — see ADR-004. A service whose
+    /// backend pool fails to build (e.g. a backend with an empty URL or
+    /// zero weight) is skipped with a `tracing::warn!`, not a hard error —
+    /// one misconfigured service shouldn't prevent the rest of the registry
+    /// from being usable.
     pub fn build_registry(&self) -> Option<Arc<ServiceRegistry>> {
-        self.egress_http.as_ref().map(|http| {
-            Arc::new(ServiceRegistry::new(
-                Arc::clone(http),
-                self.egress_grpc.clone(),
-            ))
-        })
+        let default_http = self.egress_http.as_ref()?;
+        let mut registry = ServiceRegistry::new(Arc::clone(default_http), self.egress_grpc.clone());
+
+        if let Some(config) = self.config.as_ref() {
+            for (name, service_config) in &config.services {
+                if service_config.loadbalancer.backends.is_empty() {
+                    continue;
+                }
+                match LoadBalancedHttpEgress::new(
+                    Arc::clone(default_http),
+                    service_config.loadbalancer.clone(),
+                ) {
+                    Ok(client) => {
+                        registry = registry.with_service(name.clone(), Arc::new(client));
+                    }
+                    Err(error) => {
+                        tracing::warn!(
+                            service = %name,
+                            %error,
+                            "skipping service: invalid [services.<name>.loadbalancer] config"
+                        );
+                    }
+                }
+            }
+        }
+
+        Some(Arc::new(registry))
     }
 }

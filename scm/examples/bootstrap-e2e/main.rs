@@ -68,10 +68,16 @@ async fn main() {
 
     let builder = Runtime::builder()
         .config(config)
-        .with_intrusion(wired)
         .http_route(handler.clone())
         .grpc_route(handler)
         .grpc_allow_unauthenticated();
+
+    // `.with_intrusion()` only exists behind the `intrusion` feature —
+    // without it, this demo serves with no IDS/IPS guard wired in at all.
+    #[cfg(feature = "intrusion")]
+    let builder = builder.with_intrusion(wired);
+    #[cfg(not(feature = "intrusion"))]
+    let _ = wired;
 
     // `.with_tracing()` only exists behind the `observability` feature —
     // without it, the pipeline's `tracing::debug!`/`info!` calls are still

@@ -21,3 +21,4 @@ Records the reasoning behind design choices so future contributors understand wh
 | [001](001-ingress-response-caching-per-route-opt-in.md) | Ingress response caching — per-route opt-in via `CacheAsideHandler`, not a whole-service decorator | Accepted |
 | [002](002-real-observercontext-invocation-tracking.md) | Real `ObserverContext` for invocation tracking — bridge to `swe-observability-tracing`, wired at the `RuntimeBuilder` composition root | Accepted |
 | [003](003-adopt-adr-021-system-request-flow.md) | Adopt upstream ADR-021 (System Request Flow) as governing architecture; record the per-transport `HandlerRegistry` duplication gap | Accepted |
+| [004](004-backend-pool-load-balancing-moves-to-composition-root.md) | Backend-pool load balancing moves to the `RuntimeBuilder` composition root, out of `edge-transport-http-egress` | Accepted |

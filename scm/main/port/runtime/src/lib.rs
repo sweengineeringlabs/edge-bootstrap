@@ -24,5 +24,6 @@ pub use types::{
     LogBackendConfig, LogBackendKind, LogElkSettings, LogFileSettings, LogOtelSettings,
     LogSqliteSettings, MetricsBackendConfig, MetricsBackendKind, MetricsFileSettings,
     MetricsOtelSettings, MetricsPrometheusSettings, MetricsSqliteSettings, RuntimeConfig,
-    RuntimeStatus, ServiceRegistry, TracerBackendConfig, TracerBackendKind, TracingInitializer,
+    RuntimeStatus, ServiceEgressConfig, ServiceRegistry, TracerBackendConfig, TracerBackendKind,
+    TracingInitializer,
 };

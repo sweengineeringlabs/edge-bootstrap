@@ -11,7 +11,7 @@ pub use runtime_config::{
     LogBackendConfig, LogBackendKind, LogElkSettings, LogFileSettings, LogOtelSettings,
     LogSqliteSettings, MetricsBackendConfig, MetricsBackendKind, MetricsFileSettings,
     MetricsOtelSettings, MetricsPrometheusSettings, MetricsSqliteSettings, RuntimeConfig,
-    TracerBackendConfig, TracerBackendKind,
+    ServiceEgressConfig, TracerBackendConfig, TracerBackendKind,
 };
 pub use runtime_status::RuntimeStatus;
 pub use service_registry::ServiceRegistry;

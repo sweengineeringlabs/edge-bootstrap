@@ -1806,7 +1806,7 @@ dependencies = [
 [[package]]
 name = "edge-transport-http-egress-breaker"
 version = "0.4.0"
-source = "git+https://github.com/sweengineeringlabs/edge-egress-http.git?tag=v0.4.5#cd2999da571b9e7c71b9e0e5d0c7e184e878fb52"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.4.5#cd2999da571b9e7c71b9e0e5d0c7e184e878fb52"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1824,7 +1824,7 @@ dependencies = [
 [[package]]
 name = "edge-transport-http-egress-cache"
 version = "0.4.0"
-source = "git+https://github.com/sweengineeringlabs/edge-egress-http.git?tag=v0.4.5#cd2999da571b9e7c71b9e0e5d0c7e184e878fb52"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.4.5#cd2999da571b9e7c71b9e0e5d0c7e184e878fb52"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1842,7 +1842,7 @@ dependencies = [
 [[package]]
 name = "edge-transport-http-egress-cassette"
 version = "0.4.0"
-source = "git+https://github.com/sweengineeringlabs/edge-egress-http.git?tag=v0.4.5#cd2999da571b9e7c71b9e0e5d0c7e184e878fb52"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.4.5#cd2999da571b9e7c71b9e0e5d0c7e184e878fb52"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1864,7 +1864,7 @@ dependencies = [
 [[package]]
 name = "edge-transport-http-egress-loadbalancer"
 version = "0.4.0"
-source = "git+https://github.com/sweengineeringlabs/edge-egress-http.git?tag=v0.4.5#cd2999da571b9e7c71b9e0e5d0c7e184e878fb52"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.4.5#cd2999da571b9e7c71b9e0e5d0c7e184e878fb52"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1880,7 +1880,7 @@ dependencies = [
 [[package]]
 name = "edge-transport-http-egress-rate"
 version = "0.4.0"
-source = "git+https://github.com/sweengineeringlabs/edge-egress-http.git?tag=v0.4.5#cd2999da571b9e7c71b9e0e5d0c7e184e878fb52"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.4.5#cd2999da571b9e7c71b9e0e5d0c7e184e878fb52"
 dependencies = [
  "async-trait",
  "http 1.5.0",
@@ -1897,7 +1897,7 @@ dependencies = [
 [[package]]
 name = "edge-transport-http-egress-retry"
 version = "0.4.0"
-source = "git+https://github.com/sweengineeringlabs/edge-egress-http.git?tag=v0.4.5#cd2999da571b9e7c71b9e0e5d0c7e184e878fb52"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.4.5#cd2999da571b9e7c71b9e0e5d0c7e184e878fb52"
 dependencies = [
  "async-trait",
  "http 1.5.0",
@@ -1913,7 +1913,7 @@ dependencies = [
 [[package]]
 name = "edge-transport-http-egress-transport"
 version = "0.4.0"
-source = "git+https://github.com/sweengineeringlabs/edge-egress-http.git?tag=v0.4.5#cd2999da571b9e7c71b9e0e5d0c7e184e878fb52"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.4.5#cd2999da571b9e7c71b9e0e5d0c7e184e878fb52"
 dependencies = [
  "async-trait",
  "bytes",
@@ -3729,6 +3729,7 @@ dependencies = [
  "swe-edge-ingress-grpc-transport",
  "swe-edge-ingress-grpc-transport-adapter",
  "swe-edge-ingress-verifier",
+ "swe-edge-loadbalancer 0.4.0",
  "swe-edge-observ-config",
  "swe-edge-runtime-grpc",
  "swe-edge-runtime-http",
@@ -3744,6 +3745,7 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-subscriber",
+ "url",
 ]
 
 [[package]]
@@ -3852,6 +3854,7 @@ dependencies = [
 name = "swe-edge-bootstrap-runtime"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "edge-intrusion",
  "edge-security-runtime-tls",
  "edge-transport-http-egress-transport",
@@ -3860,6 +3863,7 @@ dependencies = [
  "swe-edge-bootstrap-monitor",
  "swe-edge-egress-grpc-transport",
  "swe-edge-ingress-verifier",
+ "swe-edge-loadbalancer 0.4.0",
  "swe-edge-observ-config",
  "swe-edge-runtime-message-broker",
  "swe-edge-runtime-scheduler",
@@ -3867,6 +3871,7 @@ dependencies = [
  "swe-observability-metrics 0.2.0 (git+ssh://git@github.com/sweengineeringlabs/observability.git?tag=v0.2.9)",
  "swe-observability-tracing",
  "thiserror 2.0.19",
+ "tokio",
 ]
 
 [[package]]

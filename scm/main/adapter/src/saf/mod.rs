@@ -47,6 +47,16 @@ pub use swe_edge_ingress_http::{
 pub use swe_edge_egress_grpc::{GrpcEgress, GrpcEgressError, GrpcEgressResult, TonicGrpcClient};
 pub use swe_edge_egress_http::{HttpEgress, HttpEgressError, HttpEgressResult, HttpStreamResponse};
 
+// ── Backend-pool load balancing (per-target-service egress) ──────────────────
+// Ownership moved here from edge-transport-http-egress's `transport` crate —
+// see ADR-004.
+pub use crate::core::egress::{LoadBalancedHttpEgress, LoadBalancedHttpEgressError};
+pub use swe_edge_bootstrap_runtime::ServiceEgressConfig;
+pub use swe_edge_loadbalancer::{
+    BackendConfig, BackendHealth, BackendId, BackendPoolInstance, LoadbalancerConfig,
+    LoadbalancerError, LoadbalancerSvc, Outcome, Strategy,
+};
+
 // ── Lifecycle / health ────────────────────────────────────────────────────────
 pub use edge_proxy::{HealthResponse, LifecycleMonitor, ProxySvc};
 
