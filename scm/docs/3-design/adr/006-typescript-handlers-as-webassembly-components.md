@@ -19,6 +19,13 @@ TypeScript source cannot execute by itself. It normally compiles to JavaScript a
 
 WebAssembly provides a different deployment boundary. TypeScript handler source is processed at build time into a `.wasm` component. The existing Rust process loads and invokes that artifact, retaining ownership of sockets, HTTP/gRPC ingress, TLS, routing, security, observability, configuration, and lifecycle. The deployed handler does not need the TypeScript compiler or a standalone JavaScript host.
 
+WebAssembly does not execute itself. A compiler is still required to translate TypeScript source into Wasm, and a Wasm engine embedded in `edge-bootstrap` is required to validate, instantiate, execute, and limit the resulting component. In this ADR, “runtime” must therefore be qualified carefully:
+
+- the **JustScript compiler** is a build-time tool and is not deployed with the service;
+- the **Wasm engine** is the production execution runtime embedded in the Rust `edge-bootstrap` process;
+- the complete **JustScript runtime/`justr` daemon** is not required in production;
+- a small **guest-support library** may be compiled into the component, or implemented through explicit Rust host imports, only where generated code needs language services such as allocation, strings, arrays, or structured errors.
+
 Ordinary TypeScript is not inherently a direct-to-Wasm language. JavaScript semantics, dynamic values, garbage collection, npm packages, and host APIs cannot be assumed to map automatically to portable Wasm. The SDK must therefore define a supported TypeScript handler profile and a controlled set of host capabilities rather than claim compatibility with every TypeScript program.
 
 ## Decision Drivers
@@ -193,7 +200,9 @@ This API is illustrative, not frozen. The build validates the supported language
 
 ## JustScript Toolchain Assessment
 
-The existing SWE JustScript platform is the preferred compiler candidate and must be evaluated before introducing another TypeScript-to-Wasm compiler. Its compiler already parses TypeScript/JavaScript into JustIR and has a `CompileTarget::Wasm`; its tests demonstrate emission of valid core Wasm v1 modules for basic numeric expressions and functions. `justscript_runtime` also contains a structural Wasm validator and native runtime facilities.
+The existing SWE JustScript platform is the preferred **build-time compiler** candidate and must be evaluated before introducing another TypeScript-to-Wasm compiler. Its compiler already parses TypeScript/JavaScript into JustIR and has a `CompileTarget::Wasm`; its tests demonstrate emission of valid core Wasm v1 modules for basic numeric expressions and functions. `justscript_runtime` also contains a structural Wasm validator and native runtime facilities that may provide reusable implementation pieces.
+
+This decision does not adopt the complete `justscript_runtime`, `justr` daemon, JIT worker model, event loop, filesystem layer, networking layer, or process runtime. Reuse from that repository is limited to small libraries or contracts proven necessary for emitted components. Such code either becomes part of the component artifact or is satisfied by an explicit capability implemented by the Rust host.
 
 It is not yet a drop-in implementation of this ADR:
 
@@ -206,6 +215,49 @@ It is not yet a drop-in implementation of this ADR:
 - structural validation exists, but a Rust Component Model execution host does not yet.
 
 The JustScript compiler is therefore a candidate with a concrete extension path, not an already-complete dependency. Its conformance spike is a release gate. Failure of the spike requires revisiting this ADR before selecting QuickJS, AssemblyScript, or another compiler.
+
+## Build and Execution Workflow
+
+The development/build environment and the production environment are deliberately different:
+
+```text
+BUILD TIME
+
+handler.ts + edge-handler.toml + versioned WIT
+                    │
+                    ▼
+       JustScript compiler/tooling
+       - type-check supported profile
+       - lower TypeScript to core Wasm
+       - generate/adapt canonical ABI
+       - componentize and validate
+                    │
+                    ▼
+       edge-handler.wasm + validated manifest
+
+
+PRODUCTION
+
+HTTP/gRPC request
+       │
+       ▼
+Rust edge-bootstrap ingress and policy
+       │
+       ▼
+Wasm handler adapter
+       │
+       ▼
+Embedded Wasm engine
+       │  loads edge-handler.wasm
+       │  enforces memory/CPU/deadline/capabilities
+       ▼
+Compiled TypeScript handler logic
+       │
+       ▼
+WIT response → Rust ingress → caller
+```
+
+The production deployment contains `edge-bootstrap`, its embedded Wasm engine, the `.wasm` component, and its manifest. It does not contain the TypeScript source, JustScript compiler, `justr` daemon, Node.js, Deno, Bun, QuickJS, or a separate JavaScript handler process. If the selected compiler packages an engine such as QuickJS inside the component, that would be an explicit exception governed by Considered Option 2 and must be measured and approved; it is not implied by the chosen option.
 
 ## Conformance Gate
 
@@ -270,8 +322,8 @@ The manifest and WIT package are separately versioned public contracts. Route co
 ## Repository Responsibilities
 
 - **`justscript_compiler`:** TypeScript-profile validation, JustIR lowering, byte/string/record ABI support, exported handler generation, actionable unsupported-feature diagnostics, and core-Wasm-to-component emission or packaging.
-- **`justscript_runtime`:** reusable guest runtime/ABI support, allocation conventions, component/import validation, structured value support, and removal of JavaScript-loader assumptions from the server-side Wasm path. The existing scalar `CompiledHandler` abstraction must be generalized or bypassed by an edge-specific component contract.
-- **`edge-bootstrap`:** versioned WIT and manifest ownership, component loading, the Wasm-to-existing-handler adapter, route registration, host capabilities, resource enforcement, caching/pooling, health, tracing, and framework error mapping.
+- **`justscript_runtime`:** no whole-runtime or daemon dependency. Only reusable guest-support or validation pieces needed for allocation conventions, byte/string/record ABI support, and component/import validation may be extracted or consumed. The existing scalar `CompiledHandler` daemon abstraction is not the edge handler API and may be bypassed entirely.
+- **`edge-bootstrap`:** versioned WIT and manifest ownership, the embedded Wasm engine, component loading, the Wasm-to-existing-handler adapter, route registration, host capabilities, resource enforcement, caching/pooling, health, tracing, and framework error mapping.
 - **`sdk/typescript`:** handler types, supported-profile documentation, build command integration, example source, generated bindings/artifacts, and developer diagnostics.
 
 ## Example Parity
@@ -310,7 +362,7 @@ For `bootstrap-e2e`, TypeScript defines application handler logic and HTTP/gRPC 
 ## Trade-offs Accepted
 
 - **TypeScript compatibility is intentionally constrained.** The SDK supports a documented handler profile, not arbitrary TypeScript, JavaScript, npm packages, Node APIs, or browser APIs. Portability and enforceable isolation take priority over ecosystem compatibility.
-- **A build-time compiler is required.** Users need a supported toolchain to turn TypeScript into a component. It may itself require a JavaScript runtime during development, but that dependency is absent from production.
+- **A build-time compiler and a production Wasm engine are required.** The compiler translates TypeScript into a component and is absent from production. The embedded engine executes and isolates that component in production. WebAssembly removes the standalone JavaScript-runtime dependency; it does not eliminate compilation or execution machinery.
 - **Component calls are not free.** Canonical ABI conversion, copying, sandbox checks, compilation, and instantiation add latency and memory overhead relative to native Rust handlers. Pooling and ahead-of-time compilation may optimize this without weakening isolation.
 - **Capabilities replace ambient access.** Filesystem, network, environment, time, randomness, configuration, secrets, logging, metrics, and outbound calls are unavailable unless the host grants narrow interfaces explicitly.
 - **Host and guest evolve together through WIT.** Interface versions, generated bindings, runtime support, and component artifacts require a compatibility policy and coordinated testing.
@@ -324,4 +376,5 @@ For `bootstrap-e2e`, TypeScript defines application handler logic and HTTP/gRPC 
 - The WIT packages and component manifest become public compatibility surfaces with independent versions and conformance tests.
 - No browser-hosted server or handler process is implied. Browser compatibility is outside this ADR.
 - Node.js, Deno, and Bun may be development-tool hosts but are not production runtime dependencies.
+- The complete `justscript_runtime` and `justr` daemon are not production dependencies. Reusable guest-support code may be linked into components or exposed as narrow Rust host capabilities only when required.
 - An out-of-process handler protocol, embedded general-purpose JavaScript engine, N-API binding, or TypeScript rewrite requires a separate ADR and cannot silently replace this component path.
