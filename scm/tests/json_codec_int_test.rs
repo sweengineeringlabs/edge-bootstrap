@@ -17,12 +17,12 @@ fn test_http_route_accepts_handler_with_auto_json_codec() {
     struct Req {
         prompt: String,
     }
-    impl edge_domain::Request for Req {}
+    impl edge_application::Request for Req {}
     #[derive(Serialize)]
     struct Resp {
         text: String,
     }
-    impl edge_domain::Response for Resp {}
+    impl edge_application::Response for Resp {}
 
     struct EchoHandler;
 

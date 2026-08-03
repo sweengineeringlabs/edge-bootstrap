@@ -121,8 +121,8 @@ impl HttpIngress for MetricsHandler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use swe_edge_bootstrap_monitor::TrafficCounters;
     use std::sync::Arc;
+    use swe_edge_bootstrap_monitor::TrafficCounters;
     use swe_observ_metrics::create_local_metrics_backend;
 
     fn handler_with_data() -> MetricsHandler {
@@ -137,7 +137,7 @@ mod tests {
         InboundRequest::new(
             request,
             swe_edge_ingress_http::RequestContext::new(
-                edge_domain::SecurityContext::unauthenticated(),
+                edge_application::SecurityContext::unauthenticated(),
             ),
             std::net::SocketAddr::from(([127, 0, 0, 1], 0)),
         )

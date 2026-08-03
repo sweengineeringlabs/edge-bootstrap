@@ -4,16 +4,25 @@ set -euo pipefail
 # Ensure ~/.cargo/bin is on PATH (git-bash on Windows omits it by default).
 export PATH="$HOME/.cargo/bin:$PATH"
 
+# Prefer python3, but fall back to python -- on Windows, `python3` is often
+# the Microsoft Store alias stub rather than a real interpreter.
+PYTHON=python3
+if ! "$PYTHON" --version >/dev/null 2>&1; then
+  PYTHON=python
+fi
+
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 SCM_DIR="$REPO_ROOT/scm"
 echo "pre-commit ── $(basename $REPO_ROOT) ──"
 cd "$SCM_DIR"
-echo "  1/4 fmt..."
+echo "  1/5 deps consistency..."
+"$PYTHON" "$REPO_ROOT/scm/scripts/hooks/check_deps_consistency.py"
+echo "  2/5 fmt..."
 cargo fmt --all -- --check
-echo "  2/4 clippy..."
+echo "  3/5 clippy..."
 cargo clippy --workspace --all-targets -- -D warnings
-echo "  3/4 arch audit..."
+echo "  4/5 arch audit..."
 arch audit --rs
-echo "  4/4 cargo audit..."
+echo "  5/5 cargo audit..."
 cargo audit --deny unsound --deny yanked
 echo "pre-commit: all checks passed."

@@ -31,3 +31,12 @@ Key capabilities:
 | HTTP and gRPC share handler logic but live on separate dispatch registries | `CompositeIngress` / `CompositeGrpcIngress` unify routing without duplicating handler registration |
 | Observability config spread across multiple crates | `ApplicationConfigLoader` merges `[tracing]` + `[metrics]` from a single TOML file via XDG path resolution |
 | Graceful shutdown logic re-implemented per service | `RuntimeManager::stop()` coordinates shutdown across HTTP, gRPC, and Prometheus servers with signal handling |
+
+## HOW
+
+## Documents
+
+| Document | Description |
+|----------|-------------|
+| [3-design/](3-design/) | Architecture decision records |
+| [7-operations/](7-operations/) | Compliance and structural audit reports |

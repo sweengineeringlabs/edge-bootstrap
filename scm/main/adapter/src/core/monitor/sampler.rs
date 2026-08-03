@@ -66,8 +66,8 @@ impl BackgroundSampler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use swe_edge_bootstrap_monitor::TrafficCounters;
     use std::sync::Arc;
+    use swe_edge_bootstrap_monitor::TrafficCounters;
     use swe_observ_metrics::create_local_metrics_backend;
 
     fn counters() -> SharedCounters {
