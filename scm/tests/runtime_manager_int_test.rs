@@ -4,15 +4,12 @@
 
 use std::sync::Arc;
 
-use futures::future::BoxFuture;
-use futures::FutureExt;
 use tokio::net::TcpListener;
 use tokio::sync::oneshot;
 
 use edge_proxy::{
-    ComponentRequest, ComponentResponse, HealthRequest, HealthResponse, HealthStatus,
+    ComponentHealth, ComponentRequest, EmptyResponse, HealthRequest, HealthResponse, HealthStatus,
     LifecycleError, LifecycleMonitor, ShutdownRequest, StartBackgroundTasksRequest, StatusRequest,
-    StatusResponse,
 };
 use swe_edge_bootstrap::{Runtime, RuntimeConfig, RuntimeManager, RuntimeStatus};
 use swe_edge_egress_http::{
@@ -24,35 +21,37 @@ use swe_edge_ingress_http::{
     HealthCheckRequest, HealthCheckResponse, HttpFuture, HttpHealthCheck, HttpIngress,
     HttpIngressError, HttpResponse, InboundRequest,
 };
-use swe_edge_runtime_http::{AxumHttpServer, HttpServer, ServeWithListenerRequest};
+use swe_edge_runtime_http::{HttpServer, ServeWithListenerRequest};
+use swe_edge_runtime_http_adapter::AxumHttpServer;
 
 struct StubLifecycle;
+#[async_trait::async_trait]
 impl LifecycleMonitor for StubLifecycle {
-    fn health(&self, _req: HealthRequest) -> BoxFuture<'_, Result<HealthResponse, LifecycleError>> {
-        async move { Ok(HealthResponse::from_components(vec![])) }.boxed()
+    async fn health(&self, _req: HealthRequest) -> Result<HealthResponse, LifecycleError> {
+        Ok(HealthResponse::from_components(vec![]))
     }
-    fn start_background_tasks(
+    async fn start_background_tasks(
         &self,
         _req: StartBackgroundTasksRequest,
-    ) -> BoxFuture<'_, Result<(), LifecycleError>> {
-        async move { Ok(()) }.boxed()
+    ) -> Result<(), LifecycleError> {
+        Ok(())
     }
-    fn shutdown(&self, _req: ShutdownRequest) -> BoxFuture<'_, Result<(), LifecycleError>> {
-        async move { Ok(()) }.boxed()
+    async fn shutdown(&self, _req: ShutdownRequest) -> Result<(), LifecycleError> {
+        Ok(())
     }
-    fn status(&self, _req: StatusRequest) -> BoxFuture<'_, Result<StatusResponse, LifecycleError>> {
-        async move {
-            Ok(StatusResponse {
-                status: HealthStatus::Healthy,
-            })
-        }
-        .boxed()
+    async fn status(
+        &self,
+        _req: StatusRequest,
+    ) -> Result<EmptyResponse<HealthStatus>, LifecycleError> {
+        Ok(EmptyResponse {
+            value: HealthStatus::Healthy,
+        })
     }
-    fn component<'a>(
-        &'a self,
+    async fn component(
+        &self,
         _req: ComponentRequest<'_>,
-    ) -> BoxFuture<'a, Result<ComponentResponse, LifecycleError>> {
-        async move { Ok(ComponentResponse { health: None }) }.boxed()
+    ) -> Result<EmptyResponse<Option<ComponentHealth>>, LifecycleError> {
+        Ok(EmptyResponse { value: None })
     }
 }
 

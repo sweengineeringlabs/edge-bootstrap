@@ -1,12 +1,9 @@
 use std::sync::Arc;
 
 use edge_proxy::{
-    ComponentHealth, ComponentRequest, ComponentResponse, HealthRequest, HealthResponse,
-    HealthStatus, LifecycleError, LifecycleMonitor, ShutdownRequest, StartBackgroundTasksRequest,
-    StatusRequest, StatusResponse,
+    ComponentHealth, ComponentRequest, EmptyResponse, HealthRequest, HealthResponse, HealthStatus,
+    LifecycleError, LifecycleMonitor, ShutdownRequest, StartBackgroundTasksRequest, StatusRequest,
 };
-use futures::future::BoxFuture;
-use futures::FutureExt;
 use swe_observ_metrics::MetricsProvider;
 
 /// Wraps any [`LifecycleMonitor`]; emits an `edge_component_health` gauge for
@@ -37,48 +34,49 @@ impl MetricsLifecycleMonitor {
     }
 }
 
+#[async_trait::async_trait]
 impl LifecycleMonitor for MetricsLifecycleMonitor {
-    fn health(&self, req: HealthRequest) -> BoxFuture<'_, Result<HealthResponse, LifecycleError>> {
-        async move {
-            let report = self.inner.health(req).await?;
-            for component in &report.components {
-                self.provider.record_gauge(
-                    "edge_component_health",
-                    Self::score(component.status),
-                    &[("component", component.id.as_str())],
-                );
-            }
+    async fn health(&self, req: HealthRequest) -> Result<HealthResponse, LifecycleError> {
+        let report = self.inner.health(req).await?;
+        for component in &report.components {
             self.provider.record_gauge(
                 "edge_component_health",
-                Self::score(report.overall),
-                &[("component", "overall")],
+                Self::score(component.status),
+                &[("component", component.id.as_str())],
             );
-            Ok(report)
         }
-        .boxed()
+        self.provider.record_gauge(
+            "edge_component_health",
+            Self::score(report.overall),
+            &[("component", "overall")],
+        );
+        Ok(report)
     }
 
-    fn start_background_tasks(
+    async fn start_background_tasks(
         &self,
         req: StartBackgroundTasksRequest,
-    ) -> BoxFuture<'_, Result<(), LifecycleError>> {
-        async move { self.inner.start_background_tasks(req).await }.boxed()
+    ) -> Result<(), LifecycleError> {
+        self.inner.start_background_tasks(req).await
     }
 
-    fn shutdown(&self, req: ShutdownRequest) -> BoxFuture<'_, Result<(), LifecycleError>> {
-        async move { self.inner.shutdown(req).await }.boxed()
+    async fn shutdown(&self, req: ShutdownRequest) -> Result<(), LifecycleError> {
+        self.inner.shutdown(req).await
     }
 
-    fn status(&self, req: StatusRequest) -> BoxFuture<'_, Result<StatusResponse, LifecycleError>> {
-        async move { self.inner.status(req).await }.boxed()
+    async fn status(
+        &self,
+        req: StatusRequest,
+    ) -> Result<EmptyResponse<HealthStatus>, LifecycleError> {
+        self.inner.status(req).await
     }
 
-    fn component<'a>(
-        &'a self,
+    async fn component(
+        &self,
         req: ComponentRequest<'_>,
-    ) -> BoxFuture<'a, Result<ComponentResponse, LifecycleError>> {
+    ) -> Result<EmptyResponse<Option<ComponentHealth>>, LifecycleError> {
         let id = req.id.to_owned();
-        async move { self.inner.component(ComponentRequest { id: &id }).await }.boxed()
+        self.inner.component(ComponentRequest { id: &id }).await
     }
 }
 

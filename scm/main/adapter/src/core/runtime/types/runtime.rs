@@ -26,6 +26,13 @@ impl Runtime {
             lifecycle: None,
             tracing_config: None,
             stream_handler: None,
+            metrics_provider: None,
+            #[cfg(feature = "observability")]
+            tracer_provider: None,
+            #[cfg(feature = "observability")]
+            log_drain_backend: None,
+            #[cfg(feature = "observability")]
+            observer_context_override: None,
             #[cfg(feature = "message-broker")]
             message_broker: None,
             #[cfg(feature = "intrusion")]

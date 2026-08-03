@@ -37,7 +37,7 @@ mod tests {
     // HangManager) — those already prove RuntimeManager is object-safe with 5
     // independent implementors. This double proves something they can't: that
     // `RuntimeManager` is satisfiable using *only* this crate's own dependency
-    // graph (no `edge_domain`, no ingress/egress transports), i.e. that the
+    // graph (no `edge_application`, no ingress/egress transports), i.e. that the
     // trait genuinely stands on its own outside the assembled `core/` crate.
     struct RuntimeManagerDouble;
     impl RuntimeManager for RuntimeManagerDouble {

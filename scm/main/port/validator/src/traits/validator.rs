@@ -6,9 +6,12 @@
 /// be captured by the type system alone (e.g. non-empty strings,
 /// numeric ranges, regex patterns).
 pub trait Validator {
+    /// The type this validator checks.
     type Target;
+    /// The error returned when validation fails.
     type Error;
 
+    /// Validate `value`, returning `Err` with details when a constraint is violated.
     fn validate(&self, value: &Self::Target) -> Result<(), Self::Error>;
 }
 

@@ -79,18 +79,24 @@ mod tests {
 
     #[test]
     fn test_with_grpc_egress_grpc_returns_some() {
-        use swe_edge_egress_grpc::{GrpcEgressResult, GrpcMetadata, GrpcRequest, GrpcResponse};
+        use swe_edge_egress_grpc::{
+            GrpcEgressResult, GrpcRequest, GrpcResponse,
+            HealthCheckRequest as GrpcHealthCheckRequest,
+        };
         struct DefaultEgressStubGrpc;
         impl GrpcEgress for DefaultEgressStubGrpc {
             fn call_unary(&self, _: GrpcRequest) -> BoxFuture<'_, GrpcEgressResult<GrpcResponse>> {
                 Box::pin(async {
                     Ok(GrpcResponse {
                         body: vec![],
-                        metadata: GrpcMetadata::default(),
+                        metadata: Default::default(),
                     })
                 })
             }
-            fn health_check(&self) -> BoxFuture<'_, GrpcEgressResult<()>> {
+            fn health_check(
+                &self,
+                _: GrpcHealthCheckRequest,
+            ) -> BoxFuture<'_, GrpcEgressResult<()>> {
                 Box::pin(async { Ok(()) })
             }
         }

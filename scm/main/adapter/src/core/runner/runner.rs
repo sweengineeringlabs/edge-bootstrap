@@ -43,8 +43,8 @@ impl DaemonRunner {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use swe_edge_bootstrap_runtime::{RuntimeHealth, RuntimeStatus};
     use futures::future::BoxFuture;
+    use swe_edge_bootstrap_runtime::{RuntimeHealth, RuntimeStatus};
 
     struct DaemonRunnerOkManager;
     impl RuntimeManager for DaemonRunnerOkManager {

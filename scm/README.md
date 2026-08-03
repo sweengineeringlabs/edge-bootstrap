@@ -80,6 +80,10 @@ concerns with their own lifecycle (independently versioned, independently audita
 trail) stay in their own crate and get wrapped in, not merged in. Tracked in
 [#8](https://github.com/sweengineeringlabs/edge-bootstrap/issues/8).
 
+See [`docs/3-design/adr/`](docs/3-design/adr/) for the full reasoning behind this and other
+architectural decisions (e.g. [ADR-001](docs/3-design/adr/001-ingress-response-caching-per-route-opt-in.md),
+ingress response caching).
+
 ## Building
 
 ```bash

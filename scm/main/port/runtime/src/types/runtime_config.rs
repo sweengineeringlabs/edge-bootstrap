@@ -8,9 +8,47 @@ use swe_edge_ingress_verifier::JwtConfig;
 
 pub use swe_edge_bootstrap_monitor::{AutoscalePolicy, MetricsConfig};
 pub use swe_edge_observ_config::ObservabilityConfig;
+/// Which `LoggerProvider` backend the real `ObserverContext` bridge ships
+/// structured log entries to.
+pub use swe_observ_logging::LoggingConfig as LogBackendConfig;
+pub use swe_observ_logging::LoggingProvider as LogBackendKind;
+pub use swe_observ_logging::{
+    ElkSettings as LogElkSettings, FileSettings as LogFileSettings,
+    OtelSettings as LogOtelSettings, SqliteSettings as LogSqliteSettings,
+};
+/// Which `MetricsProvider` backend stores load-monitor/autoscale counters —
+/// distinct from [`MetricsConfig`], which is the Prometheus *scrape endpoint*
+/// bind address/path, not the backend that actually stores the data.
+pub use swe_observ_metrics::MetricsConfig as MetricsBackendConfig;
+pub use swe_observ_metrics::{
+    FileSettings as MetricsFileSettings, MetricsBackendKind, OtelSettings as MetricsOtelSettings,
+    PrometheusSettings as MetricsPrometheusSettings, SqliteSettings as MetricsSqliteSettings,
+};
+pub use swe_observ_tracing::TracingBackendKind as TracerBackendKind;
+/// Which `TracerProvider` backend the real `ObserverContext` bridge exports
+/// spans to. Named distinctly from `swe_edge_observ_config::TracingConfig`
+/// (the bare-`tracing`-crate console subscriber's own settings, a different
+/// concern entirely — see `RuntimeBuilder::with_tracing`).
+pub use swe_observ_tracing::TracingConfig as TracerBackendConfig;
 
 #[cfg(feature = "intrusion")]
 pub use edge_intrusion::config::Config as IntrusionConfig;
+
+/// Egress configuration for one named target service.
+///
+/// Currently just a backend pool for HTTP load balancing, but kept as its
+/// own struct (rather than aliasing `LoadbalancerConfig` directly) so
+/// per-service settings unrelated to load balancing (e.g. a dedicated
+/// `HttpConfig` override) can be added here later without changing the
+/// `[services.<name>]` TOML shape.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ServiceEgressConfig {
+    /// Backend pool for this service — strategy and weighted backend URLs
+    /// (`[services.<name>.loadbalancer]`). Absent or empty backends means
+    /// this service resolves to no client — see `RuntimeBuilder::build_registry`.
+    pub loadbalancer: swe_edge_loadbalancer::LoadbalancerConfig,
+}
 
 /// Configuration for the runtime manager.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -50,6 +88,15 @@ pub struct RuntimeConfig {
     /// gRPC egress channel config.  When set, `serve()` auto-dials the
     /// channel.  When absent, no gRPC egress client is wired.
     pub egress_grpc: Option<GrpcChannelConfig>,
+    /// Named target-service egress configs (`[services.<name>]`), each with
+    /// its own independently load-balanced backend pool — e.g.
+    /// `[services.user-service.loadbalancer]`. Absent or a name with no
+    /// entry here means that service has no registered
+    /// [`ServiceRegistry`](crate::ServiceRegistry) client; see
+    /// `RuntimeBuilder::build_registry`. Backend-pool ownership moved here
+    /// from `edge-transport-http-egress`'s `transport` crate — see ADR-004.
+    #[serde(default)]
+    pub services: std::collections::BTreeMap<String, ServiceEgressConfig>,
 
     // ── gRPC extras ───────────────────────────────────────────────────────────
     /// Auto-register the gRPC reflection service (`grpc.reflection.v1alpha`).
@@ -60,6 +107,26 @@ pub struct RuntimeConfig {
     // ── Observability / auto-scaling ──────────────────────────────────────────
     /// Prometheus metrics endpoint.  Absent = metrics server not started.
     pub metrics: Option<MetricsConfig>,
+    /// Which `MetricsProvider` backend stores load-monitor/autoscale counters
+    /// (`[metrics_backend]` section).  Absent = the in-memory default.
+    /// Overridden by `RuntimeBuilder::with_metrics_provider` when both are set.
+    /// Has no effect if `metrics` is absent — no backend is constructed at
+    /// all unless the scrape endpoint itself is configured.
+    pub metrics_backend: Option<MetricsBackendConfig>,
+    /// Which `TracerProvider` backend the real `ObserverContext` bridge
+    /// exports spans to (`[tracer_backend]` section). Absent = the in-memory
+    /// default. Overridden by `RuntimeBuilder::with_tracer_provider` when
+    /// both are set. Note: `swe-observability-tracing` does not publicly
+    /// re-export its `JaegerSettings`/`FileSettings`/`OtelSettings`/
+    /// `SqliteSettings` types (unlike metrics/logging), so this section can
+    /// only be populated via TOML/JSON deserialization — not constructed
+    /// programmatically in Rust with a settings literal.
+    pub tracer_backend: Option<TracerBackendConfig>,
+    /// Which `LoggerProvider` backend the real `ObserverContext` bridge
+    /// ships structured log entries to (`[log_backend]` section). Absent =
+    /// the in-memory default. Overridden by
+    /// `RuntimeBuilder::with_log_drain_backend` when both are set.
+    pub log_backend: Option<LogBackendConfig>,
     /// Auto-scale threshold policy.  Checked every second by the sampler.
     /// Has no effect if `metrics` is absent.
     pub autoscale: Option<AutoscalePolicy>,
@@ -99,8 +166,12 @@ impl Default for RuntimeConfig {
             grpc_allow_unauthenticated: false,
             egress_http: None,
             egress_grpc: None,
+            services: std::collections::BTreeMap::new(),
             grpc_reflection: false,
             metrics: None,
+            metrics_backend: None,
+            tracer_backend: None,
+            log_backend: None,
             autoscale: None,
             observability: None,
             deploy_dir: None,

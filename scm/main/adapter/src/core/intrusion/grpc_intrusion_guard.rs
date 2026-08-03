@@ -59,15 +59,35 @@ impl GrpcIngress for GrpcIntrusionGuard {
         &self,
         req: UnaryRequest,
     ) -> BoxFuture<'_, Result<GrpcResponse, GrpcIngressError>> {
-        let event = self.build_event(&req.request.method, req.peer_addr, &req.request.metadata.headers);
+        let event = self.build_event(
+            &req.request.method,
+            req.peer_addr,
+            &req.request.metadata.headers,
+        );
         match self.wired.enforcer.guard(&event) {
-            Decision::Reject(verdict) => Box::pin(async move {
-                Err(GrpcIngressError::PermissionDenied(format!(
-                    "blocked by edge-intrusion rule '{}': {}",
-                    verdict.rule_id, verdict.reason
-                )))
-            }),
-            Decision::Allow => self.inner.handle_unary(req),
+            Decision::Reject(verdict) => {
+                tracing::info!(
+                    node = "grpc_intrusion_guard",
+                    decision = "reject",
+                    rule_id = %verdict.rule_id,
+                    reason = %verdict.reason,
+                    "unary call rejected before reaching the handler"
+                );
+                Box::pin(async move {
+                    Err(GrpcIngressError::PermissionDenied(format!(
+                        "blocked by edge-intrusion rule '{}': {}",
+                        verdict.rule_id, verdict.reason
+                    )))
+                })
+            }
+            Decision::Allow => {
+                tracing::debug!(
+                    node = "grpc_intrusion_guard",
+                    decision = "allow",
+                    "unary call allowed through"
+                );
+                self.inner.handle_unary(req)
+            }
         }
     }
 
@@ -98,8 +118,8 @@ impl GrpcIngress for GrpcIntrusionGuard {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use edge_application::SecurityContext;
     use edge_intrusion::config::Config;
-    use edge_domain::SecurityContext;
     use swe_edge_ingress_grpc::{GrpcHealthCheck, GrpcMetadataInner, GrpcRequest};
 
     fn wired_with_toml(toml: &str) -> Arc<Wired> {

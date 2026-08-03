@@ -31,7 +31,10 @@ mod tests {
 
     struct HttpIngressDouble;
     impl HttpIngress for HttpIngressDouble {
-        fn handle(&self, _: InboundRequest) -> HttpFuture<'_, Result<HttpResponse, HttpIngressError>> {
+        fn handle(
+            &self,
+            _: InboundRequest,
+        ) -> HttpFuture<'_, Result<HttpResponse, HttpIngressError>> {
             HttpFuture::new(async { Ok(HttpResponse::new(200, vec![])) })
         }
         fn health_check(

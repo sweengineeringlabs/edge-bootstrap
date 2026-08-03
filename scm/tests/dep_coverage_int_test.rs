@@ -7,19 +7,19 @@ use swe_edge_bootstrap::{Runtime, RuntimeConfig};
 
 // ── edge-domain ───────────────────────────────────────────────────────────────
 
-/// Local payload implementing the `edge_domain::Request`/`Response` marker
+/// Local payload implementing the `edge_application::Request`/`Response` marker
 /// traits — `Handler::Request`/`Response` require them and neither trait has
 /// a blanket impl for foreign types (orphan rule), so every handler under
 /// test needs its own local payload type.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 struct DepCoverageTextPayload(String);
-impl edge_domain::Request for DepCoverageTextPayload {}
-impl edge_domain::Response for DepCoverageTextPayload {}
+impl edge_application::Request for DepCoverageTextPayload {}
+impl edge_application::Response for DepCoverageTextPayload {}
 
 /// Exercises edge-domain via the RuntimeBuilder HTTP route path.
 #[tokio::test]
-async fn test_edge_domain_handler_registered_via_builder() {
-    use edge_domain::{Handler, HandlerError};
+async fn test_edge_application_handler_registered_via_builder() {
+    use edge_application::{Handler, HandlerError};
 
     struct PingHandler;
 
@@ -70,6 +70,7 @@ fn test_egress_grpc_wired_via_builder() {
     use swe_edge_bootstrap::GrpcEgress;
     use swe_edge_egress_grpc::{
         GrpcEgressError, GrpcEgressResult, GrpcRequest, GrpcResponse, GrpcStatusCode,
+        HealthCheckRequest as GrpcHealthCheckRequest,
     };
 
     struct StubGrpc;
@@ -82,7 +83,7 @@ fn test_egress_grpc_wired_via_builder() {
                 ))
             })
         }
-        fn health_check(&self) -> BoxFuture<'_, GrpcEgressResult<()>> {
+        fn health_check(&self, _: GrpcHealthCheckRequest) -> BoxFuture<'_, GrpcEgressResult<()>> {
             Box::pin(async { Ok(()) })
         }
     }
@@ -107,10 +108,10 @@ fn test_grpc_reflection_config_field_respected() {
 /// Exercises swe-edge-ingress-grpc-reflection directly via ReflectionService.
 #[test]
 fn test_reflection_service_can_be_constructed_with_empty_registry() {
-    use edge_domain::InProcessHandlerRegistry;
+    use edge_application::InProcessHandlerRegistry;
     use std::sync::Arc;
     use swe_edge_ingress_grpc::GrpcBytes;
-    use swe_edge_ingress_grpc_reflection::ReflectionService;
+    use swe_edge_ingress_grpc_reflection_adapter::ReflectionService;
 
     let registry = Arc::new(InProcessHandlerRegistry::<GrpcBytes, GrpcBytes>::default());
     let _svc = ReflectionService::new(registry);
@@ -139,7 +140,7 @@ fn test_jwt_verifier_rejects_invalid_token_directly() {
 /// Exercises swe-edge-ingress-grpc through the RuntimeBuilder gRPC route path.
 #[test]
 fn test_ingress_grpc_handler_registered_via_builder() {
-    use edge_domain::{Handler, HandlerError};
+    use edge_application::{Handler, HandlerError};
     use swe_edge_bootstrap::Runtime;
     use swe_edge_ingress_grpc::GrpcBytes;
 
@@ -187,7 +188,7 @@ fn test_tonic_grpc_server_constructs_from_bind_and_handler() {
         GrpcIngress, GrpcIngressError, GrpcResponse, HealthCheckRequest, HealthCheckResponse,
         StreamRequest, StreamResponse, UnaryRequest,
     };
-    use swe_edge_runtime_grpc::{GrpcServerManage, TonicGrpcServer};
+    use swe_edge_runtime_grpc_adapter::{GrpcServerManage, TonicGrpcServer};
 
     struct NullGrpcHandler;
     impl GrpcIngress for NullGrpcHandler {
