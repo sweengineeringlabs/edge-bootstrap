@@ -14,7 +14,7 @@ impl Runtime {
             app_name: None,
             http_handler: None,
             grpc_handler: None,
-            http_dispatcher: None,
+            http_job: None,
             grpc_dispatcher: None,
             http_tls: None,
             grpc_tls: None,

@@ -12,15 +12,13 @@ use swe_edge_ingress_grpc::{
     GrpcIngressInterceptorChain,
 };
 use swe_edge_ingress_grpc_adapter::GrpcHandlerRegistryDispatcher;
-use swe_edge_ingress_http::{
-    HttpDecodeFn, HttpEncodeFn, HttpIngress, HttpRequest, HttpResponse, HttpStream,
-};
-use swe_edge_ingress_http_adapter::HttpHandlerRegistryDispatcher;
+use swe_edge_ingress_http::{HttpDecodeFn, HttpEncodeFn, HttpIngress, HttpStream};
 use swe_edge_ingress_verifier::TokenVerifier;
 
 use swe_edge_bootstrap_runtime::RuntimeConfig;
 use swe_edge_bootstrap_runtime::ServiceRegistry;
 
+use crate::core::dispatch::DefaultHttpJob;
 use crate::core::egress::LoadBalancedHttpEgress;
 
 /// Builder for assembling and starting an edge runtime.
@@ -29,7 +27,7 @@ pub struct RuntimeBuilder {
     pub(crate) app_name: Option<String>,
     pub(crate) http_handler: Option<Arc<dyn HttpIngress>>,
     pub(crate) grpc_handler: Option<Arc<dyn GrpcIngress>>,
-    pub(crate) http_dispatcher: Option<HttpHandlerRegistryDispatcher>,
+    pub(crate) http_job: Option<Arc<DefaultHttpJob>>,
     pub(crate) grpc_dispatcher: Option<GrpcHandlerRegistryDispatcher>,
     pub(crate) http_tls: Option<PemTlsConfig>,
     pub(crate) grpc_tls: Option<PemTlsConfig>,
@@ -94,13 +92,10 @@ impl RuntimeBuilder {
         Req: Send + 'static + edge_application::Request,
         Resp: Send + 'static + edge_application::Response,
     {
-        let d = self.http_dispatcher.get_or_insert_with(|| {
-            HttpHandlerRegistryDispatcher::new(Arc::new(InProcessHandlerRegistry::<
-                HttpRequest,
-                HttpResponse,
-            >::default()))
-        });
-        d.register(handler, decode, encode)
+        let job = self
+            .http_job
+            .get_or_insert_with(|| Arc::new(DefaultHttpJob::new()));
+        job.register_route(handler, decode, encode)
             .expect("duplicate HTTP route");
         self
     }

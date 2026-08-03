@@ -20,6 +20,7 @@ use swe_edge_runtime_http_adapter::AxumHttpServer;
 use tokio::sync::oneshot;
 
 use crate::core::config::loader::ApplicationConfigLoader;
+use crate::core::dispatch::HttpIngressJob;
 use crate::core::egress::DefaultEgress;
 use crate::core::ingress::DefaultIngress;
 #[cfg(feature = "intrusion")]
@@ -131,6 +132,18 @@ impl RuntimeBuilder {
             &metrics_provider,
         );
 
+        // Wire a real ObserverContext so every Handler::execute() call —
+        // infra's own and any consumer's — opens real, exportable spans via
+        // HandlerContext.observer instead of a noop default, whenever the
+        // "observability" feature resolved one above. See docs/3-design/adr/
+        // for the decision record.
+        #[cfg(feature = "observability")]
+        let http_observer: Arc<dyn edge_application_observer::ObserverContext> =
+            Arc::clone(&observer_ctx);
+        #[cfg(not(feature = "observability"))]
+        let http_observer: Arc<dyn edge_application_observer::ObserverContext> =
+            edge_application_observer::StdObserveFactory::noop_arc_observe_context();
+
         // ── Ingress ───────────────────────────────────────────────────────────
         // Capture gRPC registry before the dispatcher is consumed into input.
         let reflection_registry = if config.grpc_reflection {
@@ -142,14 +155,8 @@ impl RuntimeBuilder {
         };
 
         let mut input = DefaultIngress::empty();
-        if let Some(d) = self.http_dispatcher {
-            // Wire a real ObserverContext so every Handler::execute() call —
-            // infra's own and any consumer's — opens real, exportable spans
-            // via HandlerContext.observer instead of the framework's noop
-            // default. See docs/3-design/adr/ for the decision record.
-            #[cfg(feature = "observability")]
-            let d = d.with_observer_context(Arc::clone(&observer_ctx));
-            input = input.with_http(Arc::new(d));
+        if let Some(job) = self.http_job {
+            input = input.with_http(Arc::new(HttpIngressJob::new(job, http_observer)));
         } else if let Some(h) = self.http_handler {
             input = input.with_http(h);
         }

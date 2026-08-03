@@ -10,7 +10,9 @@ use parking_lot::RwLock;
 
 use edge_application::Handler;
 use edge_application_handler::{
-    ExecutionRequest, HandlerError, HandlerLookupRequest, IdRequest, IdResponse, PatternRequest,
+    ExecutionRequest, HandlerError, HandlerLookupRequest,
+    HealthCheckRequest as HandlerHealthCheckRequest,
+    HealthCheckResponse as HandlerHealthCheckResponse, IdRequest, IdResponse, PatternRequest,
     PatternResponse, RegisterHandlerRequest,
 };
 use edge_dispatch::{HandlerComposer, HandlerRegistry, Pipeline, StageConfig};
@@ -75,6 +77,13 @@ where
             .await?;
         Ok((self.encode)(resp))
     }
+
+    async fn health_check(
+        &self,
+        req: HandlerHealthCheckRequest,
+    ) -> Result<HandlerHealthCheckResponse, HandlerError> {
+        self.inner.health_check(req).await
+    }
 }
 
 struct JobHandlerComposer;
@@ -98,6 +107,18 @@ pub(crate) enum JobRegistrationError {
 pub(crate) struct DefaultHttpJob {
     router: RwLock<matchit::Router<String>>,
     registry: Arc<dyn HandlerRegistry<Request = HttpRequest, Response = HttpResponse>>,
+    /// Pre-`Pipeline`-wrap handlers, keyed by id, kept purely for
+    /// `health_check`: `edge_dispatch::Pipeline`'s own `Handler` impl only
+    /// overrides `id`/`pattern`/`execute` — its `health_check` falls back to
+    /// the trait's always-healthy default and never reaches the wrapped
+    /// stage, so checking `self.registry`'s stored value can't see real
+    /// handler health at all.
+    health_handlers: RwLock<
+        std::collections::HashMap<
+            String,
+            Arc<dyn Handler<Request = HttpRequest, Response = HttpResponse>>,
+        >,
+    >,
 }
 
 impl Default for DefaultHttpJob {
@@ -114,6 +135,7 @@ impl DefaultHttpJob {
             registry: Arc::new(JobHandlerComposer::create_registry::<
                 BridgedHttpHandler<WitnessRequest, WitnessResponse>,
             >()),
+            health_handlers: RwLock::new(std::collections::HashMap::new()),
         }
     }
 
@@ -145,6 +167,9 @@ impl DefaultHttpJob {
         };
         let erased: Arc<dyn Handler<Request = HttpRequest, Response = HttpResponse>> =
             Arc::new(bridged);
+        self.health_handlers
+            .write()
+            .insert(id.clone(), Arc::clone(&erased));
         let pipeline = Pipeline::<HttpRequest, HttpResponse>::builder()
             .id(id.clone())
             .pattern(pattern.clone())
@@ -173,6 +198,26 @@ impl DefaultHttpJob {
                     .unwrap_or("/")
                     .to_string()
             })
+    }
+
+    /// Aggregate health across every registered route's handler — mirrors
+    /// the transport crate's former per-handler health aggregation (now
+    /// this crate's job, since transport no longer knows `Handler` exists).
+    ///
+    /// Checks `health_handlers` (the pre-`Pipeline`-wrap handler), not
+    /// `self.registry` — see the field doc for why the registered `Pipeline`
+    /// itself can't answer this.
+    ///
+    /// Returns `false` on the first unhealthy handler.
+    pub(crate) async fn health_check(&self) -> bool {
+        let handlers: Vec<_> = self.health_handlers.read().values().cloned().collect();
+        for h in handlers {
+            match h.health_check(HandlerHealthCheckRequest).await {
+                Ok(resp) if resp.healthy => continue,
+                _ => return false,
+            }
+        }
+        true
     }
 }
 
@@ -437,5 +482,57 @@ mod tests {
             DefaultHttpJob::path_from_url("https://example.com/api/v1"),
             "/api/v1"
         );
+    }
+
+    /// @covers: DefaultHttpJob::health_check
+    #[tokio::test]
+    async fn test_health_check_with_no_routes_reports_healthy_edge() {
+        let job = DefaultHttpJob::new();
+        assert!(job.health_check().await);
+    }
+
+    /// @covers: DefaultHttpJob::health_check
+    #[tokio::test]
+    async fn test_health_check_all_healthy_handlers_reports_healthy_happy() {
+        let job = job_with_ping();
+        assert!(job.health_check().await);
+    }
+
+    /// @covers: DefaultHttpJob::health_check
+    #[tokio::test]
+    async fn test_health_check_with_unhealthy_handler_reports_unhealthy_error() {
+        struct UnhealthyHandler;
+        #[async_trait]
+        impl Handler for UnhealthyHandler {
+            type Request = PingReq;
+            type Response = PingResp;
+            fn id(&self, _req: IdRequest) -> Result<IdResponse, HandlerError> {
+                Ok(IdResponse {
+                    id: "unhealthy".to_string(),
+                })
+            }
+            fn pattern(&self, _req: PatternRequest) -> Result<PatternResponse, HandlerError> {
+                Ok(PatternResponse {
+                    pattern: "/unhealthy".to_string(),
+                })
+            }
+            async fn execute(
+                &self,
+                _req: ExecutionRequest<'_, PingReq>,
+            ) -> Result<PingResp, HandlerError> {
+                Ok(PingResp)
+            }
+            async fn health_check(
+                &self,
+                _req: HealthCheckRequest,
+            ) -> Result<HealthCheckResponse, HandlerError> {
+                Ok(HealthCheckResponse { healthy: false })
+            }
+        }
+
+        let job = DefaultHttpJob::new();
+        job.register_route(Arc::new(UnhealthyHandler), decode, encode)
+            .expect("register_route must succeed");
+        assert!(!job.health_check().await);
     }
 }

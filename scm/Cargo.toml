@@ -49,7 +49,7 @@ path = "main/adapter/src/lib.rs"
 
 [features]
 default        = []
-observability  = ["dep:tracing-subscriber", "dep:swe-observ-tracing", "dep:swe-observ-logging", "dep:edge-application-observer", "swe-edge-observ-config/observability", "swe-edge-bootstrap-runtime/observability", "swe-observ-metrics/file", "swe-observ-metrics/prometheus", "swe-observ-metrics/otel", "swe-observ-tracing/file", "swe-observ-tracing/jaeger", "swe-observ-tracing/otel", "swe-observ-logging/file", "swe-observ-logging/elk", "swe-observ-logging/otel"]
+observability  = ["dep:tracing-subscriber", "dep:swe-observ-tracing", "dep:swe-observ-logging", "swe-edge-observ-config/observability", "swe-edge-bootstrap-runtime/observability", "swe-observ-metrics/file", "swe-observ-metrics/prometheus", "swe-observ-metrics/otel", "swe-observ-tracing/file", "swe-observ-tracing/jaeger", "swe-observ-tracing/otel", "swe-observ-logging/file", "swe-observ-logging/elk", "swe-observ-logging/otel"]
 message-broker = ["dep:swe-edge-runtime-message-broker", "dep:swe-edge-runtime-message-broker-adapter", "swe-edge-bootstrap-runtime/message-broker"]
 scheduler      = ["dep:swe-edge-runtime-scheduler", "swe-edge-bootstrap-runtime/scheduler"]
 security       = ["dep:edge-security-runtime", "dep:edge-security-runtime-credential", "dep:edge-security-runtime-authz"]
@@ -100,7 +100,6 @@ edge-intrusion-enforcer           = { git = "https://github.com/sweengineeringla
 
 edge-proxy                       = { git = "https://github.com/sweengineeringlabs/edge-proxy.git", tag = "v0.3.7" }
 swe-edge-ingress-http            = { package = "edge-transport-http-ingress-port", git = "https://github.com/sweengineeringlabs/edge-transport-http-ingress.git", tag = "v0.9.3" }
-swe-edge-ingress-http-adapter     = { package = "edge-transport-http-ingress-adapter", git = "https://github.com/sweengineeringlabs/edge-transport-http-ingress.git", tag = "v0.9.4" }
 swe-edge-ingress-grpc            = { package = "edge-transport-grpc-ingress-transport", git = "https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git", tag = "v0.9.1" }
 swe-edge-ingress-grpc-adapter     = { package = "edge-transport-grpc-ingress-transport-adapter", git = "https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git", tag = "v0.9.1" }
 swe-edge-runtime-grpc            = { package = "edge-runtime-grpc", git = "https://github.com/sweengineeringlabs/edge-runtime.git", tag = "grpc/v0.8.0" }
@@ -113,8 +112,9 @@ swe-edge-ingress-verifier        = { git = "https://github.com/sweengineeringlab
 swe-edge-ingress-grpc-reflection = { package = "edge-transport-grpc-ingress-reflection", git = "https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git", tag = "v0.9.1" }
 swe-edge-ingress-grpc-reflection-adapter = { package = "edge-transport-grpc-ingress-reflection-adapter", git = "https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git", tag = "v0.9.1" }
 edge-application                 = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.20.0", features = ["full"] }
+edge-application-command         = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.20.0" }
 edge-application-handler         = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.20.0" }
-edge-application-observer        = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.20.0", optional = true }
+edge-application-observer        = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.20.0" }
 edge-dispatch                    = { package = "edge-dispatcher", git = "https://github.com/sweengineeringlabs/edge-dispatcher.git", tag = "v0.11.4" }
 swe-observ-metrics               = { package = "swe-observability-metrics", git = "ssh://git@github.com/sweengineeringlabs/observability.git", tag = "v0.2.9" }
 swe-observ-tracing                = { package = "swe-observability-tracing", git = "ssh://git@github.com/sweengineeringlabs/observability.git", tag = "v0.2.9", optional = true }
@@ -141,7 +141,6 @@ swe-edge-runtime-scheduler      = { git = "https://github.com/sweengineeringlabs
 edge-intrusion                   = { git = "https://github.com/sweengineeringlabs/edge-intrusion.git", tag = "v0.1.1" }
 edge-proxy                      = { git = "https://github.com/sweengineeringlabs/edge-proxy.git", tag = "v0.3.7" }
 swe-edge-ingress-http           = { package = "edge-transport-http-ingress-port", git = "https://github.com/sweengineeringlabs/edge-transport-http-ingress.git", tag = "v0.9.3" }
-swe-edge-ingress-http-adapter    = { package = "edge-transport-http-ingress-adapter", git = "https://github.com/sweengineeringlabs/edge-transport-http-ingress.git", tag = "v0.9.4" }
 swe-edge-ingress-grpc           = { package = "edge-transport-grpc-ingress-transport", git = "https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git", tag = "v0.9.1" }
 swe-edge-ingress-grpc-adapter    = { package = "edge-transport-grpc-ingress-transport-adapter", git = "https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git", tag = "v0.9.1" }
 swe-edge-runtime-grpc           = { package = "edge-runtime-grpc", git = "https://github.com/sweengineeringlabs/edge-runtime.git", tag = "grpc/v0.8.0" }
