@@ -61,10 +61,11 @@ impl GrpcIngress for CompositeGrpcIngress {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use edge_application::SecurityContext;
     use futures::future::BoxFuture;
     use parking_lot::Mutex;
     use std::sync::Arc;
-    use swe_edge_ingress_grpc::{GrpcHealthCheck, GrpcRequest, SecurityContext};
+    use swe_edge_ingress_grpc::{GrpcHealthCheck, GrpcRequest};
 
     #[derive(Default)]
     struct CompositeGrpcIngressTracker {

@@ -73,13 +73,29 @@ impl HttpIngress for HttpIntrusionGuard {
     ) -> HttpFuture<'_, Result<HttpResponse, HttpIngressError>> {
         let event = self.build_event(&req);
         match self.wired.enforcer.guard(&event) {
-            Decision::Reject(verdict) => HttpFuture::new(async move {
-                Err(HttpIngressError::PermissionDenied(format!(
-                    "blocked by edge-intrusion rule '{}': {}",
-                    verdict.rule_id, verdict.reason
-                )))
-            }),
-            Decision::Allow => self.inner.handle(req),
+            Decision::Reject(verdict) => {
+                tracing::info!(
+                    node = "http_intrusion_guard",
+                    decision = "reject",
+                    rule_id = %verdict.rule_id,
+                    reason = %verdict.reason,
+                    "request rejected before reaching the handler"
+                );
+                HttpFuture::new(async move {
+                    Err(HttpIngressError::PermissionDenied(format!(
+                        "blocked by edge-intrusion rule '{}': {}",
+                        verdict.rule_id, verdict.reason
+                    )))
+                })
+            }
+            Decision::Allow => {
+                tracing::debug!(
+                    node = "http_intrusion_guard",
+                    decision = "allow",
+                    "request allowed through"
+                );
+                self.inner.handle(req)
+            }
         }
     }
 
@@ -111,7 +127,7 @@ mod tests {
     fn inbound(url: &str, peer_ip: [u8; 4]) -> InboundRequest {
         InboundRequest::new(
             HttpRequest::get(url),
-            RequestContext::new(edge_domain::SecurityContext::unauthenticated()),
+            RequestContext::new(edge_application::SecurityContext::unauthenticated()),
             std::net::SocketAddr::from((peer_ip, 0)),
         )
     }

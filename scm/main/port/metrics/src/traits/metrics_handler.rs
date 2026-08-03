@@ -58,7 +58,9 @@ mod tests {
     #[test]
     fn test_metrics_handler_double_satisfies_both_supertraits() {
         let d = MetricsHandlerDouble {
-            counters: Arc::new(TrafficCounters::new(Arc::new(create_local_metrics_backend()))),
+            counters: Arc::new(TrafficCounters::new(Arc::new(
+                create_local_metrics_backend(),
+            ))),
             path: "/metrics".into(),
         };
         let as_exporter: &dyn MetricsExporter = &d;

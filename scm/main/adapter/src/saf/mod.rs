@@ -24,15 +24,15 @@ pub use swe_edge_ingress_verifier::{
 };
 
 // ── Handler decorators + config-driven assembly ───────────────────────────────
-pub use swe_edge_bootstrap_config::{FeatureHandlerBridge, HandlerFactory};
 pub use edge_dispatch::{
     Cache, CacheAsideHandler, CacheAsideResponse, EventEmittingHandler, FallbackHandler,
     FallbackPolicy, MemoryCache, OptionalHandler, TimeoutHandler, TimeoutPolicy,
 };
+pub use swe_edge_bootstrap_config::{FeatureHandlerBridge, HandlerFactory};
 pub use swe_edge_configbuilder::{FeatureRegistry, FeatureState, OptionalSection};
 
 // ── Ingress surface (handlers + request/response types) ───────────────────────
-pub use edge_domain::{Handler, HandlerError};
+pub use edge_application::{Handler, HandlerError};
 pub use swe_edge_ingress_grpc::{
     GrpcDecodeFn, GrpcEncodeFn, GrpcHealthCheck, GrpcIngress, GrpcIngressError, GrpcIngressResult,
     GrpcMessageStream, GrpcMetadata, GrpcRequest, GrpcResponse, GrpcStatusCode,
@@ -44,15 +44,33 @@ pub use swe_edge_ingress_http::{
 };
 
 // ── Egress surface (outbound clients) ─────────────────────────────────────────
-pub use swe_edge_egress_grpc::{GrpcEgress, GrpcEgressError, GrpcEgressResult, TonicGrpcClient};
+pub use swe_edge_egress_grpc::{GrpcEgress, GrpcEgressError, GrpcEgressResult};
 pub use swe_edge_egress_http::{HttpEgress, HttpEgressError, HttpEgressResult, HttpStreamResponse};
+
+// ── Backend-pool load balancing (per-target-service egress) ──────────────────
+// Ownership moved here from edge-transport-http-egress's `transport` crate —
+// see ADR-004.
+pub use crate::core::egress::{LoadBalancedHttpEgress, LoadBalancedHttpEgressError};
+pub use swe_edge_bootstrap_runtime::ServiceEgressConfig;
+pub use swe_edge_loadbalancer::{
+    BackendConfig, BackendHealth, BackendId, BackendPoolInstance, LoadbalancerConfig,
+    LoadbalancerError, LoadbalancerSvc, Outcome, Strategy,
+};
 
 // ── Lifecycle / health ────────────────────────────────────────────────────────
 pub use edge_proxy::{HealthResponse, LifecycleMonitor, ProxySvc};
 
 // ── Load monitoring / auto-scaling ────────────────────────────────────────────
 pub use swe_edge_bootstrap_monitor::RingBuffer;
-pub use swe_edge_bootstrap_monitor::{AutoscalePolicy, MetricsConfig, SharedCounters, TrafficCounters};
+pub use swe_edge_bootstrap_monitor::{
+    AutoscalePolicy, MetricsConfig, SharedCounters, TrafficCounters,
+};
+pub use swe_edge_bootstrap_runtime::{
+    LogBackendConfig, LogBackendKind, LogElkSettings, LogFileSettings, LogOtelSettings,
+    LogSqliteSettings, MetricsBackendConfig, MetricsBackendKind, MetricsFileSettings,
+    MetricsOtelSettings, MetricsPrometheusSettings, MetricsSqliteSettings, TracerBackendConfig,
+    TracerBackendKind,
+};
 pub use swe_observ_metrics::{MetricSnapshot, MetricType, MetricsProvider};
 
 // ── Observability ─────────────────────────────────────────────────────────────
@@ -66,9 +84,9 @@ pub use swe_edge_runtime_scheduler::{Scheduler, SchedulerSvc, TokioSchedulerConf
 
 // ── Message broker ────────────────────────────────────────────────────────────
 #[cfg(feature = "message-broker")]
-pub use swe_edge_runtime_message_broker::MessageBrokerFactory;
-#[cfg(feature = "message-broker")]
 pub use swe_edge_runtime_message_broker::{Message, MessageBroker, MessageStream};
+#[cfg(feature = "message-broker")]
+pub use swe_edge_runtime_message_broker_adapter::MessageBrokerFactory;
 
 // ── Security context propagation ──────────────────────────────────────────────
 #[cfg(feature = "security")]

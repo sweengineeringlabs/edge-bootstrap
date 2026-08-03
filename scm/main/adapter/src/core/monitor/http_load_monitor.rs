@@ -27,13 +27,25 @@ impl HttpIngress for HttpLoadMonitor {
         &self,
         req: InboundRequest,
     ) -> HttpFuture<'_, Result<HttpResponse, HttpIngressError>> {
+        let method = req.request.method.to_string();
+        let url = req.request.url.clone();
+        tracing::debug!(node = "http_load_monitor", %method, %url, "recording load metrics");
         self.counters.on_start();
         let counters = Arc::clone(&self.counters);
         let fut = self.inner.handle(req);
         HttpFuture::new(async move {
             let start = Instant::now();
             let result = fut.await;
-            counters.on_end(start.elapsed().as_micros() as u64, result.is_err());
+            let elapsed_us = start.elapsed().as_micros() as u64;
+            counters.on_end(elapsed_us, result.is_err());
+            tracing::debug!(
+                node = "http_load_monitor",
+                %method,
+                %url,
+                elapsed_us,
+                is_err = result.is_err(),
+                "load metrics recorded"
+            );
             result
         })
     }
@@ -49,9 +61,9 @@ impl HttpIngress for HttpLoadMonitor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use swe_edge_bootstrap_monitor::TrafficCounters;
     use std::sync::atomic::Ordering;
     use std::sync::Arc;
+    use swe_edge_bootstrap_monitor::TrafficCounters;
     use swe_edge_ingress_http::{HttpHealthCheck, HttpRequest, RequestContext};
     use swe_observ_metrics::create_local_metrics_backend;
 
@@ -110,7 +122,7 @@ mod tests {
         let m = HttpLoadMonitor::new(Arc::new(HttpLoadMonitorOk), Arc::clone(&c));
         m.handle(InboundRequest::new(
             HttpRequest::get("/"),
-            RequestContext::new(edge_domain::SecurityContext::unauthenticated()),
+            RequestContext::new(edge_application::SecurityContext::unauthenticated()),
             std::net::SocketAddr::from(([127, 0, 0, 1], 0)),
         ))
         .await

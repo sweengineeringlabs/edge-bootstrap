@@ -1,3 +1,5 @@
+//! `LifecycleObserver` — marker trait for observability-emitting lifecycle-monitor wrappers.
+
 /// Marker trait for [`LifecycleMonitor`](edge_proxy::LifecycleMonitor) wrappers
 /// that emit observability signals (metrics, traces) on health transitions.
 pub trait LifecycleObserver: edge_proxy::LifecycleMonitor {}
@@ -6,41 +8,41 @@ pub trait LifecycleObserver: edge_proxy::LifecycleMonitor {}
 mod tests {
     use super::*;
     use edge_proxy::{
-        ComponentRequest, ComponentResponse, HealthRequest, HealthResponse, LifecycleError,
-        LifecycleMonitor, ProxySvc, ShutdownRequest, StartBackgroundTasksRequest, StatusRequest,
-        StatusResponse,
+        ComponentHealth, ComponentRequest, EmptyResponse, HealthRequest, HealthResponse,
+        HealthStatus, LifecycleError, LifecycleMonitor, ProxySvc, ShutdownRequest,
+        StartBackgroundTasksRequest, StatusRequest,
     };
-    use futures::future::BoxFuture;
     use std::sync::Arc;
 
     struct LifecycleObserverDouble {
         inner: Arc<dyn LifecycleMonitor>,
     }
 
+    #[async_trait::async_trait]
     impl LifecycleMonitor for LifecycleObserverDouble {
-        fn health(
-            &self,
-            req: HealthRequest,
-        ) -> BoxFuture<'_, Result<HealthResponse, LifecycleError>> {
-            self.inner.health(req)
+        async fn health(&self, req: HealthRequest) -> Result<HealthResponse, LifecycleError> {
+            self.inner.health(req).await
         }
-        fn start_background_tasks(
+        async fn start_background_tasks(
             &self,
             req: StartBackgroundTasksRequest,
-        ) -> BoxFuture<'_, Result<(), LifecycleError>> {
-            self.inner.start_background_tasks(req)
+        ) -> Result<(), LifecycleError> {
+            self.inner.start_background_tasks(req).await
         }
-        fn shutdown(&self, req: ShutdownRequest) -> BoxFuture<'_, Result<(), LifecycleError>> {
-            self.inner.shutdown(req)
+        async fn shutdown(&self, req: ShutdownRequest) -> Result<(), LifecycleError> {
+            self.inner.shutdown(req).await
         }
-        fn status(&self, req: StatusRequest) -> BoxFuture<'_, Result<StatusResponse, LifecycleError>> {
-            self.inner.status(req)
+        async fn status(
+            &self,
+            req: StatusRequest,
+        ) -> Result<EmptyResponse<HealthStatus>, LifecycleError> {
+            self.inner.status(req).await
         }
-        fn component<'a>(
-            &'a self,
+        async fn component(
+            &self,
             req: ComponentRequest<'_>,
-        ) -> BoxFuture<'a, Result<ComponentResponse, LifecycleError>> {
-            self.inner.component(req)
+        ) -> Result<EmptyResponse<Option<ComponentHealth>>, LifecycleError> {
+            self.inner.component(req).await
         }
     }
     impl LifecycleObserver for LifecycleObserverDouble {}

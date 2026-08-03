@@ -2,23 +2,26 @@
 
 use std::sync::Arc;
 
-use edge_domain::{Handler, InProcessHandlerRegistry};
+use edge_application::{Handler, InProcessHandlerRegistry};
 use edge_proxy::LifecycleMonitor;
 use edge_security_runtime_tls::PemTlsConfig;
 use swe_edge_egress_grpc::GrpcEgress;
 use swe_edge_egress_http::HttpEgress;
 use swe_edge_ingress_grpc::{
-    GrpcBytes, GrpcDecodeFn, GrpcEncodeFn, GrpcHandlerAdapter, GrpcHandlerRegistryDispatcher,
-    GrpcIngress, GrpcIngressInterceptor, GrpcIngressInterceptorChain,
+    GrpcBytes, GrpcDecodeFn, GrpcEncodeFn, GrpcHandlerAdapter, GrpcIngress, GrpcIngressInterceptor,
+    GrpcIngressInterceptorChain,
 };
+use swe_edge_ingress_grpc_adapter::GrpcHandlerRegistryDispatcher;
 use swe_edge_ingress_http::{
-    HttpDecodeFn, HttpEncodeFn, HttpHandlerAdapter, HttpHandlerRegistryDispatcher, HttpIngress,
-    HttpRequest, HttpResponse, HttpStream,
+    HttpDecodeFn, HttpEncodeFn, HttpIngress, HttpRequest, HttpResponse, HttpStream,
 };
+use swe_edge_ingress_http_adapter::HttpHandlerRegistryDispatcher;
 use swe_edge_ingress_verifier::TokenVerifier;
 
 use swe_edge_bootstrap_runtime::RuntimeConfig;
 use swe_edge_bootstrap_runtime::ServiceRegistry;
+
+use crate::core::egress::LoadBalancedHttpEgress;
 
 /// Builder for assembling and starting an edge runtime.
 pub struct RuntimeBuilder {
@@ -38,6 +41,14 @@ pub struct RuntimeBuilder {
     pub(crate) lifecycle: Option<Arc<dyn LifecycleMonitor>>,
     pub(crate) tracing_config: Option<swe_edge_observ_config::TracingConfig>,
     pub(crate) stream_handler: Option<Arc<dyn HttpStream>>,
+    pub(crate) metrics_provider: Option<Arc<dyn swe_observ_metrics::MetricsProvider>>,
+    #[cfg(feature = "observability")]
+    pub(crate) tracer_provider: Option<Arc<dyn swe_observ_tracing::TracerProvider>>,
+    #[cfg(feature = "observability")]
+    pub(crate) log_drain_backend: Option<Arc<dyn swe_observ_logging::LoggerProvider>>,
+    #[cfg(feature = "observability")]
+    pub(crate) observer_context_override:
+        Option<Arc<dyn edge_application_observer::ObserverContext>>,
     #[cfg(feature = "message-broker")]
     pub(crate) message_broker: Option<Arc<dyn swe_edge_runtime_message_broker::MessageBroker>>,
     #[cfg(feature = "intrusion")]
@@ -62,8 +73,8 @@ impl RuntimeBuilder {
         handler: Arc<dyn Handler<Request = Req, Response = Resp>>,
     ) -> Self
     where
-        Req: serde::de::DeserializeOwned + Send + 'static + edge_domain::Request,
-        Resp: serde::Serialize + Send + 'static + edge_domain::Response,
+        Req: serde::de::DeserializeOwned + Send + 'static + edge_application::Request,
+        Resp: serde::Serialize + Send + 'static + edge_application::Response,
     {
         self.http_route_with(
             handler,
@@ -80,8 +91,8 @@ impl RuntimeBuilder {
         encode: HttpEncodeFn<Resp>,
     ) -> Self
     where
-        Req: Send + 'static + edge_domain::Request,
-        Resp: Send + 'static + edge_domain::Response,
+        Req: Send + 'static + edge_application::Request,
+        Resp: Send + 'static + edge_application::Response,
     {
         let d = self.http_dispatcher.get_or_insert_with(|| {
             HttpHandlerRegistryDispatcher::new(Arc::new(InProcessHandlerRegistry::<
@@ -89,7 +100,7 @@ impl RuntimeBuilder {
                 HttpResponse,
             >::default()))
         });
-        d.register(HttpHandlerAdapter::new(handler, decode, encode))
+        d.register(handler, decode, encode)
             .expect("duplicate HTTP route");
         self
     }
@@ -100,8 +111,8 @@ impl RuntimeBuilder {
         handler: Arc<dyn Handler<Request = Req, Response = Resp>>,
     ) -> Self
     where
-        Req: serde::de::DeserializeOwned + Send + 'static + edge_domain::Request,
-        Resp: serde::Serialize + Send + 'static + edge_domain::Response,
+        Req: serde::de::DeserializeOwned + Send + 'static + edge_application::Request,
+        Resp: serde::Serialize + Send + 'static + edge_application::Response,
     {
         self.grpc_route_with(
             handler,
@@ -118,8 +129,8 @@ impl RuntimeBuilder {
         encode: GrpcEncodeFn<Resp>,
     ) -> Self
     where
-        Req: Send + 'static + edge_domain::Request,
-        Resp: Send + 'static + edge_domain::Response,
+        Req: Send + 'static + edge_application::Request,
+        Resp: Send + 'static + edge_application::Response,
     {
         let d = self.grpc_dispatcher.get_or_insert_with(|| {
             GrpcHandlerRegistryDispatcher::new(Arc::new(InProcessHandlerRegistry::<
@@ -229,13 +240,113 @@ impl RuntimeBuilder {
         self
     }
 
+    /// Attach a `MetricsProvider` backend for load-monitor/autoscale counters.
+    ///
+    /// Takes precedence over `[metrics_backend]` in TOML config. Absent
+    /// (here and in config) means the in-memory default backend, as before —
+    /// this replaces `create_local_metrics_backend()`'s hardcoded, unconfigurable
+    /// choice with a real seam a consumer can plug Prometheus/OTel/file/SQLite
+    /// (or their own implementation) into.
+    pub fn with_metrics_provider(
+        mut self,
+        provider: Arc<dyn swe_observ_metrics::MetricsProvider>,
+    ) -> Self {
+        self.metrics_provider = Some(provider);
+        self
+    }
+
+    /// Attach a `TracerProvider` backend for the real `ObserverContext`
+    /// bridge's spans.
+    ///
+    /// Takes precedence over `[tracer_backend]` in TOML config. Absent
+    /// (here and in config) means the in-memory default backend.
+    #[cfg(feature = "observability")]
+    pub fn with_tracer_provider(
+        mut self,
+        provider: Arc<dyn swe_observ_tracing::TracerProvider>,
+    ) -> Self {
+        self.tracer_provider = Some(provider);
+        self
+    }
+
+    /// Attach a `LoggerProvider` backend for the real `ObserverContext`
+    /// bridge's structured log entries.
+    ///
+    /// Takes precedence over `[log_backend]` in TOML config. Absent (here
+    /// and in config) means the in-memory default backend.
+    #[cfg(feature = "observability")]
+    pub fn with_log_drain_backend(
+        mut self,
+        backend: Arc<dyn swe_observ_logging::LoggerProvider>,
+    ) -> Self {
+        self.log_drain_backend = Some(backend);
+        self
+    }
+
+    /// Supply a complete `ObserverContext` implementation, replacing the
+    /// internally-composed one outright.
+    ///
+    /// This is a full override, not a per-primitive merge: when set, none of
+    /// `with_tracer_provider`/`with_log_drain_backend`/`with_metrics_provider`
+    /// (or their TOML-config equivalents) have any effect on
+    /// `HandlerContext.observer` — the supplied `ObserverContext` is used
+    /// as-is. Use those other methods instead if you only want to swap one
+    /// primitive's backend while keeping the other two as this crate
+    /// composes them.
+    #[cfg(feature = "observability")]
+    pub fn with_observer_context(
+        mut self,
+        observer: Arc<dyn edge_application_observer::ObserverContext>,
+    ) -> Self {
+        self.observer_context_override = Some(observer);
+        self
+    }
+
     /// Build a [`ServiceRegistry`] from the configured egress clients, if any.
+    ///
+    /// Returns `None` unless [`RuntimeBuilder::egress_http`] was called —
+    /// `ServiceRegistry` always needs a default HTTP client, and this method
+    /// does no config-driven or XDG fallback construction of its own (that
+    /// resolution happens in `serve()`, which this method runs independent
+    /// of — call it before `.serve()` if you need the registry for handler
+    /// construction).
+    ///
+    /// When [`RuntimeBuilder::config`] was also called and its
+    /// [`RuntimeConfig::services`] map has entries, each named service with
+    /// a non-empty `[services.<name>.loadbalancer]` backend list is
+    /// registered as its own [`LoadBalancedHttpEgress`], wrapping the same
+    /// default HTTP client resolved above — see ADR-004. A service whose
+    /// backend pool fails to build (e.g. a backend with an empty URL or
+    /// zero weight) is skipped with a `tracing::warn!`, not a hard error —
+    /// one misconfigured service shouldn't prevent the rest of the registry
+    /// from being usable.
     pub fn build_registry(&self) -> Option<Arc<ServiceRegistry>> {
-        self.egress_http.as_ref().map(|http| {
-            Arc::new(ServiceRegistry::new(
-                Arc::clone(http),
-                self.egress_grpc.clone(),
-            ))
-        })
+        let default_http = self.egress_http.as_ref()?;
+        let mut registry = ServiceRegistry::new(Arc::clone(default_http), self.egress_grpc.clone());
+
+        if let Some(config) = self.config.as_ref() {
+            for (name, service_config) in &config.services {
+                if service_config.loadbalancer.backends.is_empty() {
+                    continue;
+                }
+                match LoadBalancedHttpEgress::new(
+                    Arc::clone(default_http),
+                    service_config.loadbalancer.clone(),
+                ) {
+                    Ok(client) => {
+                        registry = registry.with_service(name.clone(), Arc::new(client));
+                    }
+                    Err(error) => {
+                        tracing::warn!(
+                            service = %name,
+                            %error,
+                            "skipping service: invalid [services.<name>.loadbalancer] config"
+                        );
+                    }
+                }
+            }
+        }
+
+        Some(Arc::new(registry))
     }
 }

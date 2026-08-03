@@ -26,8 +26,9 @@ mod tests {
 
     #[test]
     fn test_sampler_double_counters_is_same_instance() {
-        let c: SharedCounters =
-            Arc::new(TrafficCounters::new(Arc::new(create_local_metrics_backend())));
+        let c: SharedCounters = Arc::new(TrafficCounters::new(Arc::new(
+            create_local_metrics_backend(),
+        )));
         let d = SamplerDouble {
             counters: Arc::clone(&c),
         };

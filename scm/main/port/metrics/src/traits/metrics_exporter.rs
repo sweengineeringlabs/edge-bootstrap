@@ -6,6 +6,7 @@ use swe_edge_bootstrap_monitor::SharedCounters;
 pub trait MetricsExporter: Send + Sync {
     /// Bind address and path are determined by `MetricsConfig`.
     fn counters(&self) -> &SharedCounters;
+    /// URL path this exporter is served under, e.g. `/metrics`.
     fn path(&self) -> &str;
 }
 
@@ -31,7 +32,9 @@ mod tests {
     }
 
     fn counters() -> SharedCounters {
-        Arc::new(TrafficCounters::new(Arc::new(create_local_metrics_backend())))
+        Arc::new(TrafficCounters::new(Arc::new(
+            create_local_metrics_backend(),
+        )))
     }
 
     #[test]

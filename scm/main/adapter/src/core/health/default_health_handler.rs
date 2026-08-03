@@ -142,7 +142,7 @@ mod tests {
         InboundRequest::new(
             request,
             swe_edge_ingress_http::RequestContext::new(
-                edge_domain::SecurityContext::unauthenticated(),
+                edge_application::SecurityContext::unauthenticated(),
             ),
             std::net::SocketAddr::from(([127, 0, 0, 1], 0)),
         )

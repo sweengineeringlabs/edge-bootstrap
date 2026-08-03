@@ -103,12 +103,15 @@ fn test_security_context_builder_sets_principal_and_authenticated() {
 /// Exercises edge-security-runtime-authz directly via `NoopAuthzPolicy`.
 #[test]
 fn test_noop_authz_policy_always_allows() {
-    use edge_security_runtime_authz::{AuthzPolicy, AuthzPolicyCheckRequest, NoopAuthzPolicy};
+    use edge_security_runtime_authz::{
+        AuthzPolicy, AuthzPolicyCheckRequest, NoopAuthzPolicy, RuntimeAuthzContext,
+    };
 
-    let ctx = SecurityContext::unauthenticated();
+    let ctx = RuntimeAuthzContext::new(SecurityContext::unauthenticated());
     let result = NoopAuthzPolicy.check(AuthzPolicyCheckRequest {
         context: &ctx,
         resource: Some("/any/resource"),
+        resource_tenant: None,
     });
     assert!(result.is_ok());
 }

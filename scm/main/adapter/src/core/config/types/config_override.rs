@@ -2,9 +2,9 @@
 
 use edge_security_runtime_tls::PemTlsConfig;
 use serde::Deserialize;
+use swe_edge_bootstrap_config::ConfigError;
 use swe_edge_bootstrap_monitor::{AutoscalePolicy, MetricsConfig};
 use swe_edge_bootstrap_runtime::RuntimeConfig;
-use swe_edge_bootstrap_config::ConfigError;
 use swe_edge_egress_grpc::GrpcChannelConfig;
 use swe_edge_egress_http::HttpConfig;
 use swe_edge_ingress_verifier::JwtConfig;
