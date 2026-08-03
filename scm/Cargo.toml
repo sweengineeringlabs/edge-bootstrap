@@ -72,6 +72,8 @@ swe-edge-bootstrap-validator  = { path = "main/port/validator" }
 async-trait        = "0.1"
 dirs               = "5"
 futures            = "0.3"
+http               = "1"
+matchit            = "0.8"
 parking_lot        = "0.12"
 serde              = { version = "1.0", features = ["derive"] }
 serde_json         = "1.0"
@@ -111,6 +113,7 @@ swe-edge-ingress-verifier        = { git = "https://github.com/sweengineeringlab
 swe-edge-ingress-grpc-reflection = { package = "edge-transport-grpc-ingress-reflection", git = "https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git", tag = "v0.9.1" }
 swe-edge-ingress-grpc-reflection-adapter = { package = "edge-transport-grpc-ingress-reflection-adapter", git = "https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git", tag = "v0.9.1" }
 edge-application                 = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.20.0", features = ["full"] }
+edge-application-handler         = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.20.0" }
 edge-application-observer        = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.20.0", optional = true }
 edge-dispatch                    = { package = "edge-dispatcher", git = "https://github.com/sweengineeringlabs/edge-dispatcher.git", tag = "v0.11.4" }
 swe-observ-metrics               = { package = "swe-observability-metrics", git = "ssh://git@github.com/sweengineeringlabs/observability.git", tag = "v0.2.9" }
@@ -123,6 +126,7 @@ path = "examples/hello_edge.rs"
 
 [dev-dependencies]
 async-trait                = "0.1"
+edge-application-command = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.20.0" }
 edge-application-handler  = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.20.0" }
 edge-application-observer = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.20.0" }
 reqwest           = { version = "0.12", features = ["json", "stream", "multipart", "rustls-tls"], default-features = false }
