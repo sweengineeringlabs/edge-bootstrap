@@ -50,7 +50,7 @@ path = "main/adapter/src/lib.rs"
 [features]
 default        = []
 observability  = ["dep:tracing-subscriber", "dep:swe-observ-tracing", "dep:swe-observ-logging", "dep:edge-application-observer", "swe-edge-observ-config/observability", "swe-edge-bootstrap-runtime/observability", "swe-observ-metrics/file", "swe-observ-metrics/prometheus", "swe-observ-metrics/otel", "swe-observ-tracing/file", "swe-observ-tracing/jaeger", "swe-observ-tracing/otel", "swe-observ-logging/file", "swe-observ-logging/elk", "swe-observ-logging/otel"]
-message-broker = ["dep:swe-edge-runtime-message-broker", "swe-edge-bootstrap-runtime/message-broker"]
+message-broker = ["dep:swe-edge-runtime-message-broker", "dep:swe-edge-runtime-message-broker-adapter", "swe-edge-bootstrap-runtime/message-broker"]
 scheduler      = ["dep:swe-edge-runtime-scheduler", "swe-edge-bootstrap-runtime/scheduler"]
 security       = ["dep:edge-security-runtime", "dep:edge-security-runtime-credential", "dep:edge-security-runtime-authz"]
 intrusion      = ["dep:edge-intrusion", "dep:edge-intrusion-rule", "dep:edge-intrusion-enforcer", "swe-edge-bootstrap-runtime/intrusion"]
@@ -83,7 +83,8 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"], optio
 
 swe-edge-configbuilder           = { git = "https://github.com/sweengineeringlabs/edge-configbuilder.git",  tag = "v0.4.2" }
 swe-edge-observ-config           = { git = "https://github.com/sweengineeringlabs/edge-observ-config.git",  tag = "v0.2.1" }
-swe-edge-runtime-message-broker  = { git = "https://github.com/sweengineeringlabs/edge-runtime.git", tag = "v0.4.0", features = ["tokio-rt"], optional = true }
+swe-edge-runtime-message-broker  = { package = "edge-runtime-message-broker", git = "https://github.com/sweengineeringlabs/edge-runtime.git", tag = "message-broker/v0.5.0", optional = true }
+swe-edge-runtime-message-broker-adapter = { package = "edge-runtime-message-broker-adapter", git = "https://github.com/sweengineeringlabs/edge-runtime.git", tag = "message-broker-adapter/v0.2.0", features = ["tokio-rt"], optional = true }
 swe-edge-runtime-scheduler       = { git = "https://github.com/sweengineeringlabs/edge-scheduler.git", tag = "v0.3.6", optional = true }
 swe-edge-loadbalancer            = { git = "https://github.com/sweengineeringlabs/edge-loadbalancer.git", tag = "v0.4.1" }
 url                               = "2"
@@ -130,7 +131,8 @@ tempfile          = "3"
 tokio             = { version = "1.0", features = ["rt-multi-thread", "sync", "signal", "macros", "time", "net", "test-util"] }
 swe-edge-configbuilder          = { git = "https://github.com/sweengineeringlabs/edge-configbuilder.git", tag = "v0.4.2" }
 swe-edge-observ-config          = { git = "https://github.com/sweengineeringlabs/edge-observ-config.git", tag = "v0.2.1" }
-swe-edge-runtime-message-broker = { git = "https://github.com/sweengineeringlabs/edge-runtime.git", tag = "v0.4.0", features = ["tokio-rt"] }
+swe-edge-runtime-message-broker = { package = "edge-runtime-message-broker", git = "https://github.com/sweengineeringlabs/edge-runtime.git", tag = "message-broker/v0.5.0" }
+swe-edge-runtime-message-broker-adapter = { package = "edge-runtime-message-broker-adapter", git = "https://github.com/sweengineeringlabs/edge-runtime.git", tag = "message-broker-adapter/v0.2.0", features = ["tokio-rt"] }
 swe-edge-runtime-scheduler      = { git = "https://github.com/sweengineeringlabs/edge-scheduler.git", tag = "v0.3.6" }
 edge-intrusion                   = { git = "https://github.com/sweengineeringlabs/edge-intrusion.git", tag = "v0.1.1" }
 edge-proxy                      = { git = "https://github.com/sweengineeringlabs/edge-proxy.git", tag = "v0.3.7" }

@@ -84,7 +84,7 @@ pub use swe_edge_runtime_scheduler::{Scheduler, SchedulerSvc, TokioSchedulerConf
 
 // ── Message broker ────────────────────────────────────────────────────────────
 #[cfg(feature = "message-broker")]
-pub use swe_edge_runtime_message_broker::MessageBrokerFactory;
+pub use swe_edge_runtime_message_broker_adapter::MessageBrokerFactory;
 #[cfg(feature = "message-broker")]
 pub use swe_edge_runtime_message_broker::{Message, MessageBroker, MessageStream};
 
