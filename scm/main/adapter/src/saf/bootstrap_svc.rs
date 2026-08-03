@@ -203,8 +203,9 @@ impl Runtime {
         lifecycle: Arc<dyn LifecycleMonitor>,
     ) -> RuntimeResult<()> {
         use swe_edge_ingress_verifier::{JwtVerifier, TokenVerifier};
-        use swe_edge_runtime_grpc::{
-            AllowUnauthenticatedFlagRequest, GrpcServerManage, TonicGrpcServer, WithTlsRequest,
+        use swe_edge_runtime_grpc::WithTlsRequest;
+        use swe_edge_runtime_grpc_adapter::{
+            AllowUnauthenticatedFlagRequest, GrpcServerManage, TonicGrpcServer,
         };
         use swe_edge_runtime_http::{HttpServer, ServeWithShutdownRequest};
         use swe_edge_runtime_http_adapter::AxumHttpServer;

@@ -20,11 +20,11 @@ path = "src/lib.rs"
 
 [dependencies]
 swe-edge-bootstrap-ingress = { path = "../ingress" }
-swe-edge-ingress-grpc = { package = "swe-edge-ingress-grpc-transport", git = "https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git", tag = "v0.8.1" }
+swe-edge-ingress-grpc = { package = "edge-transport-grpc-ingress-transport", git = "https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git", tag = "v0.9.1" }
 
 [dev-dependencies]
 futures = "0.3"
-swe-edge-ingress-http = { package = "edge-transport-http-ingress-port", git = "https://github.com/sweengineeringlabs/edge-transport-http-ingress.git", rev = "f5bf97ca01a4528cfed02ad26dc8bb8914bcfd8d" }
+swe-edge-ingress-http = { package = "edge-transport-http-ingress-port", git = "https://github.com/sweengineeringlabs/edge-transport-http-ingress.git", tag = "v0.9.3" }
 
 [lints.rust]
 unsafe_code  = "deny"

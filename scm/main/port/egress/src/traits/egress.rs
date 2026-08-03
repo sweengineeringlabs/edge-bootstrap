@@ -16,7 +16,9 @@ pub trait Egress: Send + Sync {
 mod tests {
     use super::*;
     use futures::future::BoxFuture;
-    use swe_edge_egress_grpc::{GrpcEgressResult, GrpcMetadata, GrpcRequest, GrpcResponse};
+    use swe_edge_egress_grpc::{
+        GrpcEgressResult, GrpcRequest, GrpcResponse, HealthCheckRequest as GrpcHealthCheckRequest,
+    };
     use swe_edge_egress_http::{
         ConfigRequest, ConfigResponse, HealthCheckRequest, HttpConfig, HttpEgressError,
         HttpRequest, HttpResponse, HttpStreamResponse,
@@ -47,11 +49,11 @@ mod tests {
             Box::pin(async {
                 Ok(GrpcResponse {
                     body: vec![],
-                    metadata: GrpcMetadata::default(),
+                    metadata: Default::default(),
                 })
             })
         }
-        fn health_check(&self) -> BoxFuture<'_, GrpcEgressResult<()>> {
+        fn health_check(&self, _: GrpcHealthCheckRequest) -> BoxFuture<'_, GrpcEgressResult<()>> {
             Box::pin(async { Ok(()) })
         }
     }

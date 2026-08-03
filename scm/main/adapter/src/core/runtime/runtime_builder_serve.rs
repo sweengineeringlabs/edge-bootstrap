@@ -7,13 +7,13 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use edge_proxy::ProxySvc;
-use swe_edge_egress_grpc::TransportSvc as GrpcTransportSvc;
+use swe_edge_egress_grpc::TransportConstruction as GrpcTransportSvc;
 use swe_edge_egress_http::HttpTransportSvc;
 use swe_edge_ingress_grpc_reflection_adapter::ReflectionService;
 use swe_edge_ingress_verifier::{JwtVerifier, TokenVerifier};
-use swe_edge_runtime_grpc::{
+use swe_edge_runtime_grpc::WithTlsRequest;
+use swe_edge_runtime_grpc_adapter::{
     AllowUnauthenticatedFlagRequest, GrpcServerManage, TonicGrpcServer, WithInterceptorsRequest,
-    WithTlsRequest,
 };
 use swe_edge_runtime_http::{HttpServer, ServeWithShutdownRequest};
 use swe_edge_runtime_http_adapter::AxumHttpServer;

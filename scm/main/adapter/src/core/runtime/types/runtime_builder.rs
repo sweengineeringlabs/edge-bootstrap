@@ -13,8 +13,7 @@ use swe_edge_ingress_grpc::{
 };
 use swe_edge_ingress_grpc_adapter::GrpcHandlerRegistryDispatcher;
 use swe_edge_ingress_http::{
-    HttpDecodeFn, HttpEncodeFn, HttpHandlerAdapter, HttpIngress, HttpRequest, HttpResponse,
-    HttpStream,
+    HttpDecodeFn, HttpEncodeFn, HttpIngress, HttpRequest, HttpResponse, HttpStream,
 };
 use swe_edge_ingress_http_adapter::HttpHandlerRegistryDispatcher;
 use swe_edge_ingress_verifier::TokenVerifier;
@@ -101,7 +100,7 @@ impl RuntimeBuilder {
                 HttpResponse,
             >::default()))
         });
-        d.register(HttpHandlerAdapter::new(handler, decode, encode))
+        d.register(handler, decode, encode)
             .expect("duplicate HTTP route");
         self
     }

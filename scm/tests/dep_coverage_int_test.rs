@@ -70,6 +70,7 @@ fn test_egress_grpc_wired_via_builder() {
     use swe_edge_bootstrap::GrpcEgress;
     use swe_edge_egress_grpc::{
         GrpcEgressError, GrpcEgressResult, GrpcRequest, GrpcResponse, GrpcStatusCode,
+        HealthCheckRequest as GrpcHealthCheckRequest,
     };
 
     struct StubGrpc;
@@ -82,7 +83,7 @@ fn test_egress_grpc_wired_via_builder() {
                 ))
             })
         }
-        fn health_check(&self) -> BoxFuture<'_, GrpcEgressResult<()>> {
+        fn health_check(&self, _: GrpcHealthCheckRequest) -> BoxFuture<'_, GrpcEgressResult<()>> {
             Box::pin(async { Ok(()) })
         }
     }
@@ -187,7 +188,7 @@ fn test_tonic_grpc_server_constructs_from_bind_and_handler() {
         GrpcIngress, GrpcIngressError, GrpcResponse, HealthCheckRequest, HealthCheckResponse,
         StreamRequest, StreamResponse, UnaryRequest,
     };
-    use swe_edge_runtime_grpc::{GrpcServerManage, TonicGrpcServer};
+    use swe_edge_runtime_grpc_adapter::{GrpcServerManage, TonicGrpcServer};
 
     struct NullGrpcHandler;
     impl GrpcIngress for NullGrpcHandler {

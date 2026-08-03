@@ -148,7 +148,9 @@ impl RuntimeManager for DefaultRuntimeManager {
                 .health_check(swe_edge_egress_http::HealthCheckRequest)
                 .await;
             if let Some(g) = self.egress.grpc() {
-                let _ = g.health_check().await;
+                let _ = g
+                    .health_check(swe_edge_egress_grpc::HealthCheckRequest)
+                    .await;
             }
 
             // Probe message broker if configured.
@@ -275,7 +277,10 @@ impl RuntimeManager for DefaultRuntimeManager {
                 Err(e) => components.push(ComponentHealth::unhealthy("egress.http", e.to_string())),
             }
             if let Some(g) = self.egress.grpc() {
-                match g.health_check().await {
+                match g
+                    .health_check(swe_edge_egress_grpc::HealthCheckRequest)
+                    .await
+                {
                     Ok(_) => components.push(ComponentHealth::healthy("egress.grpc")),
                     Err(e) => {
                         components.push(ComponentHealth::unhealthy("egress.grpc", e.to_string()))
@@ -309,15 +314,14 @@ mod tests {
     use crate::core::egress::DefaultEgress;
     use crate::core::ingress::DefaultIngress;
     use edge_proxy::{
-        ComponentHealth, ComponentRequest, ComponentResponse, HealthResponse, HealthStatus,
-        LifecycleError, StatusRequest, StatusResponse,
+        ComponentHealth, ComponentRequest, EmptyResponse, HealthResponse, HealthStatus,
+        LifecycleError, StatusRequest,
     };
     use futures::future::BoxFuture;
-    use futures::FutureExt;
     use std::collections::HashMap;
     use swe_edge_egress_grpc::{
-        GrpcEgress, GrpcEgressError, GrpcEgressResult, GrpcMetadata as EgressGrpcMetadata,
-        GrpcRequest as EgressGrpcRequest, GrpcResponse as EgressGrpcResponse,
+        GrpcEgress, GrpcEgressError, GrpcEgressResult, GrpcRequest as EgressGrpcRequest,
+        GrpcResponse as EgressGrpcResponse, HealthCheckRequest as EgressGrpcHealthCheckRequest,
     };
     use swe_edge_egress_http::{
         ConfigRequest as EgressConfigRequest, ConfigResponse as EgressConfigResponse,
@@ -336,38 +340,33 @@ mod tests {
 
     struct DefaultRuntimeManagerStubLifecycle;
 
+    #[async_trait::async_trait]
     impl LifecycleMonitor for DefaultRuntimeManagerStubLifecycle {
-        fn health(
-            &self,
-            _req: HealthRequest,
-        ) -> BoxFuture<'_, Result<HealthResponse, LifecycleError>> {
-            async move { Ok(HealthResponse::from_components(vec![])) }.boxed()
+        async fn health(&self, _req: HealthRequest) -> Result<HealthResponse, LifecycleError> {
+            Ok(HealthResponse::from_components(vec![]))
         }
-        fn start_background_tasks(
+        async fn start_background_tasks(
             &self,
             _req: StartBackgroundTasksRequest,
-        ) -> BoxFuture<'_, Result<(), LifecycleError>> {
-            async move { Ok(()) }.boxed()
+        ) -> Result<(), LifecycleError> {
+            Ok(())
         }
-        fn shutdown(&self, _req: ShutdownRequest) -> BoxFuture<'_, Result<(), LifecycleError>> {
-            async move { Ok(()) }.boxed()
+        async fn shutdown(&self, _req: ShutdownRequest) -> Result<(), LifecycleError> {
+            Ok(())
         }
-        fn status(
+        async fn status(
             &self,
             _req: StatusRequest,
-        ) -> BoxFuture<'_, Result<StatusResponse, LifecycleError>> {
-            async move {
-                Ok(StatusResponse {
-                    status: HealthStatus::Healthy,
-                })
-            }
-            .boxed()
+        ) -> Result<EmptyResponse<HealthStatus>, LifecycleError> {
+            Ok(EmptyResponse {
+                value: HealthStatus::Healthy,
+            })
         }
-        fn component<'a>(
-            &'a self,
+        async fn component(
+            &self,
             _req: ComponentRequest<'_>,
-        ) -> BoxFuture<'a, Result<ComponentResponse, LifecycleError>> {
-            async move { Ok(ComponentResponse { health: None }) }.boxed()
+        ) -> Result<EmptyResponse<Option<ComponentHealth>>, LifecycleError> {
+            Ok(EmptyResponse { value: None })
         }
     }
 
@@ -447,11 +446,14 @@ mod tests {
             Box::pin(async {
                 Ok(EgressGrpcResponse {
                     body: vec![],
-                    metadata: EgressGrpcMetadata::default(),
+                    metadata: Default::default(),
                 })
             })
         }
-        fn health_check(&self) -> BoxFuture<'_, GrpcEgressResult<()>> {
+        fn health_check(
+            &self,
+            _: EgressGrpcHealthCheckRequest,
+        ) -> BoxFuture<'_, GrpcEgressResult<()>> {
             Box::pin(async { Ok(()) })
         }
     }
@@ -464,7 +466,10 @@ mod tests {
         ) -> BoxFuture<'_, GrpcEgressResult<EgressGrpcResponse>> {
             Box::pin(async { Err(GrpcEgressError::Unavailable("down".into())) })
         }
-        fn health_check(&self) -> BoxFuture<'_, GrpcEgressResult<()>> {
+        fn health_check(
+            &self,
+            _: EgressGrpcHealthCheckRequest,
+        ) -> BoxFuture<'_, GrpcEgressResult<()>> {
             Box::pin(async { Err(GrpcEgressError::Unavailable("unreachable".into())) })
         }
     }

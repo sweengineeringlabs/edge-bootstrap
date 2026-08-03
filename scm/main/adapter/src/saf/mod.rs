@@ -44,7 +44,7 @@ pub use swe_edge_ingress_http::{
 };
 
 // ── Egress surface (outbound clients) ─────────────────────────────────────────
-pub use swe_edge_egress_grpc::{GrpcEgress, GrpcEgressError, GrpcEgressResult, TonicGrpcClient};
+pub use swe_edge_egress_grpc::{GrpcEgress, GrpcEgressError, GrpcEgressResult};
 pub use swe_edge_egress_http::{HttpEgress, HttpEgressError, HttpEgressResult, HttpStreamResponse};
 
 // ── Backend-pool load balancing (per-target-service egress) ──────────────────
