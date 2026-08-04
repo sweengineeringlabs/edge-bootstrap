@@ -29,12 +29,14 @@ observability, lifecycle) into a single deployable process via a fluent `Runtime
 
 ## Layout
 
-`main/port/*` holds the trait contracts (zero implementation); `main/adapter/src/`
-holds the one real implementation that wires them together — `core/` for the concrete
-adapters (`core/health/default_health_handler.rs`, `core/egress/default_egress.rs`,
-etc.), plus `saf/` (the fluent `RuntimeBuilder`/`ServerSvc` assembly layer) and `spi/`
-(runtime extension points). `port` and `adapter` are parallel, equally-named concepts
-under `main/`.
+One Cargo workspace (`scm/Cargo.toml`, members only, no crate of its own).
+`main/port/*` holds the trait contracts (zero implementation, one crate per port);
+`main/adapter/` is the one real implementation member that wires them together — its
+own `Cargo.toml` with path dependencies on every `main/port/*` crate, `src/core/` for
+the concrete adapters (`core/health/default_health_handler.rs`, `core/egress/
+default_egress.rs`, etc.), plus `src/saf/` (the fluent `RuntimeBuilder`/`ServerSvc`
+assembly layer) and `src/spi/` (runtime extension points), with its own `tests/` and
+`examples/` alongside them.
 
 ## Port trait relationships
 

@@ -423,10 +423,11 @@ mod tests {
         }
 
         let job = DefaultHttpJob::new();
+        let handler = Arc::new(EventCountingHandler {
+            started: AtomicUsize::new(0),
+        });
         job.register_route(
-            Arc::new(EventCountingHandler {
-                started: AtomicUsize::new(0),
-            }),
+            Arc::clone(&handler) as Arc<dyn Handler<Request = PingReq, Response = PingResp>>,
             decode,
             encode,
         )
@@ -450,6 +451,12 @@ mod tests {
         .await
         .expect("run must succeed");
         assert_eq!(resp.payload.status, 200);
+        assert_eq!(
+            handler.started.load(Ordering::SeqCst),
+            1,
+            "Job::run must have actually invoked the registered handler through the real \
+             Pipeline, not just returned a response without dispatching to it"
+        );
     }
 
     /// @covers: DefaultHttpJob::run

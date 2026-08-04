@@ -17,10 +17,170 @@ echo "pre-commit ── $(basename $REPO_ROOT) ──"
 cd "$SCM_DIR"
 echo "  1/5 deps consistency..."
 "$PYTHON" "$REPO_ROOT/scm/scripts/hooks/check_deps_consistency.py"
-echo "  2/5 fmt..."
-cargo fmt --all -- --check
-echo "  3/5 clippy..."
-cargo clippy --workspace --all-targets -- -D warnings
+
+# ---------------------------------------------------------------------------
+# Steps 2/3 (fmt, clippy): scope to packages affected by staged changes plus
+# their transitive dependents, via real cargo dependency-graph traversal.
+# One Cargo workspace (scm/Cargo.toml, members only): 12 main/port/* crates
+# plus main/adapter, a true sibling member (not nested inside any other
+# member's directory) -- no ancestor-ownership ambiguity to special-case.
+# Steps 1/4/5 remain global/unconditional and are never gated by this.
+# ---------------------------------------------------------------------------
+
+if ! command -v jq >/dev/null 2>&1; then
+  echo "pre-commit: jq is required (dependency-graph scoping) but not found on PATH" >&2
+  exit 1
+fi
+
+mapfile -t STAGED_FILES < <(git diff --cached --name-only)
+
+PKG_ARGS=()
+RUN_FMT_CLIPPY=0
+
+if [ "${#STAGED_FILES[@]}" -eq 0 ]; then
+  echo "  2/5 fmt... skipped (nothing staged)"
+  echo "  3/5 clippy... skipped (nothing staged)"
+else
+  # Do NOT swallow stderr here -- a cargo metadata failure (stale/broken
+  # Cargo.lock, unreachable git dependency) must fail the hook loudly, not
+  # silently yield an empty graph that looks identical to "nothing affected"
+  # and skips fmt/clippy on a broken state.
+  if ! METADATA="$(cargo metadata --format-version=1)"; then
+    echo "pre-commit: cargo metadata failed -- cannot compute affected-package scope" >&2
+    exit 1
+  fi
+
+  # id -> manifest dir (relative to REPO_ROOT, matching STAGED_FILES' domain)
+  # and id -> package name (cargo metadata's .id carries a version/source
+  # suffix that `-p` does not accept; .name is the flag-compatible form).
+  # Restricted to `.workspace_members[]` so this only ever considers this
+  # repo's own 13 packages, never the several-hundred-entry external
+  # dependency graph. `tr -d '\r'`: jq.exe on this Windows/Git-Bash setup
+  # emits trailing carriage returns on lines that reach it via certain
+  # pipelines -- invisible in normal output but fatal to associative-array
+  # key equality. Confirmed real here (verified with `od -c` on actual
+  # jq.exe output).
+  declare -A PKG_DIR
+  declare -A PKG_NAME
+  while IFS=$'\t' read -r id name manifest; do
+    [ -z "$id" ] && continue
+    manifest="${manifest//\\//}"
+    dir_abs="$(dirname "$manifest")"
+    PKG_DIR["$id"]="${dir_abs#$REPO_ROOT/}"
+    PKG_NAME["$id"]="$name"
+  done < <(echo "$METADATA" | jq -r '
+      .workspace_members as $wsm
+      | .packages[]
+      | select(.id as $id | $wsm | index($id))
+      | "\(.id)\t\(.name)\t\(.manifest_path)"
+    ' | tr -d '\r')
+
+  declare -A AFFECTED
+
+  # A Cargo.toml/Cargo.lock edit can change what every package in the
+  # workspace resolves to (e.g. bumping a shared external dependency) --
+  # something the intra-workspace path-edge graph below can't see, since it
+  # only knows about dependencies between our own crates. Treat the whole
+  # workspace as affected rather than trust the static graph in this case.
+  MANIFEST_TOUCHED=0
+  for f in "${STAGED_FILES[@]}"; do
+    if [ "$f" = "scm/Cargo.toml" ] || [ "$f" = "scm/Cargo.lock" ]; then
+      MANIFEST_TOUCHED=1
+      break
+    fi
+  done
+
+  if [ "$MANIFEST_TOUCHED" -eq 1 ]; then
+    for id in "${!PKG_NAME[@]}"; do
+      AFFECTED["$id"]=1
+    done
+  else
+    # Forward edges (FROM depends on TO), inverted into reverse-dependency
+    # lists, restricted to intra-workspace (path+file source) edges only --
+    # this workspace's full external dependency graph is several hundred
+    # crates.io/git packages we'd never scope `-p` to, so filtering keeps
+    # the walk small and avoids processing irrelevant edges.
+    declare -A REVERSE_DEPS
+    while IFS=$'\t' read -r from to; do
+      [ -z "$from" ] && continue
+      REVERSE_DEPS["$to"]="${REVERSE_DEPS[$to]:-} $from"
+    done < <(echo "$METADATA" | jq -r '
+        .resolve.nodes[]
+        | select(.id | startswith("path+file"))
+        | . as $n
+        | $n.deps[]?
+        | select(.pkg | startswith("path+file"))
+        | "\($n.id)\t\(.pkg)"
+      ' | tr -d '\r')
+
+    # Seed: for each staged file, find the longest-matching package
+    # directory (all 13 members are true siblings under scm/main/{port/*,
+    # adapter} -- no ancestor nesting -- so this degrades to a plain "any
+    # match" in practice, but the general form is lower-risk than a bespoke
+    # simplified variant).
+    QUEUE=()
+    for f in "${STAGED_FILES[@]}"; do
+      best_id=""
+      best_len=-1
+      for id in "${!PKG_DIR[@]}"; do
+        dir_rel="${PKG_DIR[$id]}"
+        case "$f" in
+          "$dir_rel"|"$dir_rel"/*)
+            if [ "${#dir_rel}" -gt "$best_len" ]; then
+              best_id="$id"
+              best_len="${#dir_rel}"
+            fi
+            ;;
+        esac
+      done
+      if [ -n "$best_id" ] && [ -z "${AFFECTED[$best_id]:-}" ]; then
+        AFFECTED["$best_id"]=1
+        QUEUE+=("$best_id")
+      fi
+      # else: $f is outside any of the 13 package dirs (e.g. top-level
+      # README.md, scripts/, docs/) -- correctly contributes nothing.
+    done
+
+    # BFS over reverse edges: every dependent of an affected package is
+    # affected too.
+    while [ "${#QUEUE[@]}" -gt 0 ]; do
+      cur="${QUEUE[0]}"
+      QUEUE=("${QUEUE[@]:1}")
+      for dep in ${REVERSE_DEPS[$cur]:-}; do
+        if [ -z "${AFFECTED[$dep]:-}" ]; then
+          AFFECTED["$dep"]=1
+          QUEUE+=("$dep")
+        fi
+      done
+    done
+  fi
+
+  # `declare -A` associative arrays with zero elements trigger "unbound
+  # variable" under `set -u` on this bash build when their length is
+  # expanded directly (a known bash quirk -- indexed arrays like QUEUE
+  # above are unaffected). Capture the count with nounset off, then
+  # restore it immediately.
+  set +u
+  affected_count="${#AFFECTED[@]}"
+  set -u
+  if [ "$affected_count" -eq 0 ]; then
+    echo "  2/5 fmt... skipped (staged files map to no workspace package)"
+    echo "  3/5 clippy... skipped (staged files map to no workspace package)"
+  else
+    for id in "${!AFFECTED[@]}"; do
+      PKG_ARGS+=(-p "${PKG_NAME[$id]}")
+    done
+    RUN_FMT_CLIPPY=1
+  fi
+fi
+
+if [ "$RUN_FMT_CLIPPY" -eq 1 ]; then
+  echo "  2/5 fmt (scoped: ${PKG_ARGS[*]})..."
+  cargo fmt "${PKG_ARGS[@]}" -- --check
+  echo "  3/5 clippy (scoped: ${PKG_ARGS[*]})..."
+  cargo clippy "${PKG_ARGS[@]}" --all-targets -- -D warnings
+fi
+
 echo "  4/5 arch audit..."
 arch audit --rs
 echo "  5/5 cargo audit..."
