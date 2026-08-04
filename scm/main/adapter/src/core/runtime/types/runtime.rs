@@ -15,7 +15,7 @@ impl Runtime {
             http_handler: None,
             grpc_handler: None,
             http_job: None,
-            grpc_dispatcher: None,
+            grpc_job: None,
             http_tls: None,
             grpc_tls: None,
             http_bearer_verifier: None,

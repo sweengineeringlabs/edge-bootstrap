@@ -33,8 +33,11 @@ impl Handler for EchoHandler {
     type Response = EchoPayload;
 
     fn id(&self, _req: IdRequest) -> Result<IdResponse, HandlerError> {
+        // Must carry the leading `/` — gRPC's real wire method is the HTTP/2
+        // request path (e.g. `/echo`), which `DefaultGrpcJob` keys routes on
+        // directly; a bare `echo` here would never match an incoming call.
         Ok(IdResponse {
-            id: "echo".to_string(),
+            id: "/echo".to_string(),
         })
     }
 

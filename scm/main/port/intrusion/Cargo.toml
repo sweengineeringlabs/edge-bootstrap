@@ -19,7 +19,7 @@ name = "swe_edge_bootstrap_intrusion"
 path = "src/lib.rs"
 
 [dependencies]
-swe-edge-ingress-grpc = { package = "edge-transport-grpc-ingress-transport", git = "https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git", tag = "v0.9.1" }
+swe-edge-ingress-grpc = { package = "edge-transport-grpc-ingress-transport", git = "https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git", tag = "v0.9.3" }
 swe-edge-ingress-http = { package = "edge-transport-http-ingress-port", git = "https://github.com/sweengineeringlabs/edge-transport-http-ingress.git", tag = "v0.9.3" }
 
 [dev-dependencies]

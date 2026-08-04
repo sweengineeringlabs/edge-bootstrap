@@ -2,23 +2,21 @@
 
 use std::sync::Arc;
 
-use edge_application::{Handler, InProcessHandlerRegistry};
+use edge_application::Handler;
 use edge_proxy::LifecycleMonitor;
 use edge_security_runtime_tls::PemTlsConfig;
 use swe_edge_egress_grpc::GrpcEgress;
 use swe_edge_egress_http::HttpEgress;
 use swe_edge_ingress_grpc::{
-    GrpcBytes, GrpcDecodeFn, GrpcEncodeFn, GrpcHandlerAdapter, GrpcIngress, GrpcIngressInterceptor,
-    GrpcIngressInterceptorChain,
+    GrpcDecodeFn, GrpcEncodeFn, GrpcIngress, GrpcIngressInterceptor, GrpcIngressInterceptorChain,
 };
-use swe_edge_ingress_grpc_adapter::GrpcHandlerRegistryDispatcher;
 use swe_edge_ingress_http::{HttpDecodeFn, HttpEncodeFn, HttpIngress, HttpStream};
 use swe_edge_ingress_verifier::TokenVerifier;
 
 use swe_edge_bootstrap_runtime::RuntimeConfig;
 use swe_edge_bootstrap_runtime::ServiceRegistry;
 
-use crate::core::dispatch::DefaultHttpJob;
+use crate::core::dispatch::{DefaultGrpcJob, DefaultHttpJob};
 use crate::core::egress::LoadBalancedHttpEgress;
 
 /// Builder for assembling and starting an edge runtime.
@@ -28,7 +26,7 @@ pub struct RuntimeBuilder {
     pub(crate) http_handler: Option<Arc<dyn HttpIngress>>,
     pub(crate) grpc_handler: Option<Arc<dyn GrpcIngress>>,
     pub(crate) http_job: Option<Arc<DefaultHttpJob>>,
-    pub(crate) grpc_dispatcher: Option<GrpcHandlerRegistryDispatcher>,
+    pub(crate) grpc_job: Option<Arc<DefaultGrpcJob>>,
     pub(crate) http_tls: Option<PemTlsConfig>,
     pub(crate) grpc_tls: Option<PemTlsConfig>,
     pub(crate) http_bearer_verifier: Option<Arc<dyn TokenVerifier>>,
@@ -127,13 +125,11 @@ impl RuntimeBuilder {
         Req: Send + 'static + edge_application::Request,
         Resp: Send + 'static + edge_application::Response,
     {
-        let d = self.grpc_dispatcher.get_or_insert_with(|| {
-            GrpcHandlerRegistryDispatcher::new(Arc::new(InProcessHandlerRegistry::<
-                GrpcBytes,
-                GrpcBytes,
-            >::default()))
-        });
-        d.register(GrpcHandlerAdapter::new(handler, decode, encode));
+        let job = self
+            .grpc_job
+            .get_or_insert_with(|| Arc::new(DefaultGrpcJob::new()));
+        job.register_route(handler, decode, encode)
+            .expect("duplicate gRPC route");
         self
     }
 

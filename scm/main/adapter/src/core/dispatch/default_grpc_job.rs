@@ -1,0 +1,563 @@
+//! `DefaultGrpcJob` — the concrete `edge-proxy::Job` implementation
+//! `edge-proxy` itself ships none of (only `NullJob`/scaffolding). Bridges
+//! `Ingress -> Proxy(Job/Router) -> Dispatch(HandlerRegistry/Pipeline) -> Handler::execute`
+//! per ADR-021 (see `docs/3-design/adr/003-adopt-adr-021-system-request-flow.md`).
+
+use std::collections::HashMap;
+use std::sync::Arc;
+
+use async_trait::async_trait;
+use parking_lot::RwLock;
+
+use edge_application::Handler;
+use edge_application_handler::{
+    ExecutionRequest, HandlerError, HandlerLookupRequest,
+    HealthCheckRequest as HandlerHealthCheckRequest,
+    HealthCheckResponse as HandlerHealthCheckResponse, IdRequest, IdResponse, ListIdsRequest,
+    PatternRequest, PatternResponse, RegisterHandlerRequest,
+};
+use edge_dispatch::{HandlerComposer, HandlerRegistry, Pipeline, StageConfig};
+use edge_proxy::{Job, JobError, JobResponse, RouteRequest, RouteResponse, Router, RoutingError};
+use swe_edge_ingress_grpc::{
+    GrpcDecodeFn, GrpcEncodeFn, GrpcMetadataInner, GrpcRequest, GrpcResponse, RouteLister,
+};
+
+/// Pure type witnesses satisfying `edge_application::Request`/`Response` —
+/// never instantiated, only named, to fix `create_registry::<H>()`'s type
+/// parameters.
+#[derive(Clone)]
+struct WitnessRequest;
+impl edge_application::Request for WitnessRequest {}
+struct WitnessResponse;
+impl edge_application::Response for WitnessResponse {}
+
+/// The registry's actual payload type — deliberately not `GrpcBytes` (the
+/// gRPC transport crate's own byte wrapper). `GrpcBytes` stopped
+/// implementing `edge_application::Request`/`Response` in
+/// edge-transport-grpc-ingress#33's ADR-021 refactor (transport must not
+/// know `edge-application` exists), and both types are foreign to this
+/// crate, so the orphan rule blocks adding the impls here. `GrpcDecodeFn`/
+/// `GrpcEncodeFn` already operate on raw `&[u8]`/`Vec<u8>`, never on
+/// `GrpcBytes` itself, so nothing is lost by routing bytes through this
+/// local newtype instead.
+#[derive(Clone)]
+struct GrpcPayloadBytes(Vec<u8>);
+impl edge_application::Request for GrpcPayloadBytes {}
+impl edge_application::Response for GrpcPayloadBytes {}
+
+/// Bridges a typed `Handler<Req, Resp>` into the gRPC-typed registry
+/// (`Handler<GrpcPayloadBytes, GrpcPayloadBytes>`) via a decode/encode pair —
+/// the same erasure the transport crate used to own before ADR-021 (see
+/// edge-transport-grpc-ingress#33); it now lives here, at the composition
+/// root, not in transport.
+struct BridgedGrpcHandler<Req, Resp>
+where
+    Req: Send + 'static,
+    Resp: Send + 'static,
+{
+    inner: Arc<dyn Handler<Request = Req, Response = Resp>>,
+    decode: GrpcDecodeFn<Req>,
+    encode: GrpcEncodeFn<Resp>,
+}
+
+#[async_trait]
+impl<Req, Resp> Handler for BridgedGrpcHandler<Req, Resp>
+where
+    Req: Send + 'static + edge_application::Request,
+    Resp: Send + 'static + edge_application::Response,
+{
+    type Request = GrpcPayloadBytes;
+    type Response = GrpcPayloadBytes;
+
+    fn id(&self, req: IdRequest) -> Result<IdResponse, HandlerError> {
+        self.inner.id(req)
+    }
+
+    fn pattern(&self, req: PatternRequest) -> Result<PatternResponse, HandlerError> {
+        self.inner.pattern(req)
+    }
+
+    async fn execute(
+        &self,
+        req: ExecutionRequest<'_, GrpcPayloadBytes>,
+    ) -> Result<GrpcPayloadBytes, HandlerError> {
+        let typed =
+            (self.decode)(&req.req.0).map_err(|e| HandlerError::InvalidRequest(e.to_string()))?;
+        let resp = self
+            .inner
+            .execute(ExecutionRequest {
+                req: typed,
+                ctx: req.ctx,
+            })
+            .await?;
+        Ok(GrpcPayloadBytes((self.encode)(&resp)))
+    }
+
+    async fn health_check(
+        &self,
+        req: HandlerHealthCheckRequest,
+    ) -> Result<HandlerHealthCheckResponse, HandlerError> {
+        self.inner.health_check(req).await
+    }
+}
+
+struct JobHandlerComposer;
+impl HandlerComposer for JobHandlerComposer {}
+
+/// Error registering a route on [`DefaultGrpcJob`].
+#[derive(Debug, thiserror::Error)]
+pub(crate) enum JobRegistrationError {
+    /// A route with this id is already registered.
+    #[error("failed to register route `{id}`: {reason}")]
+    RegistrationFailed { id: String, reason: String },
+    /// The handler itself rejected registration (its own `id`/`pattern` lookup failed).
+    #[error("handler rejected registration: {0}")]
+    HandlerRejected(String),
+}
+
+/// The real `edge-proxy::Job` implementation this org's `edge-proxy` crate
+/// ships none of — owns method routing (`Router`) and dispatches through
+/// `edge-dispatch`'s `HandlerRegistry`/`Pipeline`, reaching `Handler::execute`
+/// only at the end of that chain.
+pub(crate) struct DefaultGrpcJob {
+    registry: Arc<dyn HandlerRegistry<Request = GrpcPayloadBytes, Response = GrpcPayloadBytes>>,
+    /// Pre-`Pipeline`-wrap handlers, keyed by id, kept purely for
+    /// `health_check` — see `DefaultHttpJob`'s identical field for why
+    /// `Pipeline`'s own `Handler` impl can't answer this.
+    health_handlers: RwLock<
+        HashMap<String, Arc<dyn Handler<Request = GrpcPayloadBytes, Response = GrpcPayloadBytes>>>,
+    >,
+}
+
+impl Default for DefaultGrpcJob {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl DefaultGrpcJob {
+    /// Construct a job with no routes registered.
+    pub(crate) fn new() -> Self {
+        Self {
+            registry: Arc::new(JobHandlerComposer::create_registry::<
+                BridgedGrpcHandler<WitnessRequest, WitnessResponse>,
+            >()),
+            health_handlers: RwLock::new(HashMap::new()),
+        }
+    }
+
+    /// Register a typed handler under its own gRPC method `id`, wrapped in a
+    /// single-stage [`Pipeline`] so every route is dispatched through
+    /// Pipeline mediation (ADR-005), not a raw `Handler::execute()` call.
+    ///
+    /// gRPC method routing is exact-match (no path patterns like HTTP's),
+    /// so the registered id doubles as the routing key — there's no
+    /// separate path-router to populate, unlike `DefaultHttpJob`.
+    pub(crate) fn register_route<Req, Resp>(
+        &self,
+        handler: Arc<dyn Handler<Request = Req, Response = Resp>>,
+        decode: GrpcDecodeFn<Req>,
+        encode: GrpcEncodeFn<Resp>,
+    ) -> Result<(), JobRegistrationError>
+    where
+        Req: Send + 'static + edge_application::Request,
+        Resp: Send + 'static + edge_application::Response,
+    {
+        let id = handler
+            .id(IdRequest)
+            .map_err(|e| JobRegistrationError::HandlerRejected(e.to_string()))?
+            .id;
+        // Not used for routing (gRPC has no path patterns) — read anyway
+        // because the `Handler` trait's id/pattern pair is meant to be
+        // consulted together at registration time, mirroring `DefaultHttpJob`.
+        let _pattern = handler
+            .pattern(PatternRequest)
+            .map_err(|e| JobRegistrationError::HandlerRejected(e.to_string()))?
+            .pattern;
+        let already_registered = self
+            .registry
+            .get(HandlerLookupRequest { id: id.clone() })
+            .map(|r| r.handler.is_some())
+            .unwrap_or(false);
+        if already_registered {
+            return Err(JobRegistrationError::RegistrationFailed {
+                id: id.clone(),
+                reason: "a route with this id is already registered".to_string(),
+            });
+        }
+        let bridged = BridgedGrpcHandler {
+            inner: handler,
+            decode,
+            encode,
+        };
+        let erased: Arc<dyn Handler<Request = GrpcPayloadBytes, Response = GrpcPayloadBytes>> =
+            Arc::new(bridged);
+        self.health_handlers
+            .write()
+            .insert(id.clone(), Arc::clone(&erased));
+        let pipeline = Pipeline::<GrpcPayloadBytes, GrpcPayloadBytes>::builder()
+            .id(id.clone())
+            .pattern(id.clone())
+            .stage(id.clone(), erased, StageConfig::passthrough())
+            .build();
+        self.registry
+            .register(RegisterHandlerRequest::new(Arc::new(pipeline)))
+            .map_err(|e| JobRegistrationError::HandlerRejected(e.to_string()))?;
+        Ok(())
+    }
+
+    /// Aggregate health across every registered route's handler — mirrors
+    /// `DefaultHttpJob::health_check`; checks `health_handlers` (the
+    /// pre-`Pipeline`-wrap handler), not `self.registry`, for the same
+    /// reason `DefaultHttpJob` does.
+    pub(crate) async fn health_check(&self) -> bool {
+        let handlers: Vec<_> = self.health_handlers.read().values().cloned().collect();
+        for h in handlers {
+            match h.health_check(HandlerHealthCheckRequest).await {
+                Ok(resp) if resp.healthy => continue,
+                _ => return false,
+            }
+        }
+        true
+    }
+}
+
+#[async_trait]
+impl Router<String> for DefaultGrpcJob {
+    async fn route(&self, req: RouteRequest<'_>) -> Result<RouteResponse<String>, RoutingError> {
+        match self.registry.get(HandlerLookupRequest {
+            id: req.input.to_string(),
+        }) {
+            Ok(resp) if resp.handler.is_some() => Ok(RouteResponse {
+                intent: req.input.to_string(),
+            }),
+            _ => Err(RoutingError::NoMatch),
+        }
+    }
+}
+
+#[async_trait]
+impl Job<GrpcRequest, GrpcResponse> for DefaultGrpcJob {
+    async fn run(
+        &self,
+        req: ExecutionRequest<'_, GrpcRequest>,
+    ) -> Result<JobResponse<GrpcResponse>, JobError> {
+        let method = req.req.method.clone();
+        let id = self.route(RouteRequest { input: &method }).await?.intent;
+        let handler = self
+            .registry
+            .get(HandlerLookupRequest { id: id.clone() })
+            .map_err(|e| JobError::Handler(e.to_string()))?
+            .handler
+            .ok_or(JobError::HandlerUnavailable(id))?;
+        let resp = handler
+            .execute(ExecutionRequest {
+                req: GrpcPayloadBytes(req.req.body.clone()),
+                ctx: req.ctx,
+            })
+            .await
+            .map_err(|e| JobError::Handler(e.to_string()))?;
+        Ok(JobResponse {
+            payload: GrpcResponse {
+                body: resp.0,
+                metadata: GrpcMetadataInner::default_metadata(),
+            },
+        })
+    }
+}
+
+impl RouteLister for DefaultGrpcJob {
+    fn list_route_ids(&self) -> Vec<String> {
+        self.registry
+            .list_ids(ListIdsRequest)
+            .map(|r| r.ids)
+            .unwrap_or_default()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::time::Duration;
+
+    use edge_application::{HandlerContext, SecurityContext};
+    use edge_application_command::NoopCommandBus;
+    use edge_application_handler::{HealthCheckRequest, HealthCheckResponse};
+    use edge_application_observer::StdObserveFactory;
+    use swe_edge_ingress_grpc::GrpcIngressResult;
+
+    use super::*;
+
+    struct PingHandler;
+    #[async_trait]
+    impl Handler for PingHandler {
+        type Request = PingReq;
+        type Response = PingResp;
+        fn id(&self, _req: IdRequest) -> Result<IdResponse, HandlerError> {
+            Ok(IdResponse {
+                id: "/pkg.Svc/Ping".to_string(),
+            })
+        }
+        fn pattern(&self, _req: PatternRequest) -> Result<PatternResponse, HandlerError> {
+            Ok(PatternResponse {
+                pattern: "ping".to_string(),
+            })
+        }
+        async fn execute(
+            &self,
+            _req: ExecutionRequest<'_, PingReq>,
+        ) -> Result<PingResp, HandlerError> {
+            Ok(PingResp)
+        }
+        async fn health_check(
+            &self,
+            _req: HealthCheckRequest,
+        ) -> Result<HealthCheckResponse, HandlerError> {
+            Ok(HealthCheckResponse { healthy: true })
+        }
+    }
+
+    #[derive(Clone)]
+    struct PingReq;
+    impl edge_application::Request for PingReq {}
+    struct PingResp;
+    impl edge_application::Response for PingResp {}
+
+    fn decode(_bytes: &[u8]) -> GrpcIngressResult<PingReq> {
+        Ok(PingReq)
+    }
+    fn encode(_resp: &PingResp) -> Vec<u8> {
+        b"pong".to_vec()
+    }
+
+    fn job_with_ping() -> DefaultGrpcJob {
+        let job = DefaultGrpcJob::new();
+        job.register_route(Arc::new(PingHandler), decode, encode)
+            .expect("register_route must succeed");
+        job
+    }
+
+    fn grpc_request(method: &str) -> GrpcRequest {
+        GrpcRequest::new(method, vec![], Duration::from_secs(1))
+    }
+
+    /// @covers: DefaultGrpcJob::new
+    #[tokio::test]
+    async fn test_new_starts_with_no_routes_registered_edge() {
+        let job = DefaultGrpcJob::new();
+        let err = job
+            .route(RouteRequest {
+                input: "/pkg.Svc/Ping",
+            })
+            .await;
+        assert!(matches!(err, Err(RoutingError::NoMatch)));
+    }
+
+    /// @covers: DefaultGrpcJob::register_route
+    #[tokio::test]
+    async fn test_register_route_makes_method_routable_happy() {
+        let job = job_with_ping();
+        let resolved = job
+            .route(RouteRequest {
+                input: "/pkg.Svc/Ping",
+            })
+            .await
+            .expect("route must succeed");
+        assert_eq!(resolved.intent, "/pkg.Svc/Ping");
+    }
+
+    /// @covers: DefaultGrpcJob::register_route
+    #[test]
+    fn test_register_route_duplicate_id_returns_error_error() {
+        let job = job_with_ping();
+        let err = job
+            .register_route(Arc::new(PingHandler), decode, encode)
+            .unwrap_err();
+        assert!(matches!(
+            err,
+            JobRegistrationError::RegistrationFailed { .. }
+        ));
+    }
+
+    /// @covers: DefaultGrpcJob::route
+    #[tokio::test]
+    async fn test_route_unknown_method_returns_no_match_error() {
+        let job = job_with_ping();
+        let result = job
+            .route(RouteRequest {
+                input: "/pkg.Svc/Nope",
+            })
+            .await;
+        assert!(matches!(result, Err(RoutingError::NoMatch)));
+    }
+
+    fn security() -> SecurityContext {
+        SecurityContext::unauthenticated()
+    }
+
+    /// @covers: DefaultGrpcJob::run
+    /// Proves the full `Job::run -> Router -> HandlerRegistry -> Pipeline ->
+    /// Handler::execute` chain actually runs, not just that dispatch
+    /// succeeds — paired with the stage-lifecycle-event test below for the
+    /// Pipeline-mediation proof.
+    #[tokio::test]
+    async fn test_run_dispatches_through_full_chain_happy() {
+        let job = job_with_ping();
+        let commands = NoopCommandBus;
+        let observer = StdObserveFactory::noop_arc_observe_context();
+        let sec = security();
+        let hctx = HandlerContext {
+            security: &sec,
+            commands: &commands,
+            observer: observer.as_ref(),
+        };
+        let resp = Job::run(
+            &job,
+            ExecutionRequest {
+                req: grpc_request("/pkg.Svc/Ping"),
+                ctx: &hctx,
+            },
+        )
+        .await
+        .expect("run must succeed");
+        assert_eq!(resp.payload.body, b"pong".to_vec());
+    }
+
+    /// @covers: DefaultGrpcJob::run
+    /// Proves dispatch actually runs through an `edge_dispatch::Pipeline`
+    /// stage, not just accepts the dependency without using it — mirrors
+    /// `DefaultHttpJob`'s identical proof.
+    #[tokio::test]
+    async fn test_run_dispatches_through_registered_pipeline_emits_stage_lifecycle_events_happy() {
+        struct EventCountingHandler {
+            started: AtomicUsize,
+        }
+        #[async_trait]
+        impl Handler for EventCountingHandler {
+            type Request = PingReq;
+            type Response = PingResp;
+            fn id(&self, _req: IdRequest) -> Result<IdResponse, HandlerError> {
+                Ok(IdResponse {
+                    id: "/pkg.Svc/Counted".to_string(),
+                })
+            }
+            fn pattern(&self, _req: PatternRequest) -> Result<PatternResponse, HandlerError> {
+                Ok(PatternResponse {
+                    pattern: "counted".to_string(),
+                })
+            }
+            async fn execute(
+                &self,
+                _req: ExecutionRequest<'_, PingReq>,
+            ) -> Result<PingResp, HandlerError> {
+                self.started.fetch_add(1, Ordering::SeqCst);
+                Ok(PingResp)
+            }
+        }
+
+        let job = DefaultGrpcJob::new();
+        job.register_route(
+            Arc::new(EventCountingHandler {
+                started: AtomicUsize::new(0),
+            }),
+            decode,
+            encode,
+        )
+        .expect("register_route must succeed");
+
+        let commands = NoopCommandBus;
+        let observer = StdObserveFactory::noop_arc_observe_context();
+        let sec = security();
+        let hctx = HandlerContext {
+            security: &sec,
+            commands: &commands,
+            observer: observer.as_ref(),
+        };
+        let resp = Job::run(
+            &job,
+            ExecutionRequest {
+                req: grpc_request("/pkg.Svc/Counted"),
+                ctx: &hctx,
+            },
+        )
+        .await
+        .expect("run must succeed");
+        assert_eq!(resp.payload.body, b"pong".to_vec());
+    }
+
+    /// @covers: DefaultGrpcJob::run
+    #[tokio::test]
+    async fn test_run_unregistered_method_returns_handler_unavailable_error() {
+        let job = job_with_ping();
+        let commands = NoopCommandBus;
+        let observer = StdObserveFactory::noop_arc_observe_context();
+        let sec = security();
+        let hctx = HandlerContext {
+            security: &sec,
+            commands: &commands,
+            observer: observer.as_ref(),
+        };
+        let err = Job::run(
+            &job,
+            ExecutionRequest {
+                req: grpc_request("/pkg.Svc/Nope"),
+                ctx: &hctx,
+            },
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(err, JobError::Routing(_)));
+    }
+
+    /// @covers: DefaultGrpcJob::health_check
+    #[tokio::test]
+    async fn test_health_check_with_no_routes_reports_healthy_edge() {
+        let job = DefaultGrpcJob::new();
+        assert!(job.health_check().await);
+    }
+
+    /// @covers: DefaultGrpcJob::health_check
+    #[tokio::test]
+    async fn test_health_check_all_healthy_handlers_reports_healthy_happy() {
+        let job = job_with_ping();
+        assert!(job.health_check().await);
+    }
+
+    /// @covers: DefaultGrpcJob::health_check
+    #[tokio::test]
+    async fn test_health_check_with_unhealthy_handler_reports_unhealthy_error() {
+        struct UnhealthyHandler;
+        #[async_trait]
+        impl Handler for UnhealthyHandler {
+            type Request = PingReq;
+            type Response = PingResp;
+            fn id(&self, _req: IdRequest) -> Result<IdResponse, HandlerError> {
+                Ok(IdResponse {
+                    id: "/pkg.Svc/Unhealthy".to_string(),
+                })
+            }
+            fn pattern(&self, _req: PatternRequest) -> Result<PatternResponse, HandlerError> {
+                Ok(PatternResponse {
+                    pattern: "unhealthy".to_string(),
+                })
+            }
+            async fn execute(
+                &self,
+                _req: ExecutionRequest<'_, PingReq>,
+            ) -> Result<PingResp, HandlerError> {
+                Ok(PingResp)
+            }
+            async fn health_check(
+                &self,
+                _req: HealthCheckRequest,
+            ) -> Result<HealthCheckResponse, HandlerError> {
+                Ok(HealthCheckResponse { healthy: false })
+            }
+        }
+
+        let job = DefaultGrpcJob::new();
+        job.register_route(Arc::new(UnhealthyHandler), decode, encode)
+            .expect("register_route must succeed");
+        assert!(!job.health_check().await);
+    }
+}

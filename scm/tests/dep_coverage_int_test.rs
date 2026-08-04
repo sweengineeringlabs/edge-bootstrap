@@ -108,13 +108,9 @@ fn test_grpc_reflection_config_field_respected() {
 /// Exercises swe-edge-ingress-grpc-reflection directly via ReflectionService.
 #[test]
 fn test_reflection_service_can_be_constructed_with_empty_registry() {
-    use edge_application::InProcessHandlerRegistry;
-    use std::sync::Arc;
-    use swe_edge_ingress_grpc::GrpcBytes;
     use swe_edge_ingress_grpc_reflection_adapter::ReflectionService;
 
-    let registry = Arc::new(InProcessHandlerRegistry::<GrpcBytes, GrpcBytes>::default());
-    let _svc = ReflectionService::new(registry);
+    let _svc = ReflectionService::new();
 }
 
 // ── swe-edge-ingress-verifier ─────────────────────────────────────────────────
@@ -142,25 +138,29 @@ fn test_jwt_verifier_rejects_invalid_token_directly() {
 fn test_ingress_grpc_handler_registered_via_builder() {
     use edge_application::{Handler, HandlerError};
     use swe_edge_bootstrap::Runtime;
-    use swe_edge_ingress_grpc::GrpcBytes;
 
     struct EchoHandler;
 
     #[async_trait::async_trait]
     impl Handler for EchoHandler {
-        type Request = GrpcBytes;
-        type Response = GrpcBytes;
+        type Request = DepCoverageTextPayload;
+        type Response = DepCoverageTextPayload;
         async fn execute(
             &self,
-            req: edge_application_handler::ExecutionRequest<'_, GrpcBytes>,
-        ) -> Result<GrpcBytes, HandlerError> {
+            req: edge_application_handler::ExecutionRequest<'_, DepCoverageTextPayload>,
+        ) -> Result<DepCoverageTextPayload, HandlerError> {
             Ok(req.req)
         }
     }
 
     use swe_edge_bootstrap::{GrpcDecodeFn, GrpcEncodeFn};
-    let decode: GrpcDecodeFn<GrpcBytes> = |b| Ok(GrpcBytes(b.to_vec()));
-    let encode: GrpcEncodeFn<GrpcBytes> = |v: &GrpcBytes| v.0.clone();
+    let decode: GrpcDecodeFn<DepCoverageTextPayload> = |b| {
+        Ok(DepCoverageTextPayload(
+            String::from_utf8_lossy(b).into_owned(),
+        ))
+    };
+    let encode: GrpcEncodeFn<DepCoverageTextPayload> =
+        |v: &DepCoverageTextPayload| v.0.clone().into_bytes();
     // grpc_route_with wires up the gRPC dispatcher — success without panic confirms the dep is used
     let _b = Runtime::builder().grpc_route_with(Arc::new(EchoHandler), decode, encode);
 }

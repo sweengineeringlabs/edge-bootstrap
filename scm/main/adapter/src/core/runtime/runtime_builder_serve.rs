@@ -20,7 +20,7 @@ use swe_edge_runtime_http_adapter::AxumHttpServer;
 use tokio::sync::oneshot;
 
 use crate::core::config::loader::ApplicationConfigLoader;
-use crate::core::dispatch::HttpIngressJob;
+use crate::core::dispatch::{GrpcIngressJob, HttpIngressJob};
 use crate::core::egress::DefaultEgress;
 use crate::core::ingress::DefaultIngress;
 #[cfg(feature = "intrusion")]
@@ -144,15 +144,25 @@ impl RuntimeBuilder {
         let http_observer: Arc<dyn edge_application_observer::ObserverContext> =
             edge_application_observer::StdObserveFactory::noop_arc_observe_context();
 
+        // Same real ObserverContext as the HTTP path — Handler::execute()
+        // behaves identically regardless of which protocol dispatched it.
+        #[cfg(feature = "observability")]
+        let grpc_observer: Arc<dyn edge_application_observer::ObserverContext> =
+            Arc::clone(&observer_ctx);
+        #[cfg(not(feature = "observability"))]
+        let grpc_observer: Arc<dyn edge_application_observer::ObserverContext> =
+            edge_application_observer::StdObserveFactory::noop_arc_observe_context();
+
         // ── Ingress ───────────────────────────────────────────────────────────
-        // Capture gRPC registry before the dispatcher is consumed into input.
-        let reflection_registry = if config.grpc_reflection {
-            self.grpc_dispatcher
-                .as_ref()
-                .map(|d| Arc::clone(d.registry()))
-        } else {
-            None
-        };
+        // Capture a RouteLister handle before the job is consumed into input.
+        let reflection_route_lister: Option<Arc<dyn swe_edge_ingress_grpc::RouteLister>> =
+            if config.grpc_reflection {
+                self.grpc_job
+                    .as_ref()
+                    .map(|j| Arc::clone(j) as Arc<dyn swe_edge_ingress_grpc::RouteLister>)
+            } else {
+                None
+            };
 
         let mut input = DefaultIngress::empty();
         if let Some(job) = self.http_job {
@@ -161,12 +171,8 @@ impl RuntimeBuilder {
             input = input.with_http(h);
         }
 
-        if let Some(d) = self.grpc_dispatcher {
-            // Same real ObserverContext as the HTTP path — Handler::execute()
-            // behaves identically regardless of which protocol dispatched it.
-            #[cfg(feature = "observability")]
-            let d = d.with_observer_context(Arc::clone(&observer_ctx));
-            input = input.with_grpc(Arc::new(d));
+        if let Some(job) = self.grpc_job {
+            input = input.with_grpc(Arc::new(GrpcIngressJob::new(job, grpc_observer)));
         } else if let Some(h) = self.grpc_handler {
             input = input.with_grpc(h);
         }
@@ -293,12 +299,12 @@ impl RuntimeBuilder {
                     } else {
                         handler
                     };
-                // Wrap with reflection if enabled and a dispatcher registry was captured.
+                // Wrap with reflection if enabled and a RouteLister was captured.
                 let handler: Arc<dyn swe_edge_ingress_grpc::GrpcIngress> =
-                    if let Some(registry) = reflection_registry {
+                    if let Some(lister) = reflection_route_lister {
                         Arc::new(crate::core::composite::CompositeGrpcIngress::new(
                             handler,
-                            Arc::new(ReflectionService::new(registry)),
+                            Arc::new(ReflectionService::new().with_route_lister(lister)),
                         ))
                     } else {
                         handler

@@ -949,21 +949,6 @@ dependencies = [
 [[package]]
 name = "edge-dispatcher"
 version = "0.11.4"
-source = "git+ssh://git@github.com/sweengineeringlabs/edge-dispatch.git?tag=v0.11.4#69a5499fb73cc40eb23e152db244cd73926e331a"
-dependencies = [
- "async-trait",
- "edge-application-event",
- "edge-application-handler",
- "edge-security-runtime",
- "parking_lot",
- "thiserror 2.0.19",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "edge-dispatcher"
-version = "0.11.4"
 source = "git+https://github.com/sweengineeringlabs/edge-dispatcher.git?tag=v0.11.4#69a5499fb73cc40eb23e152db244cd73926e331a"
 dependencies = [
  "async-trait",
@@ -1411,8 +1396,8 @@ dependencies = [
 
 [[package]]
 name = "edge-runtime-grpc"
-version = "0.8.0"
-source = "git+https://github.com/sweengineeringlabs/edge-runtime.git?tag=grpc%2Fv0.8.0#c29212b0daaffde1530f1bbaeb3af3b3dcbdf96c"
+version = "0.9.0"
+source = "git+https://github.com/sweengineeringlabs/edge-runtime.git?tag=grpc%2Fv0.9.0#15016ed4757bedc05ff5a8196979b531a5dac8f3"
 dependencies = [
  "edge-security-runtime-tls",
  "edge-transport-grpc-ingress-transport",
@@ -1424,8 +1409,8 @@ dependencies = [
 
 [[package]]
 name = "edge-runtime-grpc-adapter"
-version = "0.2.0"
-source = "git+https://github.com/sweengineeringlabs/edge-runtime.git?tag=grpc-adapter%2Fv0.2.0#252f9db5fa86dad41e7d3164a0683627d98f6157"
+version = "0.3.0"
+source = "git+https://github.com/sweengineeringlabs/edge-runtime.git?tag=grpc-adapter%2Fv0.3.0#fad181db8136723967a834b8f3cdf16cfadfbe3c"
 dependencies = [
  "bytes",
  "edge-application",
@@ -1722,7 +1707,7 @@ dependencies = [
 [[package]]
 name = "edge-transport-grpc-ingress-reflection"
 version = "0.9.0"
-source = "git+https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git?tag=v0.9.1#02e62dca790fba7385dd1feb0aaf559ce048d0a6"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git?tag=v0.9.3#5ea78daf8dbc33586a41bebce6d84e90d1755fc3"
 dependencies = [
  "futures",
  "serde",
@@ -1732,10 +1717,9 @@ dependencies = [
 [[package]]
 name = "edge-transport-grpc-ingress-reflection-adapter"
 version = "0.9.0"
-source = "git+https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git?tag=v0.9.1#02e62dca790fba7385dd1feb0aaf559ce048d0a6"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git?tag=v0.9.3#5ea78daf8dbc33586a41bebce6d84e90d1755fc3"
 dependencies = [
  "edge-application",
- "edge-application-handler",
  "edge-transport-grpc-ingress-reflection",
  "edge-transport-grpc-ingress-transport",
  "futures",
@@ -1746,11 +1730,9 @@ dependencies = [
 [[package]]
 name = "edge-transport-grpc-ingress-transport"
 version = "0.9.0"
-source = "git+https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git?tag=v0.9.1#02e62dca790fba7385dd1feb0aaf559ce048d0a6"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git?tag=v0.9.3#5ea78daf8dbc33586a41bebce6d84e90d1755fc3"
 dependencies = [
- "async-trait",
  "edge-application",
- "edge-application-handler",
  "futures",
  "serde",
  "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.4.2)",
@@ -1761,15 +1743,9 @@ dependencies = [
 [[package]]
 name = "edge-transport-grpc-ingress-transport-adapter"
 version = "0.9.0"
-source = "git+https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git?tag=v0.9.1#02e62dca790fba7385dd1feb0aaf559ce048d0a6"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git?tag=v0.9.3#5ea78daf8dbc33586a41bebce6d84e90d1755fc3"
 dependencies = [
- "async-trait",
  "edge-application",
- "edge-application-event",
- "edge-application-handler",
- "edge-application-observer",
- "edge-dispatcher 0.11.4 (git+ssh://git@github.com/sweengineeringlabs/edge-dispatch.git?tag=v0.11.4)",
- "edge-proxy",
  "edge-transport-grpc-ingress-transport",
  "futures",
  "parking_lot",
@@ -3663,7 +3639,7 @@ dependencies = [
  "edge-application-command",
  "edge-application-handler",
  "edge-application-observer",
- "edge-dispatcher 0.11.4 (git+https://github.com/sweengineeringlabs/edge-dispatcher.git?tag=v0.11.4)",
+ "edge-dispatcher 0.11.4",
  "edge-intrusion",
  "edge-intrusion-enforcer",
  "edge-intrusion-rule",
@@ -3682,7 +3658,6 @@ dependencies = [
  "edge-transport-grpc-ingress-reflection",
  "edge-transport-grpc-ingress-reflection-adapter",
  "edge-transport-grpc-ingress-transport",
- "edge-transport-grpc-ingress-transport-adapter",
  "edge-transport-http-egress-transport",
  "edge-transport-http-ingress-port",
  "futures",
@@ -3738,7 +3713,7 @@ dependencies = [
  "async-trait",
  "edge-application",
  "edge-application-handler",
- "edge-dispatcher 0.11.4 (git+https://github.com/sweengineeringlabs/edge-dispatcher.git?tag=v0.11.4)",
+ "edge-dispatcher 0.11.4",
  "serde",
  "swe-edge-bootstrap-runtime",
  "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.4.2)",
