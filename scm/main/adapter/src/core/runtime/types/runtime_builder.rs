@@ -19,6 +19,19 @@ use swe_edge_bootstrap_runtime::ServiceRegistry;
 use crate::core::dispatch::{DefaultGrpcJob, DefaultHttpJob};
 use crate::core::egress::LoadBalancedHttpEgress;
 
+/// A scheduled job's constructor: receives a shutdown signal so the job can
+/// exit gracefully on `serve()` teardown instead of being abandoned on its
+/// own dedicated thread. See [`RuntimeBuilder::with_scheduler`].
+#[cfg(feature = "scheduler")]
+pub(crate) type SchedulerJobFactory = Box<
+    dyn FnOnce(
+            tokio::sync::oneshot::Receiver<()>,
+        ) -> futures::future::BoxFuture<
+            'static,
+            Result<(), swe_edge_runtime_scheduler::SchedulerError>,
+        > + Send,
+>;
+
 /// Builder for assembling and starting an edge runtime.
 pub struct RuntimeBuilder {
     pub(crate) config: Option<RuntimeConfig>,
@@ -49,6 +62,11 @@ pub struct RuntimeBuilder {
     pub(crate) message_broker: Option<Arc<dyn swe_edge_runtime_message_broker::MessageBroker>>,
     #[cfg(feature = "intrusion")]
     pub(crate) intrusion: Option<edge_intrusion::config::Wired>,
+    #[cfg(feature = "scheduler")]
+    pub(crate) scheduler: Option<(
+        swe_edge_runtime_scheduler::TokioSchedulerConfig,
+        SchedulerJobFactory,
+    )>,
 }
 
 impl RuntimeBuilder {
@@ -217,6 +235,32 @@ impl RuntimeBuilder {
         broker: impl swe_edge_runtime_message_broker::MessageBroker + 'static,
     ) -> Self {
         self.message_broker = Some(Arc::new(broker));
+        self
+    }
+
+    /// Run a scheduled background job for the lifetime of the served runtime.
+    ///
+    /// [`swe_edge_runtime_scheduler::Scheduler::run`] blocks its caller and
+    /// owns its own dedicated tokio runtime, so it can't be `.await`ed inside
+    /// `serve()`'s own async context — `serve()` drives it on a dedicated OS
+    /// thread instead. `job` is called once, with a shutdown receiver: build
+    /// your own cancellation into the returned future (e.g. race a
+    /// `tokio::time::interval` tick against the receiver in a `select!`) so
+    /// the job exits gracefully instead of being abandoned when `serve()`
+    /// tears down.
+    #[cfg(feature = "scheduler")]
+    pub fn with_scheduler<F, Fut>(
+        mut self,
+        config: swe_edge_runtime_scheduler::TokioSchedulerConfig,
+        job: F,
+    ) -> Self
+    where
+        F: FnOnce(tokio::sync::oneshot::Receiver<()>) -> Fut + Send + 'static,
+        Fut: std::future::Future<Output = Result<(), swe_edge_runtime_scheduler::SchedulerError>>
+            + Send
+            + 'static,
+    {
+        self.scheduler = Some((config, Box::new(move |rx| Box::pin(job(rx)))));
         self
     }
 

@@ -37,6 +37,8 @@ impl Runtime {
             message_broker: None,
             #[cfg(feature = "intrusion")]
             intrusion: None,
+            #[cfg(feature = "scheduler")]
+            scheduler: None,
         }
     }
 }

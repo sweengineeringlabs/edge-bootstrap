@@ -373,6 +373,30 @@ impl RuntimeBuilder {
                 (None, None)
             };
 
+        // ── Scheduler — dedicated OS thread, since `Scheduler::run` blocks ──────
+        #[cfg(feature = "scheduler")]
+        let (scheduler_tx, scheduler_handle) = if let Some((sched_config, job_factory)) =
+            self.scheduler
+        {
+            let (tx, rx) = oneshot::channel::<()>();
+            let fut = job_factory(rx);
+            let handle = std::thread::Builder::new()
+                .name("swe-scheduler".to_string())
+                .spawn(move || {
+                    let scheduler = swe_edge_runtime_scheduler::SchedulerSvc::tokio_scheduler(
+                        sched_config,
+                        "swe-scheduler-worker",
+                    );
+                    if let Err(e) = swe_edge_runtime_scheduler::Scheduler::run(&scheduler, fut) {
+                        tracing::error!("scheduler error: {e}");
+                    }
+                })
+                .map_err(|e| RuntimeError::StartFailed(format!("spawn scheduler thread: {e}")))?;
+            (Some(tx), Some(handle))
+        } else {
+            (None, None)
+        };
+
         #[cfg(not(feature = "message-broker"))]
         let mgr = DefaultRuntimeManager::new(config, Arc::new(input), Arc::new(output), lifecycle);
         #[cfg(feature = "message-broker")]
@@ -404,6 +428,19 @@ impl RuntimeBuilder {
         }
         if let Some(t) = metrics_task {
             let _ = tokio::time::timeout(Duration::from_secs(5), t).await;
+        }
+        #[cfg(feature = "scheduler")]
+        {
+            if let Some(tx) = scheduler_tx {
+                let _ = tx.send(());
+            }
+            if let Some(h) = scheduler_handle {
+                let _ = tokio::time::timeout(
+                    Duration::from_secs(5),
+                    tokio::task::spawn_blocking(move || h.join()),
+                )
+                .await;
+            }
         }
 
         result
