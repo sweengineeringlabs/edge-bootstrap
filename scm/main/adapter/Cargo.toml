@@ -26,6 +26,7 @@ path = "src/lib.rs"
 default        = []
 observability  = ["dep:tracing-subscriber", "dep:swe-observ-tracing", "dep:swe-observ-logging", "swe-edge-observ-config/observability", "swe-edge-bootstrap-runtime/observability", "swe-observ-metrics/file", "swe-observ-metrics/prometheus", "swe-observ-metrics/otel", "swe-observ-tracing/file", "swe-observ-tracing/jaeger", "swe-observ-tracing/otel", "swe-observ-logging/file", "swe-observ-logging/elk", "swe-observ-logging/otel"]
 message-broker = ["dep:swe-edge-runtime-message-broker", "dep:swe-edge-runtime-message-broker-adapter", "swe-edge-bootstrap-runtime/message-broker"]
+message-broker-nats = ["message-broker", "swe-edge-runtime-message-broker-adapter/nats"]
 scheduler      = ["dep:swe-edge-runtime-scheduler", "swe-edge-bootstrap-runtime/scheduler"]
 security       = ["dep:edge-security-runtime", "dep:edge-security-runtime-credential", "dep:edge-security-runtime-authz"]
 intrusion      = ["dep:edge-intrusion", "dep:edge-intrusion-rule", "dep:edge-intrusion-enforcer", "swe-edge-bootstrap-runtime/intrusion"]
@@ -100,13 +101,16 @@ path = "examples/hello_edge.rs"
 
 [dev-dependencies]
 async-trait                = "0.1"
+jsonwebtoken               = "9"
 edge-application-command = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.20.0" }
 edge-application-handler  = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.20.0" }
 edge-application-observer = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.20.0" }
 reqwest           = { version = "0.12", features = ["json", "stream", "multipart", "rustls-tls"], default-features = false }
+rustls            = { version = "0.23", features = ["ring"] }
 serde             = { version = "1.0", features = ["derive"] }
 tempfile          = "3"
 tokio             = { version = "1.0", features = ["rt-multi-thread", "sync", "signal", "macros", "time", "net", "test-util"] }
+tokio-tungstenite = "0.29"
 swe-edge-configbuilder          = { git = "https://github.com/sweengineeringlabs/edge-configbuilder.git", tag = "v0.4.2" }
 swe-edge-observ-config          = { git = "https://github.com/sweengineeringlabs/edge-observ-config.git", tag = "v0.2.1" }
 swe-edge-runtime-message-broker = { package = "edge-runtime-message-broker", git = "https://github.com/sweengineeringlabs/edge-runtime.git", tag = "message-broker/v0.5.0" }
