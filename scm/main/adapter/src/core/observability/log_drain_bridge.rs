@@ -30,6 +30,10 @@ impl LogDrain for LogDrainBridge {
             req.handler_id,
             req.message,
         ));
+        // Buffered backends (e.g. `FileLogger`) only reach disk on flush —
+        // without this, entries sit in an in-memory BufWriter and are lost
+        // if the process dies before the buffer fills on its own.
+        self.backend.flush();
         Ok(LogEmitResponse)
     }
 }
@@ -66,6 +70,38 @@ mod tests {
                 .iter()
                 .any(|e| e.message == "something failed" && e.source == "echo"),
             "expected the real backend to have recorded the entry, got: {recent:?}"
+        );
+    }
+
+    /// Regression test for a real data-loss bug: `LogDrainBridge::emit` used
+    /// to call `backend.emit()` without `flush()`, so entries sat in
+    /// `FileLogger`'s in-memory `BufWriter` and were lost if the process
+    /// died before the buffer filled on its own (confirmed live: 19 of 303
+    /// entries lost to a hard kill before this fix). This test never calls
+    /// `flush()` itself — only `LogDrainBridge::emit` does — so it fails if
+    /// that call is ever removed.
+    #[test]
+    fn test_emit_persists_to_disk_via_file_backend_without_external_flush_happy() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("drain_bridge.jsonl");
+        let backend =
+            swe_observ_logging::create_file_logger(path.to_string_lossy().to_string(), 10);
+        let drain = LogDrainBridge::new(Arc::new(backend));
+
+        drain
+            .emit(LogEmitRequest {
+                level: "info".to_string(),
+                handler_id: "probe".to_string(),
+                message: "durable_without_manual_flush".to_string(),
+            })
+            .unwrap();
+
+        let contents = std::fs::read_to_string(&path).unwrap_or_else(|e| {
+            panic!("expected the entry to already be on disk (no manual flush): {e}")
+        });
+        assert!(
+            contents.contains("durable_without_manual_flush"),
+            "expected the entry on disk immediately after emit(), got: {contents}"
         );
     }
 
