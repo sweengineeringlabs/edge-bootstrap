@@ -39,4 +39,5 @@ Key capabilities:
 | Document | Description |
 |----------|-------------|
 | [3-design/](3-design/) | Architecture decision records |
+| [5-testing/](5-testing/) | Test and benchmark reports |
 | [7-operations/](7-operations/) | Compliance and structural audit reports |
