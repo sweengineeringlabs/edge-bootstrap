@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Initial project structure — extracted from the `sweengineeringlabs/edge` monorepo
+  (`scm/bootstrap`), full history preserved.
+
 ### Changed
 - Migrated to `edge-application@v0.18.0` (dependency key `edge-domain`), completing the
   org-wide `edge-domain` → `edge-application` rename/rewrite for this crate. All direct and
