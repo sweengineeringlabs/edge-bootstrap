@@ -3965,6 +3965,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "swe-edge-bootstrap-examples"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "edge-application",
+ "edge-application-command",
+ "edge-application-handler",
+ "edge-application-observer",
+ "edge-intrusion",
+ "edge-proxy",
+ "edge-security-runtime-authz",
+ "edge-transport-http-egress-transport",
+ "edge-transport-http-ingress-port",
+ "futures",
+ "jsonwebtoken",
+ "rustls",
+ "serde",
+ "serde_json",
+ "swe-edge-bootstrap",
+ "swe-edge-ingress-verifier",
+ "swe-edge-runtime-scheduler",
+ "swe-observability-logging",
+ "tempfile",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "swe-edge-bootstrap-health"
 version = "0.1.0"
 dependencies = [

@@ -95,10 +95,6 @@ swe-observ-metrics               = { package = "swe-observability-metrics", git 
 swe-observ-tracing                = { package = "swe-observability-tracing", git = "ssh://git@github.com/sweengineeringlabs/observability.git", tag = "v0.2.9", optional = true }
 swe-observ-logging                = { package = "swe-observability-logging", git = "ssh://git@github.com/sweengineeringlabs/observability.git", tag = "v0.2.9", optional = true }
 
-[[example]]
-name = "hello_edge"
-path = "examples/hello_edge.rs"
-
 [dev-dependencies]
 async-trait                = "0.1"
 jsonwebtoken               = "9"

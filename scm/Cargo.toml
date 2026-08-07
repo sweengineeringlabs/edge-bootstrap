@@ -1,19 +1,9 @@
 [workspace]
 resolver = "2"
 members = [
-  "main/port/composite",
-  "main/port/config",
-  "main/port/egress",
-  "main/port/health",
-  "main/port/ingress",
-  "main/port/intrusion",
-  "main/port/json",
-  "main/port/metrics",
-  "main/port/monitor",
-  "main/port/runner",
-  "main/port/runtime",
-  "main/port/validator",
+  "main/port/*",
   "main/adapter",
+  "examples",
 ]
 
 [workspace.package]
