@@ -87,7 +87,7 @@ that a real client would ever trust the result unmodified.
 
 ## Related
 
-- `scm/main/examples/tls-e2e/` — the live example this document explains.
+- `scm/examples/tls-e2e/` — the live example this document explains.
 - `edge-security#57` — a real bug found while building `tls-e2e`: `build_tls_acceptor` never
   installs a rustls `CryptoProvider` itself.
 - `edge-security#59` — mTLS (the `ca_pem_path` path above) is proven at config-construction only
