@@ -82,7 +82,7 @@ swe-edge-runtime-grpc-adapter     = { package = "edge-runtime-grpc-adapter", git
 swe-edge-runtime-http            = { package = "edge-runtime-http", git = "https://github.com/sweengineeringlabs/edge-runtime.git", tag = "http/v0.13.0" }
 swe-edge-runtime-http-adapter     = { package = "edge-runtime-http-adapter", git = "https://github.com/sweengineeringlabs/edge-runtime.git", tag = "http-adapter/v0.5.0" }
 swe-edge-egress-grpc             = { package = "edge-transport-grpc-egress-transport", git = "https://github.com/sweengineeringlabs/edge-egress-grpc.git", tag = "v0.6.1" }
-swe-edge-egress-http             = { package = "edge-transport-http-egress-transport", git = "https://github.com/sweengineeringlabs/edge-transport-http-egress.git", tag = "v0.6.1" }
+swe-edge-egress-http             = { package = "edge-transport-http-egress-transport", git = "https://github.com/sweengineeringlabs/edge-transport-http-egress.git", tag = "v0.7.0" }
 swe-edge-ingress-verifier        = { git = "https://github.com/sweengineeringlabs/edge-ingress-security.git", tag = "v0.6.3" }
 swe-edge-ingress-grpc-reflection = { package = "edge-transport-grpc-ingress-reflection", git = "https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git", tag = "v0.9.5" }
 swe-edge-ingress-grpc-reflection-adapter = { package = "edge-transport-grpc-ingress-reflection-adapter", git = "https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git", tag = "v0.9.5" }
@@ -120,7 +120,7 @@ swe-edge-runtime-grpc           = { package = "edge-runtime-grpc", git = "https:
 swe-edge-runtime-http           = { package = "edge-runtime-http", git = "https://github.com/sweengineeringlabs/edge-runtime.git", tag = "http/v0.13.0" }
 swe-edge-runtime-http-adapter    = { package = "edge-runtime-http-adapter", git = "https://github.com/sweengineeringlabs/edge-runtime.git", tag = "http-adapter/v0.5.0" }
 swe-edge-egress-grpc            = { package = "edge-transport-grpc-egress-transport", git = "https://github.com/sweengineeringlabs/edge-egress-grpc.git", tag = "v0.6.1" }
-swe-edge-egress-http            = { package = "edge-transport-http-egress-transport", git = "https://github.com/sweengineeringlabs/edge-transport-http-egress.git", tag = "v0.6.1" }
+swe-edge-egress-http            = { package = "edge-transport-http-egress-transport", git = "https://github.com/sweengineeringlabs/edge-transport-http-egress.git", tag = "v0.7.0" }
 edge-application                = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.21.1", features = ["full"] }
 
 [lints.rust]
