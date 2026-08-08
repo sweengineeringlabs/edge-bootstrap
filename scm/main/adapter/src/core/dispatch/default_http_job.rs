@@ -37,7 +37,7 @@ impl edge_application::Response for WitnessResponse {}
 /// both types are foreign to this crate, so the orphan rule blocks adding
 /// the impls here. Routed through the shared `Payload` wrapper (see
 /// `super::Payload`) instead — mirrors `default_grpc_job.rs`'s identical
-/// `GrpcPayloadBytes` wrapper for the same reason.
+/// `GrpcPayload` wrapper for the same reason.
 type HttpRequestPayload = Payload<HttpRequest>;
 type HttpResponsePayload = Payload<HttpResponse>;
 
