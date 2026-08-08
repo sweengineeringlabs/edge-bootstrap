@@ -311,6 +311,16 @@ impl RuntimeBuilder {
                         handler
                     };
                 // Wrap with reflection if enabled and a RouteLister was captured.
+                // `reflection_enabled` is captured separately (rather than
+                // re-checking `handler`'s type after wrapping) so the
+                // `with_streaming_kind` registration below — required for
+                // grpc-adapter v0.4.0+, which rejects unregistered methods
+                // outright — can register `REFLECTION_INFO_METHOD` as
+                // `BidiStream` (the reflection protocol's real kind; it was
+                // previously never registered at all, so grpc-adapter
+                // v0.5.0 rejected every reflection call with `Unimplemented`
+                // before it ever reached `ReflectionService`).
+                let reflection_enabled = reflection_route_lister.is_some();
                 let handler: Arc<dyn swe_edge_ingress_grpc::GrpcIngress> =
                     if let Some(lister) = reflection_route_lister {
                         Arc::new(crate::core::composite::CompositeGrpcIngress::new(
@@ -335,6 +345,15 @@ impl RuntimeBuilder {
                         .with_streaming_kind(WithStreamingKindRequest {
                             method: method.clone(),
                             kind: StreamingKind::Unary,
+                        })
+                        .map_err(|e| RuntimeError::StartFailed(e.to_string()))?;
+                }
+                if reflection_enabled {
+                    server = server
+                        .with_streaming_kind(WithStreamingKindRequest {
+                            method: swe_edge_ingress_grpc_reflection::REFLECTION_INFO_METHOD
+                                .to_string(),
+                            kind: StreamingKind::BidiStream,
                         })
                         .map_err(|e| RuntimeError::StartFailed(e.to_string()))?;
                 }
