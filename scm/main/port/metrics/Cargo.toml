@@ -20,7 +20,7 @@ path = "src/lib.rs"
 
 [dependencies]
 swe-edge-bootstrap-monitor = { path = "../monitor" }
-swe-edge-ingress-http = { package = "edge-transport-http-ingress-port", git = "https://github.com/sweengineeringlabs/edge-transport-http-ingress.git", tag = "v0.9.3" }
+swe-edge-ingress-http = { package = "edge-transport-http-ingress-port", git = "https://github.com/sweengineeringlabs/edge-transport-http-ingress.git", tag = "v0.10.1" }
 
 [dev-dependencies]
 swe-observ-metrics = { package = "swe-observability-metrics", git = "ssh://git@github.com/sweengineeringlabs/observability.git", tag = "v0.2.9" }

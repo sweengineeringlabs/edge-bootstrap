@@ -27,11 +27,11 @@ intrusion      = ["dep:edge-intrusion"]
 
 [dependencies]
 edge-intrusion              = { git = "https://github.com/sweengineeringlabs/edge-intrusion.git", tag = "v0.1.1", optional = true }
-edge-security-runtime-tls  = { git = "https://github.com/sweengineeringlabs/edge-security.git", tag = "v0.3.22" }
+edge-security-runtime-tls  = { git = "https://github.com/sweengineeringlabs/edge-security.git", tag = "v0.3.25" }
 futures                     = "0.3"
 serde                       = { version = "1.0", features = ["derive"] }
 swe-edge-bootstrap-monitor = { path = "../monitor" }
-swe-edge-egress-grpc        = { package = "edge-transport-grpc-egress-transport", git = "https://github.com/sweengineeringlabs/edge-egress-grpc.git", tag = "v0.5.1" }
+swe-edge-egress-grpc        = { package = "edge-transport-grpc-egress-transport", git = "https://github.com/sweengineeringlabs/edge-egress-grpc.git", tag = "v0.6.1" }
 swe-edge-egress-http        = { package = "edge-transport-http-egress-transport", git = "https://github.com/sweengineeringlabs/edge-transport-http-egress.git", tag = "v0.6.1" }
 swe-edge-ingress-verifier   = { git = "https://github.com/sweengineeringlabs/edge-ingress-security.git", tag = "v0.6.3" }
 swe-edge-observ-config      = { git = "https://github.com/sweengineeringlabs/edge-observ-config.git", tag = "v0.2.1" }

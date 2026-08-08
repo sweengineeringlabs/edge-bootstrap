@@ -21,7 +21,7 @@ path = "src/lib.rs"
 [dependencies]
 futures = "0.3"
 swe-edge-bootstrap-runtime = { path = "../runtime" }
-swe-edge-ingress-http = { package = "edge-transport-http-ingress-port", git = "https://github.com/sweengineeringlabs/edge-transport-http-ingress.git", tag = "v0.9.3" }
+swe-edge-ingress-http = { package = "edge-transport-http-ingress-port", git = "https://github.com/sweengineeringlabs/edge-transport-http-ingress.git", tag = "v0.10.1" }
 
 [dev-dependencies]
 tokio = { version = "1.0", features = ["macros", "rt"] }
