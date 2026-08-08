@@ -32,7 +32,7 @@ futures                     = "0.3"
 serde                       = { version = "1.0", features = ["derive"] }
 swe-edge-bootstrap-monitor = { path = "../monitor" }
 swe-edge-egress-grpc        = { package = "edge-transport-grpc-egress-transport", git = "https://github.com/sweengineeringlabs/edge-egress-grpc.git", tag = "v0.6.1" }
-swe-edge-egress-http        = { package = "edge-transport-http-egress-transport", git = "https://github.com/sweengineeringlabs/edge-transport-http-egress.git", tag = "v0.6.1" }
+swe-edge-egress-http        = { package = "edge-transport-http-egress-transport", git = "https://github.com/sweengineeringlabs/edge-transport-http-egress.git", tag = "v0.7.0" }
 swe-edge-ingress-verifier   = { git = "https://github.com/sweengineeringlabs/edge-ingress-security.git", tag = "v0.6.3" }
 swe-edge-observ-config      = { git = "https://github.com/sweengineeringlabs/edge-observ-config.git", tag = "v0.2.1" }
 swe-edge-runtime-message-broker = { package = "edge-runtime-message-broker", git = "https://github.com/sweengineeringlabs/edge-runtime.git", tag = "message-broker/v0.5.0", optional = true }
