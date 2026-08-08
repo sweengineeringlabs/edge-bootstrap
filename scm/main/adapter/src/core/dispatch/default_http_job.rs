@@ -156,10 +156,23 @@ impl DefaultHttpJob {
             .id(IdRequest)
             .map_err(|e| JobRegistrationError::HandlerRejected(e.to_string()))?
             .id;
+        if id.is_empty() {
+            return Err(JobRegistrationError::HandlerRejected(
+                "Handler::id() must not be empty".to_string(),
+            ));
+        }
         let pattern = handler
             .pattern(PatternRequest)
             .map_err(|e| JobRegistrationError::HandlerRejected(e.to_string()))?
             .pattern;
+        if pattern.is_empty() {
+            return Err(JobRegistrationError::HandlerRejected(
+                "Handler::pattern() must not be empty — HTTP routes on pattern, not id; a \
+                 Handler that only overrides id() compiles, works over gRPC, and would \
+                 otherwise silently never match any HTTP request"
+                    .to_string(),
+            ));
+        }
         let bridged = BridgedHttpHandler {
             inner: handler,
             decode,
@@ -345,6 +358,76 @@ mod tests {
             err,
             JobRegistrationError::RegistrationFailed { .. }
         ));
+    }
+
+    /// Regression test for `#32`: a `Handler` that only implements `id()`
+    /// correctly and leaves `pattern()` at its default empty string used to
+    /// register successfully here, then silently never match any real HTTP
+    /// request. This now fails loudly at registration time instead.
+    #[test]
+    fn test_register_route_rejects_empty_pattern_negative() {
+        struct EmptyPatternHandler;
+        #[async_trait]
+        impl Handler for EmptyPatternHandler {
+            type Request = PingReq;
+            type Response = PingResp;
+            fn id(&self, _req: IdRequest) -> Result<IdResponse, HandlerError> {
+                Ok(IdResponse {
+                    id: "no-pattern".to_string(),
+                })
+            }
+            async fn execute(
+                &self,
+                _req: ExecutionRequest<'_, PingReq>,
+            ) -> Result<PingResp, HandlerError> {
+                Ok(PingResp)
+            }
+        }
+
+        let job = DefaultHttpJob::new();
+        let err = job
+            .register_route(Arc::new(EmptyPatternHandler), decode, encode)
+            .unwrap_err();
+        assert!(
+            matches!(err, JobRegistrationError::HandlerRejected(ref msg) if msg.contains("pattern")),
+            "expected a HandlerRejected error naming `pattern`, got: {err:?}"
+        );
+    }
+
+    /// Symmetric defense-in-depth check: an empty `id()` is rejected too,
+    /// even though HTTP routes on `pattern`, not `id` — `id` still keys the
+    /// registry/health_handlers map, so an empty one is never valid here.
+    #[test]
+    fn test_register_route_rejects_empty_id_negative() {
+        struct EmptyIdHandler;
+        #[async_trait]
+        impl Handler for EmptyIdHandler {
+            type Request = PingReq;
+            type Response = PingResp;
+            fn id(&self, _req: IdRequest) -> Result<IdResponse, HandlerError> {
+                Ok(IdResponse { id: String::new() })
+            }
+            fn pattern(&self, _req: PatternRequest) -> Result<PatternResponse, HandlerError> {
+                Ok(PatternResponse {
+                    pattern: "/no-id".to_string(),
+                })
+            }
+            async fn execute(
+                &self,
+                _req: ExecutionRequest<'_, PingReq>,
+            ) -> Result<PingResp, HandlerError> {
+                Ok(PingResp)
+            }
+        }
+
+        let job = DefaultHttpJob::new();
+        let err = job
+            .register_route(Arc::new(EmptyIdHandler), decode, encode)
+            .unwrap_err();
+        assert!(
+            matches!(err, JobRegistrationError::HandlerRejected(ref msg) if msg.contains("id")),
+            "expected a HandlerRejected error naming `id`, got: {err:?}"
+        );
     }
 
     /// @covers: DefaultHttpJob::route

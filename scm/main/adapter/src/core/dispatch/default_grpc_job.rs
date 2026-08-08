@@ -167,13 +167,30 @@ impl DefaultGrpcJob {
             .id(IdRequest)
             .map_err(|e| JobRegistrationError::HandlerRejected(e.to_string()))?
             .id;
-        // Not used for routing (gRPC has no path patterns) — read anyway
-        // because the `Handler` trait's id/pattern pair is meant to be
-        // consulted together at registration time, mirroring `DefaultHttpJob`.
-        let _pattern = handler
+        if id.is_empty() {
+            return Err(JobRegistrationError::HandlerRejected(
+                "Handler::id() must not be empty — gRPC routes on id".to_string(),
+            ));
+        }
+        // Not used for routing (gRPC has no path patterns), but validated
+        // anyway: a Handler registered here with an empty pattern compiles
+        // and works fine over gRPC, then silently never matches any HTTP
+        // request if the same Handler is later registered with
+        // `DefaultHttpJob`, which does route on pattern. Catching it here,
+        // at gRPC registration time, surfaces the mistake immediately
+        // instead of as a mysterious HTTP 404 discovered later.
+        let pattern = handler
             .pattern(PatternRequest)
             .map_err(|e| JobRegistrationError::HandlerRejected(e.to_string()))?
             .pattern;
+        if pattern.is_empty() {
+            return Err(JobRegistrationError::HandlerRejected(
+                "Handler::pattern() must not be empty — even though gRPC doesn't route on it, \
+                 HTTP does, and this handler would silently fail to route if registered there \
+                 too"
+                .to_string(),
+            ));
+        }
         let already_registered = self
             .registry
             .get(HandlerLookupRequest { id: id.clone() })
@@ -377,6 +394,78 @@ mod tests {
             err,
             JobRegistrationError::RegistrationFailed { .. }
         ));
+    }
+
+    /// Regression test for `#32`: even though gRPC doesn't route on
+    /// `pattern`, an empty one used to register successfully here, then
+    /// silently fail to route if the same `Handler` were later registered
+    /// with `DefaultHttpJob` too (which does route on `pattern`). This now
+    /// fails loudly at gRPC registration time instead, catching the mistake
+    /// before it ever reaches HTTP.
+    #[test]
+    fn test_register_route_rejects_empty_pattern_negative() {
+        struct EmptyPatternHandler;
+        #[async_trait]
+        impl Handler for EmptyPatternHandler {
+            type Request = PingReq;
+            type Response = PingResp;
+            fn id(&self, _req: IdRequest) -> Result<IdResponse, HandlerError> {
+                Ok(IdResponse {
+                    id: "/pkg.Svc/NoPattern".to_string(),
+                })
+            }
+            async fn execute(
+                &self,
+                _req: ExecutionRequest<'_, PingReq>,
+            ) -> Result<PingResp, HandlerError> {
+                Ok(PingResp)
+            }
+        }
+
+        let job = DefaultGrpcJob::new();
+        let err = job
+            .register_route(Arc::new(EmptyPatternHandler), decode, encode)
+            .unwrap_err();
+        assert!(
+            matches!(err, JobRegistrationError::HandlerRejected(ref msg) if msg.contains("pattern")),
+            "expected a HandlerRejected error naming `pattern`, got: {err:?}"
+        );
+    }
+
+    /// An empty `id()` is rejected too — gRPC routes on `id` directly, so
+    /// this was already effectively broken before, just without a clear
+    /// error naming the actual problem.
+    #[test]
+    fn test_register_route_rejects_empty_id_negative() {
+        struct EmptyIdHandler;
+        #[async_trait]
+        impl Handler for EmptyIdHandler {
+            type Request = PingReq;
+            type Response = PingResp;
+            fn id(&self, _req: IdRequest) -> Result<IdResponse, HandlerError> {
+                Ok(IdResponse { id: String::new() })
+            }
+            fn pattern(&self, _req: PatternRequest) -> Result<PatternResponse, HandlerError> {
+                Ok(PatternResponse {
+                    pattern: "no-id".to_string(),
+                })
+            }
+            async fn execute(
+                &self,
+                _req: ExecutionRequest<'_, PingReq>,
+            ) -> Result<PingResp, HandlerError> {
+                Ok(PingResp)
+            }
+        }
+
+        let job = DefaultGrpcJob::new();
+        let err = job
+            .register_route(Arc::new(EmptyIdHandler), decode, encode)
+            .unwrap_err();
+        assert!(
+            matches!(err, JobRegistrationError::HandlerRejected(ref msg) if msg.contains("id")),
+            "expected a HandlerRejected error naming `id`, got: {err:?}"
+        );
     }
 
     /// @covers: DefaultGrpcJob::route
