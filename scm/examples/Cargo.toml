@@ -1,0 +1,86 @@
+[package]
+name         = "swe-edge-bootstrap-examples"
+version.workspace      = true
+edition.workspace      = true
+license.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+repository.workspace   = true
+description  = "Runnable usage examples for swe-edge-bootstrap."
+publish      = false
+
+[features]
+default             = []
+observability        = ["swe-edge-bootstrap/observability"]
+message-broker        = ["swe-edge-bootstrap/message-broker"]
+message-broker-nats   = ["message-broker", "swe-edge-bootstrap/message-broker-nats"]
+scheduler             = ["swe-edge-bootstrap/scheduler"]
+security              = ["swe-edge-bootstrap/security"]
+intrusion             = ["swe-edge-bootstrap/intrusion"]
+
+[[bin]]
+name = "basic"
+path = "basic.rs"
+
+[[bin]]
+name = "hello_edge"
+path = "hello_edge.rs"
+
+[[bin]]
+name = "bootstrap-e2e"
+path = "bootstrap-e2e/main.rs"
+required-features = ["intrusion", "observability"]
+
+[[bin]]
+name = "messaging-e2e"
+path = "messaging-e2e/main.rs"
+required-features = ["message-broker-nats"]
+
+[[bin]]
+name = "observability-e2e"
+path = "observability-e2e/main.rs"
+required-features = ["observability"]
+
+[[bin]]
+name = "scheduler-e2e"
+path = "scheduler-e2e/main.rs"
+required-features = ["scheduler"]
+
+[[bin]]
+name = "security-e2e"
+path = "security-e2e/main.rs"
+required-features = ["security"]
+
+[[bin]]
+name = "tls-e2e"
+path = "tls-e2e/main.rs"
+
+[[bin]]
+name = "websocket-e2e"
+path = "websocket-e2e/main.rs"
+
+[dependencies]
+swe-edge-bootstrap = { path = "../main/adapter" }
+
+async-trait        = "0.1"
+futures             = "0.3"
+jsonwebtoken        = "9"
+rustls               = { version = "0.23", features = ["ring"] }
+serde                = { version = "1.0", features = ["derive"] }
+serde_json           = "1.0"
+tempfile             = "3"
+tokio                = { version = "1.0", features = ["rt-multi-thread", "sync", "signal", "macros", "time", "net", "test-util"] }
+tracing              = { version = "0.1", default-features = false }
+
+edge-application            = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.20.0", features = ["full"] }
+edge-application-command    = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.20.0" }
+edge-application-handler    = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.20.0" }
+edge-application-observer   = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.20.0" }
+edge-intrusion               = { git = "https://github.com/sweengineeringlabs/edge-intrusion.git", tag = "v0.1.1" }
+edge-proxy                   = { git = "https://github.com/sweengineeringlabs/edge-proxy.git", tag = "v0.3.7" }
+edge-security-runtime-authz  = { git = "https://github.com/sweengineeringlabs/edge-security.git", tag = "v0.3.22" }
+swe-edge-egress-http         = { package = "edge-transport-http-egress-transport", git = "https://github.com/sweengineeringlabs/edge-transport-http-egress.git", tag = "v0.6.1" }
+swe-edge-ingress-http        = { package = "edge-transport-http-ingress-port", git = "https://github.com/sweengineeringlabs/edge-transport-http-ingress.git", tag = "v0.9.3" }
+swe-edge-ingress-verifier    = { git = "https://github.com/sweengineeringlabs/edge-ingress-security.git", tag = "v0.6.3" }
+swe-edge-runtime-scheduler   = { git = "https://github.com/sweengineeringlabs/edge-scheduler.git", tag = "v0.3.6" }
+swe-observ-logging           = { package = "swe-observability-logging", git = "ssh://git@github.com/sweengineeringlabs/observability.git", tag = "v0.2.9" }

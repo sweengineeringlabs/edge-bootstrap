@@ -6,7 +6,7 @@
 
 ## WHAT
 
-Architectural decision records for `edge-bootstrap`.
+Architectural decision records and design reference material for `edge-bootstrap`.
 
 ## WHY
 
@@ -19,3 +19,4 @@ Records how the system is structured and why, so future contributors understand 
 | Document | Description |
 |----------|-------------|
 | [adr/](adr/) | Architectural decision records |
+| [tls-certificate-workflow.md](tls-certificate-workflow.md) | How real-world TLS certificate issuance works, and how it maps onto `PemTlsConfig`/`tls-e2e` |

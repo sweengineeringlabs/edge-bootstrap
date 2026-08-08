@@ -1795,6 +1795,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "edge-transport-breaker"
+version = "0.1.1"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-breaker.git?tag=v0.1.1#0a3b8d1fe731a640ffb236e0eefd40fdcdaf551c"
+dependencies = [
+ "edge-transport-breaker-policy",
+ "tracing",
+]
+
+[[package]]
+name = "edge-transport-breaker-policy"
+version = "0.1.1"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-breaker.git?tag=v0.1.1#0a3b8d1fe731a640ffb236e0eefd40fdcdaf551c"
+dependencies = [
+ "thiserror 2.0.19",
+]
+
+[[package]]
 name = "edge-transport-grpc-egress-transport"
 version = "0.5.0"
 source = "git+https://github.com/sweengineeringlabs/edge-egress-grpc.git?tag=v0.5.1#455d2c0ee8f0388d27395544a22c48859eff68bf"
@@ -1873,10 +1890,12 @@ dependencies = [
 [[package]]
 name = "edge-transport-http-egress-breaker"
 version = "0.4.0"
-source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.5.0#35b56ba95774f39f552487ef180646799b4f2ec7"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.6.1#3629c8bba9917ffef5dc7836b96fbb69941695be"
 dependencies = [
  "anyhow",
  "async-trait",
+ "edge-transport-breaker",
+ "edge-transport-breaker-policy",
  "http 1.5.0",
  "moka",
  "reqwest",
@@ -1891,7 +1910,7 @@ dependencies = [
 [[package]]
 name = "edge-transport-http-egress-cache"
 version = "0.4.0"
-source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.5.0#35b56ba95774f39f552487ef180646799b4f2ec7"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.6.1#3629c8bba9917ffef5dc7836b96fbb69941695be"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1909,7 +1928,7 @@ dependencies = [
 [[package]]
 name = "edge-transport-http-egress-cassette"
 version = "0.4.0"
-source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.5.0#35b56ba95774f39f552487ef180646799b4f2ec7"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.6.1#3629c8bba9917ffef5dc7836b96fbb69941695be"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1931,7 +1950,7 @@ dependencies = [
 [[package]]
 name = "edge-transport-http-egress-rate"
 version = "0.4.0"
-source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.5.0#35b56ba95774f39f552487ef180646799b4f2ec7"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.6.1#3629c8bba9917ffef5dc7836b96fbb69941695be"
 dependencies = [
  "async-trait",
  "http 1.5.0",
@@ -1948,9 +1967,11 @@ dependencies = [
 [[package]]
 name = "edge-transport-http-egress-retry"
 version = "0.4.0"
-source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.5.0#35b56ba95774f39f552487ef180646799b4f2ec7"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.6.1#3629c8bba9917ffef5dc7836b96fbb69941695be"
 dependencies = [
  "async-trait",
+ "edge-transport-retry",
+ "edge-transport-retry-policy",
  "http 1.5.0",
  "reqwest",
  "reqwest-middleware 0.4.2",
@@ -1964,11 +1985,11 @@ dependencies = [
 [[package]]
 name = "edge-transport-http-egress-transport"
 version = "0.4.0"
-source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.5.0#35b56ba95774f39f552487ef180646799b4f2ec7"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.6.1#3629c8bba9917ffef5dc7836b96fbb69941695be"
 dependencies = [
  "async-trait",
  "bytes",
- "edge-application",
+ "edge-security-runtime",
  "edge-security-transport-egress-http",
  "edge-security-transport-egress-http-oauth",
  "edge-security-transport-egress-http-tls",
@@ -2002,6 +2023,22 @@ dependencies = [
  "swe-edge-loadbalancer 0.4.1",
  "thiserror 2.0.19",
  "tokio",
+]
+
+[[package]]
+name = "edge-transport-retry"
+version = "0.1.0"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-retry.git?tag=v0.1.0#7e72740e59aaf825e575a3ef485385c0fd91918c"
+dependencies = [
+ "edge-transport-retry-policy",
+]
+
+[[package]]
+name = "edge-transport-retry-policy"
+version = "0.1.0"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-retry.git?tag=v0.1.0#7e72740e59aaf825e575a3ef485385c0fd91918c"
+dependencies = [
+ "thiserror 2.0.19",
 ]
 
 [[package]]
@@ -3962,6 +3999,34 @@ dependencies = [
  "edge-transport-grpc-egress-transport",
  "edge-transport-http-egress-transport",
  "futures",
+]
+
+[[package]]
+name = "swe-edge-bootstrap-examples"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "edge-application",
+ "edge-application-command",
+ "edge-application-handler",
+ "edge-application-observer",
+ "edge-intrusion",
+ "edge-proxy",
+ "edge-security-runtime-authz",
+ "edge-transport-http-egress-transport",
+ "edge-transport-http-ingress-port",
+ "futures",
+ "jsonwebtoken",
+ "rustls",
+ "serde",
+ "serde_json",
+ "swe-edge-bootstrap",
+ "swe-edge-ingress-verifier",
+ "swe-edge-runtime-scheduler",
+ "swe-observability-logging",
+ "tempfile",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
