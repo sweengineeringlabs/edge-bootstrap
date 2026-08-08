@@ -42,10 +42,10 @@ impl edge_application::Response for WitnessResponse {}
 /// `GrpcEncodeFn` already operate on raw `&[u8]`/`Vec<u8>`, never on
 /// `GrpcBytes` itself, so nothing is lost by routing bytes through the
 /// shared `Payload` wrapper (see `super::Payload`) instead.
-type GrpcPayloadBytes = Payload<Vec<u8>>;
+type GrpcPayload = Payload<Vec<u8>>;
 
 /// Bridges a typed `Handler<Req, Resp>` into the gRPC-typed registry
-/// (`Handler<GrpcPayloadBytes, GrpcPayloadBytes>`) via a decode/encode pair —
+/// (`Handler<GrpcPayload, GrpcPayload>`) via a decode/encode pair —
 /// the same erasure the transport crate used to own before ADR-021 (see
 /// edge-transport-grpc-ingress#33); it now lives here, at the composition
 /// root, not in transport.
@@ -65,8 +65,8 @@ where
     Req: Send + 'static + edge_application::Request,
     Resp: Send + 'static + edge_application::Response,
 {
-    type Request = GrpcPayloadBytes;
-    type Response = GrpcPayloadBytes;
+    type Request = GrpcPayload;
+    type Response = GrpcPayload;
 
     fn id(&self, req: IdRequest) -> Result<IdResponse, HandlerError> {
         self.inner.id(req)
@@ -78,8 +78,8 @@ where
 
     async fn execute(
         &self,
-        req: ExecutionRequest<'_, GrpcPayloadBytes>,
-    ) -> Result<GrpcPayloadBytes, HandlerError> {
+        req: ExecutionRequest<'_, GrpcPayload>,
+    ) -> Result<GrpcPayload, HandlerError> {
         let typed =
             (self.decode)(&req.req.0).map_err(|e| HandlerError::InvalidRequest(e.to_string()))?;
         let resp = self
@@ -119,13 +119,12 @@ pub(crate) enum JobRegistrationError {
 /// `edge-dispatch`'s `HandlerRegistry`/`Pipeline`, reaching `Handler::execute`
 /// only at the end of that chain.
 pub(crate) struct DefaultGrpcJob {
-    registry: Arc<dyn HandlerRegistry<Request = GrpcPayloadBytes, Response = GrpcPayloadBytes>>,
+    registry: Arc<dyn HandlerRegistry<Request = GrpcPayload, Response = GrpcPayload>>,
     /// Pre-`Pipeline`-wrap handlers, keyed by id, kept purely for
     /// `health_check` — see `DefaultHttpJob`'s identical field for why
     /// `Pipeline`'s own `Handler` impl can't answer this.
-    health_handlers: RwLock<
-        HashMap<String, Arc<dyn Handler<Request = GrpcPayloadBytes, Response = GrpcPayloadBytes>>>,
-    >,
+    health_handlers:
+        RwLock<HashMap<String, Arc<dyn Handler<Request = GrpcPayload, Response = GrpcPayload>>>>,
 }
 
 impl Default for DefaultGrpcJob {
@@ -206,12 +205,12 @@ impl DefaultGrpcJob {
             decode,
             encode,
         };
-        let erased: Arc<dyn Handler<Request = GrpcPayloadBytes, Response = GrpcPayloadBytes>> =
+        let erased: Arc<dyn Handler<Request = GrpcPayload, Response = GrpcPayload>> =
             Arc::new(bridged);
         self.health_handlers
             .write()
             .insert(id.clone(), Arc::clone(&erased));
-        let pipeline = Pipeline::<GrpcPayloadBytes, GrpcPayloadBytes>::builder()
+        let pipeline = Pipeline::<GrpcPayload, GrpcPayload>::builder()
             .id(id.clone())
             .pattern(id.clone())
             .stage(id.clone(), erased, StageConfig::passthrough())
