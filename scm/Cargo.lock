@@ -841,7 +841,7 @@ dependencies = [
 [[package]]
 name = "edge-application"
 version = "0.10.0"
-source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.20.0#d1f05c1b6d65d38750d05b6317235dfcf97df38d"
+source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.21.1#45d06c06dfcf29c7090eda6cca80f55b6c023adc"
 dependencies = [
  "async-trait",
  "edge-application-base",
@@ -861,10 +861,10 @@ dependencies = [
  "edge-application-snapshot",
  "edge-application-validator",
  "edge-application-valueobject",
- "edge-pipeline",
+ "edge-pipeline 0.3.0",
  "edge-security-authn",
  "edge-security-authz",
- "edge-security-runtime",
+ "edge-security-runtime 0.3.8 (git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25)",
  "parking_lot",
  "serde",
  "thiserror 2.0.19",
@@ -873,10 +873,10 @@ dependencies = [
 
 [[package]]
 name = "edge-application-base"
-version = "0.2.0"
-source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.20.0#d1f05c1b6d65d38750d05b6317235dfcf97df38d"
+version = "0.3.0"
+source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.21.1#45d06c06dfcf29c7090eda6cca80f55b6c023adc"
 dependencies = [
- "edge-security-runtime",
+ "edge-security-runtime 0.3.8 (git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25)",
  "serde",
  "thiserror 2.0.19",
 ]
@@ -884,7 +884,7 @@ dependencies = [
 [[package]]
 name = "edge-application-clock"
 version = "0.1.0"
-source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.20.0#d1f05c1b6d65d38750d05b6317235dfcf97df38d"
+source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.21.1#45d06c06dfcf29c7090eda6cca80f55b6c023adc"
 dependencies = [
  "serde",
  "thiserror 2.0.19",
@@ -893,7 +893,7 @@ dependencies = [
 [[package]]
 name = "edge-application-command"
 version = "0.1.0"
-source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.20.0#d1f05c1b6d65d38750d05b6317235dfcf97df38d"
+source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.21.1#45d06c06dfcf29c7090eda6cca80f55b6c023adc"
 dependencies = [
  "async-trait",
  "edge-application-base",
@@ -906,7 +906,7 @@ dependencies = [
 [[package]]
 name = "edge-application-entity"
 version = "0.1.0"
-source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.20.0#d1f05c1b6d65d38750d05b6317235dfcf97df38d"
+source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.21.1#45d06c06dfcf29c7090eda6cca80f55b6c023adc"
 dependencies = [
  "serde",
 ]
@@ -914,7 +914,7 @@ dependencies = [
 [[package]]
 name = "edge-application-event"
 version = "0.1.0"
-source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.20.0#d1f05c1b6d65d38750d05b6317235dfcf97df38d"
+source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.21.1#45d06c06dfcf29c7090eda6cca80f55b6c023adc"
 dependencies = [
  "async-trait",
  "futures",
@@ -926,14 +926,14 @@ dependencies = [
 
 [[package]]
 name = "edge-application-handler"
-version = "0.2.0"
-source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.20.0#d1f05c1b6d65d38750d05b6317235dfcf97df38d"
+version = "0.3.0"
+source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.21.1#45d06c06dfcf29c7090eda6cca80f55b6c023adc"
 dependencies = [
  "async-trait",
  "edge-application-base",
  "edge-application-command",
  "edge-application-observer",
- "edge-security-runtime",
+ "edge-security-runtime 0.3.8 (git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25)",
  "parking_lot",
  "thiserror 2.0.19",
 ]
@@ -941,7 +941,7 @@ dependencies = [
 [[package]]
 name = "edge-application-lifecycle"
 version = "0.1.0"
-source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.20.0#d1f05c1b6d65d38750d05b6317235dfcf97df38d"
+source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.21.1#45d06c06dfcf29c7090eda6cca80f55b6c023adc"
 dependencies = [
  "async-trait",
  "serde",
@@ -951,7 +951,7 @@ dependencies = [
 [[package]]
 name = "edge-application-observer"
 version = "0.1.0"
-source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.20.0#d1f05c1b6d65d38750d05b6317235dfcf97df38d"
+source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.21.1#45d06c06dfcf29c7090eda6cca80f55b6c023adc"
 dependencies = [
  "edge-application-base",
  "serde",
@@ -960,7 +960,7 @@ dependencies = [
 [[package]]
 name = "edge-application-policy"
 version = "0.1.0"
-source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.20.0#d1f05c1b6d65d38750d05b6317235dfcf97df38d"
+source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.21.1#45d06c06dfcf29c7090eda6cca80f55b6c023adc"
 dependencies = [
  "serde",
  "thiserror 2.0.19",
@@ -969,7 +969,7 @@ dependencies = [
 [[package]]
 name = "edge-application-projection"
 version = "0.1.0"
-source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.20.0#d1f05c1b6d65d38750d05b6317235dfcf97df38d"
+source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.21.1#45d06c06dfcf29c7090eda6cca80f55b6c023adc"
 dependencies = [
  "edge-application-event",
  "serde",
@@ -979,7 +979,7 @@ dependencies = [
 [[package]]
 name = "edge-application-query"
 version = "0.1.0"
-source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.20.0#d1f05c1b6d65d38750d05b6317235dfcf97df38d"
+source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.21.1#45d06c06dfcf29c7090eda6cca80f55b6c023adc"
 dependencies = [
  "async-trait",
  "futures",
@@ -991,7 +991,7 @@ dependencies = [
 [[package]]
 name = "edge-application-registry"
 version = "0.1.0"
-source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.20.0#d1f05c1b6d65d38750d05b6317235dfcf97df38d"
+source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.21.1#45d06c06dfcf29c7090eda6cca80f55b6c023adc"
 dependencies = [
  "serde",
  "thiserror 2.0.19",
@@ -1000,7 +1000,7 @@ dependencies = [
 [[package]]
 name = "edge-application-repository"
 version = "0.1.0"
-source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.20.0#d1f05c1b6d65d38750d05b6317235dfcf97df38d"
+source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.21.1#45d06c06dfcf29c7090eda6cca80f55b6c023adc"
 dependencies = [
  "futures",
  "parking_lot",
@@ -1010,7 +1010,7 @@ dependencies = [
 [[package]]
 name = "edge-application-saga"
 version = "0.2.0"
-source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.20.0#d1f05c1b6d65d38750d05b6317235dfcf97df38d"
+source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.21.1#45d06c06dfcf29c7090eda6cca80f55b6c023adc"
 dependencies = [
  "edge-application-command",
  "edge-application-event",
@@ -1022,7 +1022,7 @@ dependencies = [
 [[package]]
 name = "edge-application-snapshot"
 version = "0.1.0"
-source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.20.0#d1f05c1b6d65d38750d05b6317235dfcf97df38d"
+source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.21.1#45d06c06dfcf29c7090eda6cca80f55b6c023adc"
 dependencies = [
  "futures",
  "serde",
@@ -1032,7 +1032,7 @@ dependencies = [
 [[package]]
 name = "edge-application-validator"
 version = "0.1.0"
-source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.20.0#d1f05c1b6d65d38750d05b6317235dfcf97df38d"
+source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.21.1#45d06c06dfcf29c7090eda6cca80f55b6c023adc"
 dependencies = [
  "serde",
  "thiserror 2.0.19",
@@ -1041,7 +1041,7 @@ dependencies = [
 [[package]]
 name = "edge-application-valueobject"
 version = "0.1.0"
-source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.20.0#d1f05c1b6d65d38750d05b6317235dfcf97df38d"
+source = "git+https://github.com/sweengineeringlabs/edge-application.git?tag=v0.21.1#45d06c06dfcf29c7090eda6cca80f55b6c023adc"
 dependencies = [
  "serde",
 ]
@@ -1062,12 +1062,12 @@ dependencies = [
 [[package]]
 name = "edge-dispatcher"
 version = "0.11.4"
-source = "git+https://github.com/sweengineeringlabs/edge-dispatcher.git?tag=v0.11.4#69a5499fb73cc40eb23e152db244cd73926e331a"
+source = "git+https://github.com/sweengineeringlabs/edge-dispatcher.git?tag=v0.11.5#160444fe9aa1f91f9646e79e7ef3f1d6f5463e9d"
 dependencies = [
  "async-trait",
  "edge-application-event",
  "edge-application-handler",
- "edge-security-runtime",
+ "edge-security-runtime 0.3.8 (git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25)",
  "parking_lot",
  "thiserror 2.0.19",
  "tokio",
@@ -1493,14 +1493,43 @@ dependencies = [
 ]
 
 [[package]]
+name = "edge-pipeline"
+version = "0.4.0"
+source = "git+https://github.com/sweengineeringlabs/edge-pipeline.git?tag=v0.4.0#2bc7a5da50badbd6d5192ae0a6d74d6b22537d6b"
+dependencies = [
+ "async-trait",
+ "edge-pipeline-event",
+ "edge-pipeline-registry",
+ "futures",
+ "serde",
+ "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.4.2)",
+ "thiserror 2.0.19",
+ "tokio",
+]
+
+[[package]]
+name = "edge-pipeline-event"
+version = "0.1.0"
+source = "git+https://github.com/sweengineeringlabs/edge-pipeline.git?tag=v0.4.0#2bc7a5da50badbd6d5192ae0a6d74d6b22537d6b"
+dependencies = [
+ "futures",
+ "tokio",
+]
+
+[[package]]
+name = "edge-pipeline-registry"
+version = "0.1.0"
+source = "git+https://github.com/sweengineeringlabs/edge-pipeline.git?tag=v0.4.0#2bc7a5da50badbd6d5192ae0a6d74d6b22537d6b"
+
+[[package]]
 name = "edge-proxy"
 version = "0.3.4"
-source = "git+https://github.com/sweengineeringlabs/edge-proxy.git?tag=v0.3.7#2bb9fee3e374e02b8aa460f9c20c07f1c97a28e6"
+source = "git+https://github.com/sweengineeringlabs/edge-proxy.git?tag=v0.3.8#ec5b51c8d5febd79b6fe7f4ba35ac5fa771b0bf6"
 dependencies = [
  "async-trait",
  "edge-application-command",
  "edge-application-handler",
- "edge-security-runtime",
+ "edge-security-runtime 0.3.8 (git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25)",
  "parking_lot",
  "serde",
  "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.4.2)",
@@ -1509,8 +1538,8 @@ dependencies = [
 
 [[package]]
 name = "edge-runtime-grpc"
-version = "0.9.0"
-source = "git+https://github.com/sweengineeringlabs/edge-runtime.git?tag=grpc%2Fv0.9.0#15016ed4757bedc05ff5a8196979b531a5dac8f3"
+version = "0.10.0"
+source = "git+https://github.com/sweengineeringlabs/edge-runtime.git?tag=grpc%2Fv0.11.0#764db5c37659400804466ea7eff46bfcad616cea"
 dependencies = [
  "edge-security-runtime-tls",
  "edge-transport-grpc-ingress-transport",
@@ -1522,13 +1551,12 @@ dependencies = [
 
 [[package]]
 name = "edge-runtime-grpc-adapter"
-version = "0.3.0"
-source = "git+https://github.com/sweengineeringlabs/edge-runtime.git?tag=grpc-adapter%2Fv0.3.0#fad181db8136723967a834b8f3cdf16cfadfbe3c"
+version = "0.5.0"
+source = "git+https://github.com/sweengineeringlabs/edge-runtime.git?tag=grpc-adapter%2Fv0.5.0#db0c9063b78d9992f45bc2c4d9d4f26daad5d23f"
 dependencies = [
  "bytes",
- "edge-application",
  "edge-runtime-grpc",
- "edge-security-runtime",
+ "edge-security-runtime 0.3.8 (git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25)",
  "edge-security-runtime-tls",
  "edge-transport-grpc-ingress-transport",
  "edge-transport-grpc-ingress-transport-adapter",
@@ -1550,8 +1578,8 @@ dependencies = [
 
 [[package]]
 name = "edge-runtime-http"
-version = "0.8.0"
-source = "git+https://github.com/sweengineeringlabs/edge-runtime.git?tag=http%2Fv0.8.0#8d3a2e36afe2316e3445f6c3abd747e9696780d8"
+version = "0.13.0"
+source = "git+https://github.com/sweengineeringlabs/edge-runtime.git?tag=http%2Fv0.13.0#0bcff13cef12590b0826187083b9570fb27593b4"
 dependencies = [
  "edge-transport-http-ingress-port",
  "futures",
@@ -1561,14 +1589,13 @@ dependencies = [
 
 [[package]]
 name = "edge-runtime-http-adapter"
-version = "0.2.0"
-source = "git+https://github.com/sweengineeringlabs/edge-runtime.git?tag=http-adapter%2Fv0.2.0#b006bd421ec76ccf58c8789b6c7b0dec7ff36742"
+version = "0.5.0"
+source = "git+https://github.com/sweengineeringlabs/edge-runtime.git?tag=http-adapter%2Fv0.5.0#db0c9063b78d9992f45bc2c4d9d4f26daad5d23f"
 dependencies = [
  "axum 0.8.9",
  "bytes",
- "edge-application",
  "edge-runtime-http",
- "edge-security-runtime",
+ "edge-security-runtime 0.3.8 (git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25)",
  "edge-security-runtime-tls",
  "edge-transport-http-ingress-port",
  "futures",
@@ -1576,8 +1603,10 @@ dependencies = [
  "hyper",
  "hyper-util",
  "serde_json",
+ "sha2 0.10.9",
  "swe-edge-ingress-verifier",
  "tokio",
+ "tokio-rustls",
  "tower 0.5.3",
  "tower-http",
  "tracing",
@@ -1614,31 +1643,74 @@ dependencies = [
 [[package]]
 name = "edge-security-application"
 version = "0.3.8"
-source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.22#747cc155cb09a029dffdb8763cc485824b12761c"
+source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25#a023f5c80aa2e5e7913c2d7e095f7a517faa72c4"
 dependencies = [
  "async-trait",
- "edge-pipeline",
- "edge-security-runtime",
- "edge-security-runtime-authz",
- "edge-security-runtime-credential",
+ "edge-pipeline 0.4.0",
+ "edge-security-application-port",
+ "edge-security-runtime 0.3.8 (git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25)",
+ "edge-security-runtime-authz-port",
+ "edge-security-runtime-credential-port",
+ "edge-security-runtime-identity-port",
+ "edge-security-runtime-jwt-port",
  "serde_json",
- "thiserror 2.0.19",
  "tracing",
+]
+
+[[package]]
+name = "edge-security-application-port"
+version = "0.3.8"
+source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25#a023f5c80aa2e5e7913c2d7e095f7a517faa72c4"
+dependencies = [
+ "async-trait",
+ "edge-security-runtime-authz-port",
+ "edge-security-runtime-identity-port",
+ "thiserror 2.0.19",
 ]
 
 [[package]]
 name = "edge-security-authn"
 version = "0.3.8"
-source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.22#747cc155cb09a029dffdb8763cc485824b12761c"
+source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25#a023f5c80aa2e5e7913c2d7e095f7a517faa72c4"
 dependencies = [
  "async-trait",
  "axum 0.8.9",
  "edge-security-application",
- "edge-security-runtime",
- "edge-security-runtime-credential",
+ "edge-security-authn-port",
+ "edge-security-runtime 0.3.8 (git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25)",
+ "edge-security-runtime-credential 0.3.8 (git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25)",
  "edge-security-runtime-tls",
  "edge-security-transport-ingress-grpc",
  "edge-security-transport-ingress-grpc-auth-mtls",
+ "futures",
+ "tower 0.5.3",
+ "tracing",
+]
+
+[[package]]
+name = "edge-security-authn-port"
+version = "0.3.8"
+source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25#a023f5c80aa2e5e7913c2d7e095f7a517faa72c4"
+dependencies = [
+ "async-trait",
+ "edge-security-application-port",
+ "edge-security-runtime-identity-port",
+ "edge-security-transport-ingress-grpc-auth-mtls-port",
+ "thiserror 2.0.19",
+]
+
+[[package]]
+name = "edge-security-authz"
+version = "0.3.8"
+source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25#a023f5c80aa2e5e7913c2d7e095f7a517faa72c4"
+dependencies = [
+ "async-trait",
+ "axum 0.8.9",
+ "edge-security-application",
+ "edge-security-authz-port",
+ "edge-security-runtime 0.3.8 (git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25)",
+ "edge-security-runtime-authz",
+ "edge-security-transport-ingress-grpc",
  "futures",
  "thiserror 2.0.19",
  "tower 0.5.3",
@@ -1646,20 +1718,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "edge-security-authz"
+name = "edge-security-authz-port"
 version = "0.3.8"
-source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.22#747cc155cb09a029dffdb8763cc485824b12761c"
+source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25#a023f5c80aa2e5e7913c2d7e095f7a517faa72c4"
 dependencies = [
  "async-trait",
- "axum 0.8.9",
- "edge-security-application",
- "edge-security-runtime",
- "edge-security-runtime-authz",
- "edge-security-transport-ingress-grpc",
- "futures",
+ "edge-security-application-port",
+ "edge-security-runtime-identity-port",
  "thiserror 2.0.19",
- "tower 0.5.3",
- "tracing",
 ]
 
 [[package]]
@@ -1671,11 +1737,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "edge-security-runtime"
+version = "0.3.8"
+source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25#a023f5c80aa2e5e7913c2d7e095f7a517faa72c4"
+dependencies = [
+ "edge-security-runtime-identity-port",
+ "thiserror 2.0.19",
+]
+
+[[package]]
 name = "edge-security-runtime-authz"
 version = "0.3.8"
-source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.22#747cc155cb09a029dffdb8763cc485824b12761c"
+source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25#a023f5c80aa2e5e7913c2d7e095f7a517faa72c4"
 dependencies = [
- "edge-security-runtime",
+ "edge-security-runtime-authz-port",
+ "edge-security-runtime-identity-port",
+ "thiserror 2.0.19",
+]
+
+[[package]]
+name = "edge-security-runtime-authz-port"
+version = "0.3.8"
+source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25#a023f5c80aa2e5e7913c2d7e095f7a517faa72c4"
+dependencies = [
+ "edge-security-runtime-identity-port",
  "thiserror 2.0.19",
 ]
 
@@ -1686,8 +1771,8 @@ source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.2
 dependencies = [
  "base64",
  "dirs 5.0.1",
- "edge-security-runtime",
- "edge-security-runtime-validation",
+ "edge-security-runtime 0.3.8 (git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.22)",
+ "edge-security-runtime-validation 0.3.8 (git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.22)",
  "jsonwebtoken",
  "serde",
  "serde_json",
@@ -1697,23 +1782,129 @@ dependencies = [
 ]
 
 [[package]]
+name = "edge-security-runtime-credential"
+version = "0.3.8"
+source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25#a023f5c80aa2e5e7913c2d7e095f7a517faa72c4"
+dependencies = [
+ "base64",
+ "dirs 5.0.1",
+ "edge-security-runtime 0.3.8 (git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25)",
+ "edge-security-runtime-credential-port",
+ "edge-security-runtime-introspection-port",
+ "edge-security-runtime-jwks-port",
+ "edge-security-runtime-jwt-port",
+ "edge-security-runtime-static-key-port",
+ "edge-security-runtime-validation 0.3.8 (git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25)",
+ "jsonwebtoken",
+ "serde",
+ "serde_json",
+ "subtle",
+ "thiserror 2.0.19",
+ "ureq",
+]
+
+[[package]]
+name = "edge-security-runtime-credential-port"
+version = "0.3.8"
+source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25#a023f5c80aa2e5e7913c2d7e095f7a517faa72c4"
+dependencies = [
+ "edge-security-runtime-identity-port",
+ "edge-security-runtime-validation-port",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.19",
+]
+
+[[package]]
+name = "edge-security-runtime-identity-port"
+version = "0.3.8"
+source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25#a023f5c80aa2e5e7913c2d7e095f7a517faa72c4"
+dependencies = [
+ "thiserror 2.0.19",
+]
+
+[[package]]
+name = "edge-security-runtime-introspection-port"
+version = "0.3.8"
+source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25#a023f5c80aa2e5e7913c2d7e095f7a517faa72c4"
+dependencies = [
+ "edge-security-runtime-credential-port",
+ "edge-security-runtime-validation-port",
+]
+
+[[package]]
+name = "edge-security-runtime-jwks-port"
+version = "0.3.8"
+source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25#a023f5c80aa2e5e7913c2d7e095f7a517faa72c4"
+dependencies = [
+ "edge-security-runtime-validation-port",
+]
+
+[[package]]
+name = "edge-security-runtime-jwt-port"
+version = "0.3.8"
+source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25#a023f5c80aa2e5e7913c2d7e095f7a517faa72c4"
+dependencies = [
+ "edge-security-runtime-credential-port",
+ "edge-security-runtime-validation-port",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "edge-security-runtime-static-key-port"
+version = "0.3.8"
+source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25#a023f5c80aa2e5e7913c2d7e095f7a517faa72c4"
+dependencies = [
+ "edge-security-runtime-credential-port",
+]
+
+[[package]]
 name = "edge-security-runtime-tls"
 version = "0.3.8"
-source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.22#747cc155cb09a029dffdb8763cc485824b12761c"
+source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25#a023f5c80aa2e5e7913c2d7e095f7a517faa72c4"
 dependencies = [
- "edge-security-runtime",
+ "edge-security-runtime-identity-port",
+ "edge-security-runtime-tls-port",
  "rustls",
  "rustls-pemfile",
- "serde",
  "thiserror 2.0.19",
  "tokio-rustls",
  "x509-parser",
 ]
 
 [[package]]
+name = "edge-security-runtime-tls-port"
+version = "0.3.8"
+source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25#a023f5c80aa2e5e7913c2d7e095f7a517faa72c4"
+dependencies = [
+ "edge-security-runtime-identity-port",
+ "serde",
+ "thiserror 2.0.19",
+ "tokio-rustls",
+]
+
+[[package]]
 name = "edge-security-runtime-validation"
 version = "0.3.8"
 source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.22#747cc155cb09a029dffdb8763cc485824b12761c"
+dependencies = [
+ "thiserror 2.0.19",
+]
+
+[[package]]
+name = "edge-security-runtime-validation"
+version = "0.3.8"
+source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25#a023f5c80aa2e5e7913c2d7e095f7a517faa72c4"
+dependencies = [
+ "edge-security-runtime-validation-port",
+ "thiserror 2.0.19",
+]
+
+[[package]]
+name = "edge-security-runtime-validation-port"
+version = "0.3.8"
+source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25#a023f5c80aa2e5e7913c2d7e095f7a517faa72c4"
 dependencies = [
  "thiserror 2.0.19",
 ]
@@ -1728,7 +1919,7 @@ dependencies = [
  "aws-credential-types",
  "aws-sigv4",
  "base64",
- "edge-security-runtime-credential",
+ "edge-security-runtime-credential 0.3.8 (git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.22)",
  "http 1.5.0",
  "reqwest",
  "reqwest-middleware 0.4.2",
@@ -1770,28 +1961,43 @@ dependencies = [
 [[package]]
 name = "edge-security-transport-ingress-grpc"
 version = "0.3.8"
-source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.22#747cc155cb09a029dffdb8763cc485824b12761c"
+source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25#a023f5c80aa2e5e7913c2d7e095f7a517faa72c4"
 dependencies = [
- "edge-security-runtime-credential",
- "thiserror 2.0.19",
- "tokio-util",
+ "edge-security-transport-ingress-grpc-port",
  "tracing",
 ]
 
 [[package]]
 name = "edge-security-transport-ingress-grpc-auth-mtls"
 version = "0.3.8"
-source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.22#747cc155cb09a029dffdb8763cc485824b12761c"
+source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25#a023f5c80aa2e5e7913c2d7e095f7a517faa72c4"
 dependencies = [
- "edge-security-runtime",
- "edge-security-runtime-authz",
- "edge-security-runtime-tls",
- "edge-security-transport-ingress-grpc",
+ "edge-security-transport-ingress-grpc-auth-mtls-port",
+ "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25)",
+]
+
+[[package]]
+name = "edge-security-transport-ingress-grpc-auth-mtls-port"
+version = "0.3.8"
+source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25#a023f5c80aa2e5e7913c2d7e095f7a517faa72c4"
+dependencies = [
+ "edge-security-runtime-authz-port",
+ "edge-security-runtime-identity-port",
+ "edge-security-runtime-tls-port",
+ "edge-security-transport-ingress-grpc-port",
  "serde",
- "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.22)",
  "thiserror 2.0.19",
  "toml",
- "tracing",
+]
+
+[[package]]
+name = "edge-security-transport-ingress-grpc-port"
+version = "0.3.8"
+source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25#a023f5c80aa2e5e7913c2d7e095f7a517faa72c4"
+dependencies = [
+ "edge-security-runtime-jwt-port",
+ "thiserror 2.0.19",
+ "tokio-util",
 ]
 
 [[package]]
@@ -1814,10 +2020,10 @@ dependencies = [
 [[package]]
 name = "edge-transport-grpc-egress-transport"
 version = "0.5.0"
-source = "git+https://github.com/sweengineeringlabs/edge-egress-grpc.git?tag=v0.5.1#455d2c0ee8f0388d27395544a22c48859eff68bf"
+source = "git+https://github.com/sweengineeringlabs/edge-egress-grpc.git?tag=v0.6.1#a2fe9547b7ac4d08b8dbb7c74d8afde9b1173466"
 dependencies = [
  "bytes",
- "edge-application",
+ "edge-security-runtime 0.3.8 (git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25)",
  "futures",
  "http 1.5.0",
  "http-body-util",
@@ -1837,8 +2043,8 @@ dependencies = [
 
 [[package]]
 name = "edge-transport-grpc-ingress-reflection"
-version = "0.9.0"
-source = "git+https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git?tag=v0.9.3#5ea78daf8dbc33586a41bebce6d84e90d1755fc3"
+version = "0.9.5"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git?tag=v0.9.5#4e61c0e1260734a5a687b81f93317bfa9faf5f25"
 dependencies = [
  "futures",
  "serde",
@@ -1847,10 +2053,10 @@ dependencies = [
 
 [[package]]
 name = "edge-transport-grpc-ingress-reflection-adapter"
-version = "0.9.0"
-source = "git+https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git?tag=v0.9.3#5ea78daf8dbc33586a41bebce6d84e90d1755fc3"
+version = "0.9.5"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git?tag=v0.9.5#4e61c0e1260734a5a687b81f93317bfa9faf5f25"
 dependencies = [
- "edge-application",
+ "edge-security-runtime 0.3.8 (git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25)",
  "edge-transport-grpc-ingress-reflection",
  "edge-transport-grpc-ingress-transport",
  "futures",
@@ -1860,10 +2066,10 @@ dependencies = [
 
 [[package]]
 name = "edge-transport-grpc-ingress-transport"
-version = "0.9.0"
-source = "git+https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git?tag=v0.9.3#5ea78daf8dbc33586a41bebce6d84e90d1755fc3"
+version = "0.9.5"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git?tag=v0.9.5#4e61c0e1260734a5a687b81f93317bfa9faf5f25"
 dependencies = [
- "edge-application",
+ "edge-security-runtime 0.3.8 (git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25)",
  "futures",
  "serde",
  "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.4.2)",
@@ -1873,10 +2079,10 @@ dependencies = [
 
 [[package]]
 name = "edge-transport-grpc-ingress-transport-adapter"
-version = "0.9.0"
-source = "git+https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git?tag=v0.9.3#5ea78daf8dbc33586a41bebce6d84e90d1755fc3"
+version = "0.9.5"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git?tag=v0.9.5#4e61c0e1260734a5a687b81f93317bfa9faf5f25"
 dependencies = [
- "edge-application",
+ "edge-security-runtime 0.3.8 (git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25)",
  "edge-transport-grpc-ingress-transport",
  "futures",
  "parking_lot",
@@ -1989,7 +2195,7 @@ source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.g
 dependencies = [
  "async-trait",
  "bytes",
- "edge-security-runtime",
+ "edge-security-runtime 0.3.8 (git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.22)",
  "edge-security-transport-egress-http",
  "edge-security-transport-egress-http-oauth",
  "edge-security-transport-egress-http-tls",
@@ -2012,10 +2218,10 @@ dependencies = [
 
 [[package]]
 name = "edge-transport-http-ingress-port"
-version = "0.9.2"
-source = "git+https://github.com/sweengineeringlabs/edge-transport-http-ingress.git?tag=v0.9.3#d8a91e36cb1e3169278d3ad011c965eed7f90738"
+version = "0.10.1"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-http-ingress.git?tag=v0.10.1#8aa2c8d183e32b31d19b18a8fefbd0ceb901d650"
 dependencies = [
- "edge-application",
+ "edge-security-runtime 0.3.8 (git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25)",
  "futures",
  "serde",
  "serde_json",
@@ -3917,9 +4123,9 @@ dependencies = [
  "edge-runtime-http-adapter",
  "edge-runtime-message-broker",
  "edge-runtime-message-broker-adapter",
- "edge-security-runtime",
+ "edge-security-runtime 0.3.8 (git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25)",
  "edge-security-runtime-authz",
- "edge-security-runtime-credential",
+ "edge-security-runtime-credential 0.3.8 (git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25)",
  "edge-security-runtime-tls",
  "edge-transport-grpc-egress-transport",
  "edge-transport-grpc-ingress-reflection",
@@ -4166,6 +4372,17 @@ dependencies = [
 [[package]]
 name = "swe-edge-configbuilder"
 version = "0.3.0"
+source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25#a023f5c80aa2e5e7913c2d7e095f7a517faa72c4"
+dependencies = [
+ "dirs 5.0.1",
+ "serde",
+ "swe-edge-configbuilder-port",
+ "toml",
+]
+
+[[package]]
+name = "swe-edge-configbuilder"
+version = "0.3.0"
 source = "git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.4.1#6a33cee8365b0bd55d1db858ef81fa50a696dd1d"
 dependencies = [
  "dirs 6.0.0",
@@ -4185,6 +4402,14 @@ dependencies = [
  "serde",
  "thiserror 2.0.19",
  "toml",
+]
+
+[[package]]
+name = "swe-edge-configbuilder-port"
+version = "0.3.0"
+source = "git+https://github.com/sweengineeringlabs/edge-security.git?tag=v0.3.25#a023f5c80aa2e5e7913c2d7e095f7a517faa72c4"
+dependencies = [
+ "thiserror 2.0.19",
 ]
 
 [[package]]
@@ -4770,7 +4995,6 @@ dependencies = [
  "futures-sink",
  "libc",
  "pin-project-lite",
- "slab",
  "tokio",
 ]
 
