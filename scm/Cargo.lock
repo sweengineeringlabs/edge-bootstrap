@@ -2096,7 +2096,7 @@ dependencies = [
 [[package]]
 name = "edge-transport-http-egress-breaker"
 version = "0.4.0"
-source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.6.1#3629c8bba9917ffef5dc7836b96fbb69941695be"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.7.0#96f8da10f78c01cc94ad597985481446ff9c2a4e"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2116,7 +2116,7 @@ dependencies = [
 [[package]]
 name = "edge-transport-http-egress-cache"
 version = "0.4.0"
-source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.6.1#3629c8bba9917ffef5dc7836b96fbb69941695be"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.7.0#96f8da10f78c01cc94ad597985481446ff9c2a4e"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2134,7 +2134,7 @@ dependencies = [
 [[package]]
 name = "edge-transport-http-egress-cassette"
 version = "0.4.0"
-source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.6.1#3629c8bba9917ffef5dc7836b96fbb69941695be"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.7.0#96f8da10f78c01cc94ad597985481446ff9c2a4e"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2156,7 +2156,7 @@ dependencies = [
 [[package]]
 name = "edge-transport-http-egress-rate"
 version = "0.4.0"
-source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.6.1#3629c8bba9917ffef5dc7836b96fbb69941695be"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.7.0#96f8da10f78c01cc94ad597985481446ff9c2a4e"
 dependencies = [
  "async-trait",
  "http 1.5.0",
@@ -2171,9 +2171,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "edge-transport-http-egress-resilient"
+version = "0.4.0"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.7.0#96f8da10f78c01cc94ad597985481446ff9c2a4e"
+dependencies = [
+ "edge-transport-http-egress-breaker",
+ "edge-transport-http-egress-cache",
+ "edge-transport-http-egress-cassette",
+ "edge-transport-http-egress-rate",
+ "edge-transport-http-egress-resilient-port",
+ "edge-transport-http-egress-retry",
+ "reqwest-middleware 0.4.2",
+ "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.4.2)",
+]
+
+[[package]]
+name = "edge-transport-http-egress-resilient-port"
+version = "0.4.0"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.7.0#96f8da10f78c01cc94ad597985481446ff9c2a4e"
+dependencies = [
+ "edge-transport-http-egress-cassette",
+ "reqwest-middleware 0.4.2",
+ "swe-edge-configbuilder 0.3.0 (git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.4.2)",
+ "thiserror 2.0.19",
+]
+
+[[package]]
 name = "edge-transport-http-egress-retry"
 version = "0.4.0"
-source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.6.1#3629c8bba9917ffef5dc7836b96fbb69941695be"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.7.0#96f8da10f78c01cc94ad597985481446ff9c2a4e"
 dependencies = [
  "async-trait",
  "edge-transport-retry",
@@ -2191,7 +2217,7 @@ dependencies = [
 [[package]]
 name = "edge-transport-http-egress-transport"
 version = "0.4.0"
-source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.6.1#3629c8bba9917ffef5dc7836b96fbb69941695be"
+source = "git+https://github.com/sweengineeringlabs/edge-transport-http-egress.git?tag=v0.7.0#96f8da10f78c01cc94ad597985481446ff9c2a4e"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2199,11 +2225,7 @@ dependencies = [
  "edge-security-transport-egress-http",
  "edge-security-transport-egress-http-oauth",
  "edge-security-transport-egress-http-tls",
- "edge-transport-http-egress-breaker",
- "edge-transport-http-egress-cache",
- "edge-transport-http-egress-cassette",
- "edge-transport-http-egress-rate",
- "edge-transport-http-egress-retry",
+ "edge-transport-http-egress-resilient",
  "futures",
  "http 1.5.0",
  "reqwest",
