@@ -1,0 +1,36 @@
+[package]
+name                   = "swe-edge-bootstrap-wasm"
+version.workspace      = true
+edition.workspace      = true
+license.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+repository.workspace   = true
+description = "swe-edge-bootstrap — Wasm component handler port (ComponentEngine/ComponentValidator traits + DTOs, zero implementation, per ADR-007)"
+keywords    = ["wasm", "ports"]
+categories  = ["network-programming"]
+
+[package.metadata.arch]
+application_type = "port"
+service_type     = "port"
+
+[lib]
+name = "swe_edge_bootstrap_wasm"
+path = "src/lib.rs"
+
+[dependencies]
+futures = "0.3"
+serde   = { version = "1.0", features = ["derive"] }
+thiserror = "2"
+
+[dev-dependencies]
+serde_json = "1.0"
+tokio       = { version = "1.0", features = ["macros", "rt"] }
+
+[lints.rust]
+unsafe_code  = "deny"
+missing_docs = "warn"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
