@@ -4335,6 +4335,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "swe-edge-bootstrap-wasm"
+version = "0.1.0"
+dependencies = [
+ "futures",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.19",
+ "tokio",
+]
+
+[[package]]
 name = "swe-edge-configbuilder"
 version = "0.1.0"
 source = "git+https://github.com/sweengineeringlabs/edge-configbuilder.git?tag=v0.1.0#842429c1fd3d95255940d6dbd5da17c14c37f8a8"
