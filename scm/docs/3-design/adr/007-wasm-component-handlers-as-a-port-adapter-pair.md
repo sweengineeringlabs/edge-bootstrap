@@ -93,6 +93,28 @@ A `WasmHandler` struct implements the already-existing `edge_application::Handle
 
 **Option 1 — a dedicated `swe-edge-bootstrap-wasm` port crate, with the concrete engine inside the existing adapter crate behind a `wasm` feature, bridged into dispatch via a `Handler`-implementing `WasmHandler`** — because it is the only option that is simultaneously consistent with this repo's established port/adapter convention *and* satisfies ADR-006's explicit requirement that components adapt into the existing dispatch boundary rather than acquire a new one.
 
+## Tasks
+
+Blocked on `js-runtime#52` (guest-ABI/WIT contract scope) — these can be scaffolded once that lands; nothing here depends on the compiler or SDK side of ADR-006.
+
+- [ ] Scaffold `scm/main/port/wasm/` (`swe-edge-bootstrap-wasm`) with zero-implementation `ComponentEngine`/`ComponentValidator` traits and `ComponentManifest`/`ComponentError`/request-response DTOs, following the request/response-object convention (`ComponentLoadRequest`/`ComponentInvokeRequest`, not bare arguments) already used by every other port.
+- [ ] Register the new port crate in the workspace member list and as a dependency of `main/adapter/Cargo.toml`.
+- [ ] Add a `wasm` Cargo feature to `main/adapter/Cargo.toml` gating an optional `wasmtime`/`wasmtime-wasi` dependency — not default-on, matching `intrusion`/`security`/`scheduler`/`message-broker`.
+- [ ] Add `core/wasm/` to `main/adapter/src/`, containing the concrete `WasmtimeComponentEngine` behind `#[cfg(feature = "wasm")]`.
+- [ ] Add a `saf/` factory for the engine (`WASM_ENGINE_SVC`/`WASM_ENGINE_SVC_FACTORY` constants), matching `TLS_SVC`/`SECURITY_CONTEXT_SVC`'s existing convention.
+- [ ] Implement `WasmHandler`, delegating `edge_application::Handler::execute()` to `ComponentEngine::invoke()`.
+- [ ] Add `RuntimeBuilder::wasm_route(manifest, component_bytes)`, mirroring `.with_scheduler()`'s shape, registering through the same path `.http_route()`/`.grpc_route()` already use.
+- [ ] Flip this ADR's Status from Proposed to Accepted once the above lands and is verified.
+
+## Acceptance Criteria
+
+- [ ] `swe-edge-bootstrap-wasm` compiles standalone with zero dependency on `wasmtime` or any other port/adapter crate — a consumer can depend on it for the trait/DTO shape alone.
+- [ ] Building `swe-edge-bootstrap` without the `wasm` feature pulls in no `wasmtime`/`wasmtime-wasi` crate — verified via the dependency graph (e.g. `cargo tree`), not just "the code compiles."
+- [ ] `DefaultHttpJob`, `DefaultGrpcJob`, `HttpIngressJob`, `GrpcIngressJob`, `HandlerRegistry`, and `Pipeline` require zero source changes — the diff for this work touches only new files plus `RuntimeBuilder`'s one new builder method.
+- [ ] A route registered via `.wasm_route(...)` is dispatched identically to a native Rust route from the composition root's perspective: same health-check aggregation, same load-monitor wrapping, same intrusion-guard wrapping, no Wasm-specific special-casing in any of the three.
+- [ ] `ComponentValidator` rejects an invalid manifest (unversioned WIT contract, undeclared capability, route collision) before the route is ever registered — proven by a test asserting registration itself fails, not merely that invocation later fails.
+- [ ] `cargo build --workspace`, `cargo test --workspace`, and `cargo clippy --workspace --all-targets -D warnings` all pass both with and without the `wasm` feature enabled.
+
 ## Trade-offs Accepted
 
 - **A twelfth port crate.** Consistent with the existing pattern's own logic (one port per substantial, independently-testable capability), but it is a real crate to maintain, version, and keep zero-implementation.
