@@ -72,15 +72,15 @@ tempfile             = "3"
 tokio                = { version = "1.0", features = ["rt-multi-thread", "sync", "signal", "macros", "time", "net", "test-util"] }
 tracing              = { version = "0.1", default-features = false }
 
-edge-application            = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.20.0", features = ["full"] }
-edge-application-command    = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.20.0" }
-edge-application-handler    = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.20.0" }
-edge-application-observer   = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.20.0" }
+edge-application            = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.21.1", features = ["full"] }
+edge-application-command    = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.21.1" }
+edge-application-handler    = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.21.1" }
+edge-application-observer   = { git = "https://github.com/sweengineeringlabs/edge-application.git", tag = "v0.21.1" }
 edge-intrusion               = { git = "https://github.com/sweengineeringlabs/edge-intrusion.git", tag = "v0.1.1" }
-edge-proxy                   = { git = "https://github.com/sweengineeringlabs/edge-proxy.git", tag = "v0.3.7" }
-edge-security-runtime-authz  = { git = "https://github.com/sweengineeringlabs/edge-security.git", tag = "v0.3.22" }
+edge-proxy                   = { git = "https://github.com/sweengineeringlabs/edge-proxy.git", tag = "v0.3.8" }
+edge-security-runtime-authz  = { git = "https://github.com/sweengineeringlabs/edge-security.git", tag = "v0.3.25" }
 swe-edge-egress-http         = { package = "edge-transport-http-egress-transport", git = "https://github.com/sweengineeringlabs/edge-transport-http-egress.git", tag = "v0.6.1" }
-swe-edge-ingress-http        = { package = "edge-transport-http-ingress-port", git = "https://github.com/sweengineeringlabs/edge-transport-http-ingress.git", tag = "v0.9.3" }
+swe-edge-ingress-http        = { package = "edge-transport-http-ingress-port", git = "https://github.com/sweengineeringlabs/edge-transport-http-ingress.git", tag = "v0.10.1" }
 swe-edge-ingress-verifier    = { git = "https://github.com/sweengineeringlabs/edge-ingress-security.git", tag = "v0.6.3" }
 swe-edge-runtime-scheduler   = { git = "https://github.com/sweengineeringlabs/edge-scheduler.git", tag = "v0.3.6" }
 swe-observ-logging           = { package = "swe-observability-logging", git = "ssh://git@github.com/sweengineeringlabs/observability.git", tag = "v0.2.9" }

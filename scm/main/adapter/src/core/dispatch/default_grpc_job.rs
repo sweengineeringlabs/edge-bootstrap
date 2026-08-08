@@ -22,6 +22,8 @@ use swe_edge_ingress_grpc::{
     GrpcDecodeFn, GrpcEncodeFn, GrpcMetadataInner, GrpcRequest, GrpcResponse, RouteLister,
 };
 
+use super::Payload;
+
 /// Pure type witnesses satisfying `edge_application::Request`/`Response` —
 /// never instantiated, only named, to fix `create_registry::<H>()`'s type
 /// parameters.
@@ -38,12 +40,9 @@ impl edge_application::Response for WitnessResponse {}
 /// know `edge-application` exists), and both types are foreign to this
 /// crate, so the orphan rule blocks adding the impls here. `GrpcDecodeFn`/
 /// `GrpcEncodeFn` already operate on raw `&[u8]`/`Vec<u8>`, never on
-/// `GrpcBytes` itself, so nothing is lost by routing bytes through this
-/// local newtype instead.
-#[derive(Clone)]
-struct GrpcPayloadBytes(Vec<u8>);
-impl edge_application::Request for GrpcPayloadBytes {}
-impl edge_application::Response for GrpcPayloadBytes {}
+/// `GrpcBytes` itself, so nothing is lost by routing bytes through the
+/// shared `Payload` wrapper (see `super::Payload`) instead.
+type GrpcPayloadBytes = Payload<Vec<u8>>;
 
 /// Bridges a typed `Handler<Req, Resp>` into the gRPC-typed registry
 /// (`Handler<GrpcPayloadBytes, GrpcPayloadBytes>`) via a decode/encode pair —
@@ -90,7 +89,7 @@ where
                 ctx: req.ctx,
             })
             .await?;
-        Ok(GrpcPayloadBytes((self.encode)(&resp)))
+        Ok(Payload((self.encode)(&resp)))
     }
 
     async fn health_check(
@@ -269,7 +268,7 @@ impl Job<GrpcRequest, GrpcResponse> for DefaultGrpcJob {
             .ok_or(JobError::HandlerUnavailable(id))?;
         let resp = handler
             .execute(ExecutionRequest {
-                req: GrpcPayloadBytes(req.req.body.clone()),
+                req: Payload(req.req.body.clone()),
                 ctx: req.ctx,
             })
             .await

@@ -24,3 +24,4 @@ Records the reasoning behind design choices so future contributors understand wh
 | [004](004-backend-pool-load-balancing-moves-to-composition-root.md) | Backend-pool load balancing moves to the `RuntimeBuilder` composition root, out of `edge-transport-http-egress` | Accepted |
 | [005](005-runtime-neutral-typescript-support-via-protocol-boundary.md) | Runtime-neutral TypeScript support through a protocol-based SDK, not N-API or a rewrite of the Rust runtime | Accepted |
 | [006](006-typescript-handlers-as-webassembly-components.md) | TypeScript handlers compile to WebAssembly components hosted by the Rust runtime | Accepted |
+| [007](007-wasm-component-handlers-as-a-port-adapter-pair.md) | Wasm component handlers are a port + adapter pair, bridged into the existing `Handler` boundary | Proposed |
