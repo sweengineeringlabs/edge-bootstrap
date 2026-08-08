@@ -30,6 +30,22 @@ fn test_http_route_accepts_handler_with_auto_json_codec() {
     impl Handler for EchoHandler {
         type Request = Req;
         type Response = Resp;
+        fn id(
+            &self,
+            _req: edge_application_handler::IdRequest,
+        ) -> Result<edge_application_handler::IdResponse, HandlerError> {
+            Ok(edge_application_handler::IdResponse {
+                id: "json-codec-echo".to_string(),
+            })
+        }
+        fn pattern(
+            &self,
+            _req: edge_application_handler::PatternRequest,
+        ) -> Result<edge_application_handler::PatternResponse, HandlerError> {
+            Ok(edge_application_handler::PatternResponse {
+                pattern: "/json-codec-echo".to_string(),
+            })
+        }
         async fn execute(
             &self,
             req: edge_application_handler::ExecutionRequest<'_, Req>,

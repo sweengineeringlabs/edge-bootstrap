@@ -18,7 +18,9 @@ use std::time::Duration;
 
 use async_trait::async_trait;
 use edge_application::{Handler, HandlerError};
-use edge_application_handler::{ExecutionRequest, IdRequest, IdResponse};
+use edge_application_handler::{
+    ExecutionRequest, IdRequest, IdResponse, PatternRequest, PatternResponse,
+};
 use swe_edge_bootstrap::{Runtime, RuntimeConfig};
 use swe_edge_egress_grpc::{
     GrpcChannelConfig, GrpcRequest, HealthCheckRequest as GrpcEgressHealthCheckRequest,
@@ -45,6 +47,12 @@ impl Handler for EchoHandler {
         // `tonic_server_dispatcher.rs`), which always includes it.
         Ok(IdResponse {
             id: "/echo".to_string(),
+        })
+    }
+
+    fn pattern(&self, _req: PatternRequest) -> Result<PatternResponse, HandlerError> {
+        Ok(PatternResponse {
+            pattern: "/echo".to_string(),
         })
     }
 
