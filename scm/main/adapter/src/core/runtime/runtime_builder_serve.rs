@@ -13,7 +13,8 @@ use swe_edge_ingress_grpc_reflection_adapter::ReflectionService;
 use swe_edge_ingress_verifier::{JwtVerifier, TokenVerifier};
 use swe_edge_runtime_grpc::WithTlsRequest;
 use swe_edge_runtime_grpc_adapter::{
-    AllowUnauthenticatedFlagRequest, GrpcServerManage, TonicGrpcServer, WithInterceptorsRequest,
+    AllowUnauthenticatedFlagRequest, GrpcServerManage, StreamingKind, TonicGrpcServer,
+    WithInterceptorsRequest, WithStreamingKindRequest,
 };
 use swe_edge_runtime_http::{HttpServer, ServeWithShutdownRequest};
 use swe_edge_runtime_http_adapter::AxumHttpServer;
@@ -163,6 +164,16 @@ impl RuntimeBuilder {
             } else {
                 None
             };
+
+        // Every registered gRPC route must declare its streaming kind explicitly
+        // (grpc-adapter v0.4.0+ rejects unregistered methods with Unimplemented
+        // instead of guessing from a header). DefaultGrpcJob has no streaming-
+        // Handler concept yet, so every route registered through it is unary.
+        let grpc_route_ids: Vec<String> = self
+            .grpc_job
+            .as_ref()
+            .map(|j| swe_edge_ingress_grpc::RouteLister::list_route_ids(j.as_ref()))
+            .unwrap_or_default();
 
         let mut input = DefaultIngress::empty();
         if let Some(job) = self.http_job {
@@ -319,6 +330,14 @@ impl RuntimeBuilder {
                         handler
                     };
                 let mut server = TonicGrpcServer::new(grpc_bind, handler);
+                for method in &grpc_route_ids {
+                    server = server
+                        .with_streaming_kind(WithStreamingKindRequest {
+                            method: method.clone(),
+                            kind: StreamingKind::Unary,
+                        })
+                        .map_err(|e| RuntimeError::StartFailed(e.to_string()))?;
+                }
                 if let Some(tls) = grpc_tls {
                     server = server
                         .with_tls(WithTlsRequest { tls })

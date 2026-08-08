@@ -19,8 +19,8 @@ name = "swe_edge_bootstrap_ingress"
 path = "src/lib.rs"
 
 [dependencies]
-swe-edge-ingress-grpc = { package = "edge-transport-grpc-ingress-transport", git = "https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git", tag = "v0.9.3" }
-swe-edge-ingress-http = { package = "edge-transport-http-ingress-port", git = "https://github.com/sweengineeringlabs/edge-transport-http-ingress.git", tag = "v0.9.3" }
+swe-edge-ingress-grpc = { package = "edge-transport-grpc-ingress-transport", git = "https://github.com/sweengineeringlabs/edge-transport-grpc-ingress.git", tag = "v0.9.5" }
+swe-edge-ingress-http = { package = "edge-transport-http-ingress-port", git = "https://github.com/sweengineeringlabs/edge-transport-http-ingress.git", tag = "v0.10.1" }
 
 [dev-dependencies]
 futures = "0.3"

@@ -19,22 +19,33 @@ use edge_dispatch::{HandlerComposer, HandlerRegistry, Pipeline, StageConfig};
 use edge_proxy::{Job, JobError, JobResponse, RouteRequest, RouteResponse, Router, RoutingError};
 use swe_edge_ingress_http::{HttpDecodeFn, HttpEncodeFn, HttpRequest, HttpResponse};
 
+use super::Payload;
+
 /// Pure type witnesses satisfying `edge_application::Request`/`Response` —
 /// never instantiated, only named, to fix `create_registry::<H>()`'s type
-/// parameters. `HttpRequest`/`HttpResponse` deliberately no longer implement
-/// these marker traits (removed in edge-transport-http-ingress#29 — transport
-/// must not know `edge-application`), so this crate supplies its own.
+/// parameters.
 #[derive(Clone)]
 struct WitnessRequest;
 impl edge_application::Request for WitnessRequest {}
 struct WitnessResponse;
 impl edge_application::Response for WitnessResponse {}
 
+/// The registry's actual payload types — deliberately not `HttpRequest`/
+/// `HttpResponse` directly. `HttpRequest`/`HttpResponse` stopped implementing
+/// `edge_application::Request`/`Response` in edge-transport-http-ingress#29's
+/// ADR-021 refactor (transport must not know `edge-application` exists), and
+/// both types are foreign to this crate, so the orphan rule blocks adding
+/// the impls here. Routed through the shared `Payload` wrapper (see
+/// `super::Payload`) instead — mirrors `default_grpc_job.rs`'s identical
+/// `GrpcPayloadBytes` wrapper for the same reason.
+type HttpRequestPayload = Payload<HttpRequest>;
+type HttpResponsePayload = Payload<HttpResponse>;
+
 /// Bridges a typed `Handler<Req, Resp>` into the HTTP-typed registry
-/// (`Handler<HttpRequest, HttpResponse>`) via a decode/encode pair — the
-/// same erasure the transport crate used to own before ADR-021 (see
-/// edge-transport-http-ingress#29); it now lives here, at the composition
-/// root, not in transport.
+/// (`Handler<HttpRequestPayload, HttpResponsePayload>`) via a decode/encode
+/// pair — the same erasure the transport crate used to own before ADR-021
+/// (see edge-transport-http-ingress#29); it now lives here, at the
+/// composition root, not in transport.
 struct BridgedHttpHandler<Req, Resp>
 where
     Req: Send + 'static,
@@ -51,8 +62,8 @@ where
     Req: Send + 'static + edge_application::Request,
     Resp: Send + 'static + edge_application::Response,
 {
-    type Request = HttpRequest;
-    type Response = HttpResponse;
+    type Request = HttpRequestPayload;
+    type Response = HttpResponsePayload;
 
     fn id(&self, req: IdRequest) -> Result<IdResponse, HandlerError> {
         self.inner.id(req)
@@ -64,10 +75,10 @@ where
 
     async fn execute(
         &self,
-        req: ExecutionRequest<'_, HttpRequest>,
-    ) -> Result<HttpResponse, HandlerError> {
+        req: ExecutionRequest<'_, HttpRequestPayload>,
+    ) -> Result<HttpResponsePayload, HandlerError> {
         let typed =
-            (self.decode)(&req.req).map_err(|e| HandlerError::InvalidRequest(e.to_string()))?;
+            (self.decode)(&req.req.0).map_err(|e| HandlerError::InvalidRequest(e.to_string()))?;
         let resp = self
             .inner
             .execute(ExecutionRequest {
@@ -75,7 +86,7 @@ where
                 ctx: req.ctx,
             })
             .await?;
-        Ok((self.encode)(resp))
+        Ok(Payload((self.encode)(resp)))
     }
 
     async fn health_check(
@@ -106,7 +117,8 @@ pub(crate) enum JobRegistrationError {
 /// only at the end of that chain.
 pub(crate) struct DefaultHttpJob {
     router: RwLock<matchit::Router<String>>,
-    registry: Arc<dyn HandlerRegistry<Request = HttpRequest, Response = HttpResponse>>,
+    registry:
+        Arc<dyn HandlerRegistry<Request = HttpRequestPayload, Response = HttpResponsePayload>>,
     /// Pre-`Pipeline`-wrap handlers, keyed by id, kept purely for
     /// `health_check`: `edge_dispatch::Pipeline`'s own `Handler` impl only
     /// overrides `id`/`pattern`/`execute` — its `health_check` falls back to
@@ -116,7 +128,7 @@ pub(crate) struct DefaultHttpJob {
     health_handlers: RwLock<
         std::collections::HashMap<
             String,
-            Arc<dyn Handler<Request = HttpRequest, Response = HttpResponse>>,
+            Arc<dyn Handler<Request = HttpRequestPayload, Response = HttpResponsePayload>>,
         >,
     >,
 }
@@ -178,12 +190,12 @@ impl DefaultHttpJob {
             decode,
             encode,
         };
-        let erased: Arc<dyn Handler<Request = HttpRequest, Response = HttpResponse>> =
+        let erased: Arc<dyn Handler<Request = HttpRequestPayload, Response = HttpResponsePayload>> =
             Arc::new(bridged);
         self.health_handlers
             .write()
             .insert(id.clone(), Arc::clone(&erased));
-        let pipeline = Pipeline::<HttpRequest, HttpResponse>::builder()
+        let pipeline = Pipeline::<HttpRequestPayload, HttpResponsePayload>::builder()
             .id(id.clone())
             .pattern(pattern.clone())
             .stage(id.clone(), erased, StageConfig::passthrough())
@@ -261,10 +273,13 @@ impl Job<HttpRequest, HttpResponse> for DefaultHttpJob {
             .handler
             .ok_or(JobError::HandlerUnavailable(id))?;
         let resp = handler
-            .execute(ExecutionRequest { req: http_req, ctx })
+            .execute(ExecutionRequest {
+                req: Payload(http_req),
+                ctx,
+            })
             .await
             .map_err(|e| JobError::Handler(e.to_string()))?;
-        Ok(JobResponse { payload: resp })
+        Ok(JobResponse { payload: resp.0 })
     }
 }
 
