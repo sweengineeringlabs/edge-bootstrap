@@ -20,6 +20,7 @@ impl edge_application::Response for DepCoverageTextPayload {}
 #[tokio::test]
 async fn test_edge_application_handler_registered_via_builder() {
     use edge_application::{Handler, HandlerError};
+    use edge_application_handler::{IdRequest, IdResponse, PatternRequest, PatternResponse};
 
     struct PingHandler;
 
@@ -27,6 +28,16 @@ async fn test_edge_application_handler_registered_via_builder() {
     impl Handler for PingHandler {
         type Request = DepCoverageTextPayload;
         type Response = DepCoverageTextPayload;
+        fn id(&self, _req: IdRequest) -> Result<IdResponse, HandlerError> {
+            Ok(IdResponse {
+                id: "dep-coverage-ping".to_string(),
+            })
+        }
+        fn pattern(&self, _req: PatternRequest) -> Result<PatternResponse, HandlerError> {
+            Ok(PatternResponse {
+                pattern: "/dep-coverage-ping".to_string(),
+            })
+        }
         async fn execute(
             &self,
             req: edge_application_handler::ExecutionRequest<'_, DepCoverageTextPayload>,
@@ -137,6 +148,7 @@ fn test_jwt_verifier_rejects_invalid_token_directly() {
 #[test]
 fn test_ingress_grpc_handler_registered_via_builder() {
     use edge_application::{Handler, HandlerError};
+    use edge_application_handler::{IdRequest, IdResponse, PatternRequest, PatternResponse};
     use swe_edge_bootstrap::Runtime;
 
     struct EchoHandler;
@@ -145,6 +157,16 @@ fn test_ingress_grpc_handler_registered_via_builder() {
     impl Handler for EchoHandler {
         type Request = DepCoverageTextPayload;
         type Response = DepCoverageTextPayload;
+        fn id(&self, _req: IdRequest) -> Result<IdResponse, HandlerError> {
+            Ok(IdResponse {
+                id: "/dep-coverage.Svc/Echo".to_string(),
+            })
+        }
+        fn pattern(&self, _req: PatternRequest) -> Result<PatternResponse, HandlerError> {
+            Ok(PatternResponse {
+                pattern: "dep-coverage-echo".to_string(),
+            })
+        }
         async fn execute(
             &self,
             req: edge_application_handler::ExecutionRequest<'_, DepCoverageTextPayload>,
