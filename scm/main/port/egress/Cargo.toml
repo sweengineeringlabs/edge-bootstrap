@@ -19,7 +19,7 @@ name = "swe_edge_bootstrap_egress"
 path = "src/lib.rs"
 
 [dependencies]
-swe-edge-egress-grpc = { package = "edge-transport-grpc-egress-transport", git = "https://github.com/sweengineeringlabs/edge-egress-grpc.git", tag = "v0.5.1" }
+swe-edge-egress-grpc = { package = "edge-transport-grpc-egress-transport", git = "https://github.com/sweengineeringlabs/edge-egress-grpc.git", tag = "v0.6.1" }
 swe-edge-egress-http = { package = "edge-transport-http-egress-transport", git = "https://github.com/sweengineeringlabs/edge-transport-http-egress.git", tag = "v0.6.1" }
 
 [dev-dependencies]
